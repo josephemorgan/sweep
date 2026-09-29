@@ -4,6 +4,8 @@
 **/coverage
 .git
 .env
+.env.*
+!.env.example
 .claude
 packages/client/playwright-report
 packages/client/test-results

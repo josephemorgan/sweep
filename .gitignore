@@ -9,6 +9,8 @@ __screenshots__/
 
 # Local env and tool state
 .env
+.env.*
+!.env.example
 *.local
 .claude/settings.local.json
 .claude/worktrees/

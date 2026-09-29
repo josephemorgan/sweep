@@ -6,7 +6,7 @@ services:
       POSTGRES_PASSWORD: sweep
       POSTGRES_DB: sweep
     ports:
-      - '5432:5432'
+      - '127.0.0.1:5432:5432'
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
@@ -24,7 +24,7 @@ services:
       SIGNUP_ENABLED: ${SIGNUP_ENABLED:-false}
       PORT: '3000'
     ports:
-      - '3000:3000'
+      - '127.0.0.1:3000:3000'
     depends_on:
       postgres:
         condition: service_healthy
