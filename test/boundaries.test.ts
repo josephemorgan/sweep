@@ -42,6 +42,24 @@ describe('package boundaries (spec §7)', () => {
     );
   });
 
+  it.each(['packages/server/src/probe.ts', 'packages/server/src/routes/probe.ts'])(
+    'rejects @sweep/core/parse in server code outside the core adapter (%s)',
+    async (filePath) => {
+      for (const spec of ['@sweep/core/parse', '@sweep/core/parse/x', '@sweep/client']) {
+        expect(await ruleIds(filePath, `import '${spec}';\n`), spec).toContain(
+          'no-restricted-imports',
+        );
+      }
+    },
+  );
+
+  it('allows @sweep/core/parse in the server core adapter and in server tests', async () => {
+    const code =
+      "import { parseGuide } from '@sweep/core/parse';\nexport const probe = parseGuide;\n";
+    expect(await ruleIds('packages/server/src/guides/core-adapter.ts', code)).toEqual([]);
+    expect(await ruleIds('packages/server/test/probe.test.ts', code)).toEqual([]);
+  });
+
   it('rejects Node built-ins in core library code, with or without the node: prefix', async () => {
     for (const spec of ['node:fs', 'fs', 'node:path']) {
       const ids = await ruleIds(

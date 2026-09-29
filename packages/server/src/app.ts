@@ -9,7 +9,13 @@ import { authRateLimit, userRateLimit } from './http/rate-limits.js';
 import { requireSession } from './http/require-session.js';
 import { sameOriginGuard } from './http/same-origin.js';
 import { securityHeaders } from './http/security-headers.js';
-import { JSON_BODY_LIMIT_BYTES, RATE_LIMITS, type RateLimits } from './limits.js';
+import {
+  JSON_BODY_LIMIT_BYTES,
+  QUOTAS,
+  RATE_LIMITS,
+  type Quotas,
+  type RateLimits,
+} from './limits.js';
 import { healthRouter } from './routes/health.js';
 import { runsRouter } from './routes/runs.js';
 
@@ -24,6 +30,8 @@ export interface AppOptions {
   trustProxy?: number | false | undefined;
   /** Overrides for the spec §6.4 rate limits. */
   rateLimits?: Partial<RateLimits> | undefined;
+  /** Overrides for spec §6.5 quotas. */
+  quotas?: Partial<Quotas> | undefined;
 }
 
 /**
@@ -55,6 +63,7 @@ const IMMUTABLE_ASSET = /-[A-Z0-9]{8}\.[a-z0-9]+$/;
 export function createApp(options: AppOptions): Express {
   const { db, auth, sameOrigin, clientDistDir } = options;
   const limits: RateLimits = { ...RATE_LIMITS, ...options.rateLimits };
+  const quotas: Quotas = { ...QUOTAS, ...options.quotas };
   const app = express();
   app.disable('x-powered-by');
   app.use(securityHeaders());
@@ -70,7 +79,10 @@ export function createApp(options: AppOptions): Express {
   app.use('/api', healthRouter(db));
   app.use('/api', requireSession(auth));
   app.use('/api', userRateLimit('api', limits.api));
-  app.use('/api', runsRouter({ db }));
+  app.use(
+    '/api',
+    runsRouter({ db, quotas, uploadLimiter: userRateLimit('uploads', limits.uploads) }),
+  );
   app.use('/api', () => {
     throw new HttpError(404, ApiErrorCode.NotFound, 'No such API route.');
   });
