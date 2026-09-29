@@ -45,6 +45,8 @@ function safeAuthHandler(auth: Auth): (request: Request) => Promise<Response> {
 }
 
 const NO_CACHE_FILES = new Set(['index.html', 'ngsw-worker.js', 'ngsw.json']);
+/** Angular's content-hashed outputs: main-ABCD2345.js, chunk-…, styles-…, media/<name>-HASH.<ext>. */
+const IMMUTABLE_ASSET = /-[A-Z0-9]{8}\.[a-z0-9]+$/;
 
 /**
  * Order: helmet, trust proxy, /api/auth (limit + Better Auth), JSON, same-origin, health,
@@ -79,7 +81,11 @@ export function createApp(options: AppOptions): Express {
       express.static(root, {
         index: false,
         setHeaders(res, path) {
-          if (NO_CACHE_FILES.has(basename(path))) res.setHeader('Cache-Control', 'no-cache');
+          const name = basename(path);
+          if (NO_CACHE_FILES.has(name)) res.setHeader('Cache-Control', 'no-cache');
+          else if (IMMUTABLE_ASSET.test(name)) {
+            res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+          }
         },
       }),
     );

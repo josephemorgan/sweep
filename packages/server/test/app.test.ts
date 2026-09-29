@@ -1,4 +1,4 @@
-import { mkdtempSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import request from 'supertest';
@@ -33,6 +33,20 @@ describe('GET /api/health', () => {
     expect(res.status).toBe(503);
     expect(res.body).toEqual({ ok: false, db: false });
   });
+
+  it('logs a described error, never the SQL, when the check fails', async () => {
+    const spy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    try {
+      await request(offlineApp(dead.db)).get('/api/health');
+      expect(spy).toHaveBeenCalledTimes(1);
+      const logged = spy.mock.calls[0]!.map(String).join(' ');
+      expect(logged).toContain('health: database check failed');
+      expect(logged).not.toContain('Failed query');
+      expect(logged.toLowerCase()).not.toContain('select');
+    } finally {
+      spy.mockRestore();
+    }
+  });
 });
 
 describe('API 404 and client serving', () => {
@@ -41,6 +55,13 @@ describe('API 404 and client serving', () => {
   writeFileSync(join(clientDir, 'index.html'), '<!doctype html><app-root></app-root>');
   writeFileSync(join(clientDir, 'ngsw-worker.js'), '// worker');
   writeFileSync(join(clientDir, 'main.js'), '// main');
+  writeFileSync(join(clientDir, 'ngsw.json'), '{}');
+  writeFileSync(join(clientDir, 'main-ABCD2345.js'), '// main');
+  writeFileSync(join(clientDir, 'chunk-ZXCV7654.js'), '// chunk');
+  writeFileSync(join(clientDir, 'styles-QWER5678.css'), '/* css */');
+  writeFileSync(join(clientDir, 'favicon.ico'), '');
+  mkdirSync(join(clientDir, 'media'));
+  writeFileSync(join(clientDir, 'media', 'font-ASDF2345.woff2'), '');
   const app = offlineApp(handle.db, { clientDistDir: clientDir });
 
   afterAll(async () => {
@@ -64,6 +85,31 @@ describe('API 404 and client serving', () => {
     const res = await request(app).get('/');
     expect(res.status).toBe(200);
     expect(res.text).toContain('<app-root>');
+  });
+
+  it.each([
+    '/main-ABCD2345.js',
+    '/chunk-ZXCV7654.js',
+    '/styles-QWER5678.css',
+    '/media/font-ASDF2345.woff2',
+  ])('serves fingerprinted %s as immutable for a year', async (path) => {
+    const res = await request(app).get(path);
+    expect(res.status).toBe(200);
+    expect(res.headers['cache-control']).toBe('public, max-age=31536000, immutable');
+  });
+
+  it.each(['/ngsw.json', '/ngsw-worker.js'])('serves %s with no-cache', async (path) => {
+    const res = await request(app).get(path);
+    expect(res.status).toBe(200);
+    expect(res.headers['cache-control']).toBe('no-cache');
+  });
+
+  it('does not mark un-fingerprinted files immutable', async () => {
+    for (const path of ['/main.js', '/favicon.ico']) {
+      const res = await request(app).get(path);
+      expect(res.status).toBe(200);
+      expect(res.headers['cache-control']).not.toMatch(/immutable/);
+    }
   });
 
   it('serves ngsw-worker.js with no-cache and other assets normally', async () => {
