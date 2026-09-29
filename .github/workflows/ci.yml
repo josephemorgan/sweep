@@ -110,6 +110,24 @@ jobs:
       - name: Create a user with the bundled script
         run: printf 'ci-password-123456\n' | docker compose exec -T app node server/dist/scripts/create-user.js --email ci@example.com
 
+      - name: Sign in and dry-run a guide upload
+        run: |
+          # Origin must be the app's BETTER_AUTH_URL (compose default SWEEP_APP_URL).
+          origin=http://localhost:3000
+          jar=$(mktemp)
+          curl -fsS -o /dev/null -c "$jar" -H "Origin: $origin" -H 'Content-Type: application/json' \
+            -d '{"email":"ci@example.com","password":"ci-password-123456"}' \
+            http://127.0.0.1:3000/api/auth/sign-in/email
+          status=$(curl -sS -o dry-run.json -w '%{http_code}' -b "$jar" -H "Origin: $origin" \
+            -F 'file=@guides/examples/lantern-keep.yaml' \
+            'http://127.0.0.1:3000/api/runs?dryRun=true')
+          if [ "$status" != 200 ]; then
+            echo "dry run returned $status"
+            cat dry-run.json
+            exit 1
+          fi
+          jq -e '.summary != null' dry-run.json
+
       - name: Serve the client with no-cache index.html
         run: |
           curl -fsSI http://127.0.0.1:3000/ | grep -i '^cache-control: no-cache'
