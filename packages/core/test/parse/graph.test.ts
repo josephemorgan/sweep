@@ -32,17 +32,52 @@ describe('requires graph', () => {
     expect(graphIssues(guideWith(['a=[c]', 'b=[c]', 'c=[]']))).toEqual([]);
   });
 
-  it('reports one requires-cycle per cycle, listing it in route order', () => {
+  it('reports one requires-cycle per cycle, following what each section needs', () => {
+    // a needs c, c needs b, b needs a.
     const text = guideWith(['a=[c]', 'b=[a]', 'c=[b]', 'd=[]', 'e=[f]', 'f=[e]']);
     const issues = graphIssues(text);
-    expect(issues.map((i) => i.code)).toEqual(['requires-cycle', 'requires-cycle']);
-    expect(issues[0]!.message).toContain('a → b → c → a');
-    expect(issues[1]!.message).toContain('e → f → e');
+    expect(issues.map((i) => i.message)).toEqual([
+      'requires cycle: a → c → b → a',
+      'requires cycle: e → f → e',
+    ]);
   });
 
   it('locates a cycle at the first explicit requires on it, in route order', () => {
     const [found] = graphIssues(guideWith(['a', 'b=[c]', 'c=[b]']));
     expect(found).toMatchObject({ line: 9, column: 15, path: 'sections[1].requires' });
+  });
+
+  it("never locates a cycle at a group's requires: [], which has no edge into it", () => {
+    const text = [
+      'sweep: 1',
+      'game: Graph',
+      'sections:',
+      '  - id: g',
+      '    title: G',
+      '    overview: A group.',
+      '    requires: []',
+      '    sections:',
+      '      - id: g1',
+      '        title: G1',
+      '        overview: One.',
+      '        requires: [x]',
+      '      - id: g2',
+      '        title: G2',
+      '        overview: Two.',
+      '  - id: x',
+      '    title: X',
+      '    overview: Beyond.',
+      '    requires: [g]',
+      '',
+    ].join('\n');
+    expect(graphIssues(text)).toEqual([
+      expect.objectContaining({
+        message: 'requires cycle: g1 → x → g → g1',
+        line: 12,
+        column: 19,
+        path: 'sections[0].sections[0].requires',
+      }),
+    ]);
   });
 
   it('reports a self-requiring section as lineage, not a cycle', () => {

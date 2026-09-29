@@ -88,21 +88,55 @@ function checkCycles(
 ): Issue[] {
   const sections = [...index.sections.values()];
   const order = new Map(sections.map((s, i) => [s.id, i]));
+  const edges = buildEdges(index, order);
   const issues: Issue[] = [];
-  for (const component of stronglyConnected(buildEdges(index, order))) {
+  for (const component of stronglyConnected(edges)) {
     if (component.length < 2) continue;
     component.sort((a, b) => a - b);
+    const inCycle = new Set(component);
     const members = component.map((i) => sections[i]!);
-    const names = [...members, members[0]!].map((s) => s.id).join(' → ');
-    const withRequires = members.find((s) => hasExplicitRequires(sources, locator, s));
-    // A cycle always has an explicit requires, since default edges point backward; the fallback
-    // only keeps a bug from throwing.
-    const path = sources.sections.get((withRequires ?? members[0]!).id)!;
-    const at = withRequires === undefined ? path : [...path, 'requires'];
-    const message = `requires cycle: ${names}`;
+    const explicit = (s: Section): boolean => hasExplicitRequires(sources, locator, s);
+    // Prefer a section whose own `requires` names a section on the cycle (an edge into it), first
+    // in route order. Otherwise the first explicit, non-empty `requires`, so a group's
+    // `requires: []` is never chosen; otherwise the first section (a cycle closed by default
+    // requires and a group gate can have no explicit `requires` on it).
+    const chosen =
+      members.find(
+        (s) => explicit(s) && requiredIds(s.requires).some((id) => inCycle.has(order.get(id)!)),
+      ) ?? members.find((s) => explicit(s) && requiredIds(s.requires).length > 0);
+    const start = chosen ?? members[0]!;
+    const path = sources.sections.get(start.id)!;
+    const at = chosen === undefined ? path : [...path, 'requires'];
+    const names = cycleThrough(order.get(start.id)!, edges, inCycle).map((i) => sections[i]!.id);
+    const message = `requires cycle: ${names.join(' → ')}`;
     issues.push(issue('error', ErrorCode.RequiresCycle, message, file, locator.value(at), at));
   }
   return issues;
+}
+
+/**
+ * The shortest cycle from `start` back to itself along "needs" edges, staying inside the
+ * component: breadth-first, so each section's edges are tried in the order written.
+ */
+function cycleThrough(start: number, edges: number[][], inCycle: Set<number>): number[] {
+  const previous = new Map<number, number>();
+  const queue = [start];
+  for (let head = 0; head < queue.length; head += 1) {
+    const node = queue[head]!;
+    for (const next of edges[node]!) {
+      if (!inCycle.has(next)) continue;
+      if (next === start) {
+        const back: number[] = [];
+        for (let at = node; at !== start; at = previous.get(at)!) back.push(at);
+        return [start, ...back.reverse(), start];
+      }
+      if (previous.has(next)) continue;
+      previous.set(next, node);
+      queue.push(next);
+    }
+  }
+  // Unreachable: every section of a strongly connected component reaches every other.
+  return [start, start];
 }
 
 /**
