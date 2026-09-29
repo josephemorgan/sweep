@@ -1,0 +1,9 @@
+**/node_modules
+**/dist
+**/.angular
+**/coverage
+.git
+.env
+.claude
+packages/client/playwright-report
+packages/client/test-results
