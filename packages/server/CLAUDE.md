@@ -12,6 +12,7 @@ Express 5 (ESM) API, Drizzle ORM on Postgres 16, Better Auth (session C). Spec ย
 
 - `src/app.ts`: `createApp({ db, clientDistDir })`. Mounts routers under `/api`, answers unknown `/api/*` with a JSON 404, and when `clientDistDir` is set (the Docker image sets `CLIENT_DIST_DIR`) serves the built client with SPA fallback.
 - `src/routes/<resource>.ts`: one router factory per resource, e.g. `healthRouter(db)`.
+- `src/guides/core-adapter.ts` and `src/guides/parse-worker.ts`: the only src importers of `@sweep/core/parse`. Every parse runs in a worker thread with a time budget (`PARSE_TIMEOUT_MS`, spec ยง6.4). `src/http/upload.ts` `uploadParser` allows one parse per user at a time (429). The worker runs as `.ts` from source through Node's type stripping, so it has no relative imports.
 - `src/db/schema.ts` (Drizzle tables), `src/db/client.ts` (`createDb`), `src/db/migrate.ts`
 - `src/env.ts` (`readEnv`: validates `DATABASE_URL`, `PORT`, `SIGNUP_ENABLED`; reads `BETTER_AUTH_*` and `CLIENT_DIST_DIR` as optional), `src/load-env.ts` (loads the repo-root `.env` whatever the cwd)
 

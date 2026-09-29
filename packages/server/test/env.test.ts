@@ -18,6 +18,7 @@ describe('readEnv', () => {
       betterAuthUrl: 'http://localhost:4200',
       clientDistDir: undefined,
       trustProxy: false,
+      parseTimeoutMs: 5_000,
     });
   });
 
@@ -29,12 +30,14 @@ describe('readEnv', () => {
       BETTER_AUTH_URL: 'https://sweep.example.com/some/path?x=1',
       CLIENT_DIST_DIR: '/app/public',
       TRUST_PROXY: '2',
+      PARSE_TIMEOUT_MS: '2500',
     });
     expect(env.port).toBe(8080);
     expect(env.signupEnabled).toBe(true);
     expect(env.betterAuthUrl).toBe('https://sweep.example.com');
     expect(env.clientDistDir).toBe('/app/public');
     expect(env.trustProxy).toBe(2);
+    expect(env.parseTimeoutMs).toBe(2_500);
   });
 
   it('requires DATABASE_URL', () => {
@@ -67,6 +70,14 @@ describe('readEnv', () => {
 
   it.each(['-1', 'abc', '1.5', 'true', '11'])('rejects TRUST_PROXY=%j', (value) => {
     expect(() => readEnv({ ...base, TRUST_PROXY: value })).toThrow(/TRUST_PROXY/);
+  });
+
+  it.each(['0', '-5', '1.5', 'abc', '5s', '60001'])('rejects PARSE_TIMEOUT_MS=%j', (value) => {
+    expect(() => readEnv({ ...base, PARSE_TIMEOUT_MS: value })).toThrow(/PARSE_TIMEOUT_MS/);
+  });
+
+  it('treats an empty PARSE_TIMEOUT_MS as unset', () => {
+    expect(readEnv({ ...base, PARSE_TIMEOUT_MS: '' }).parseTimeoutMs).toBe(5_000);
   });
 
   it.each(['0', '70000', 'abc', ''])('rejects PORT=%j', (port) => {

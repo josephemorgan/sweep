@@ -1,7 +1,13 @@
-import type { Request, RequestHandler } from 'express';
+import type { Request, RequestHandler, Response } from 'express';
 import multer from 'multer';
-import { LIMITS, type UploadedFile } from '../guides/core-adapter.js';
+import {
+  LIMITS,
+  parseUpload,
+  type ParsedUpload,
+  type UploadedFile,
+} from '../guides/core-adapter.js';
 import { ApiErrorCode, HttpError } from './errors.js';
+import { getUser } from './locals.js';
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -40,4 +46,64 @@ export function requireFile(req: Request): UploadedFile {
     throw new HttpError(400, ApiErrorCode.BadRequest, 'Attach the guide file in the "file" field.');
   }
   return { originalname: req.file.originalname, buffer: req.file.buffer };
+}
+
+export interface UploadParserOptions {
+  /** Time budget per parse (PARSE_TIMEOUT_MS). */
+  timeoutMs: number;
+  /** Test hook: the worker entry to run instead of parse-worker. */
+  workerUrl?: URL | undefined;
+}
+
+/** Parses the request's upload (after singleUpload and requireSession). */
+export type UploadParser = (req: Request, res: Response) => Promise<ParsedUpload>;
+
+/**
+ * Parses uploads in a worker with a time budget, one parse per user at a time (spec §6.4).
+ * A second upload while the user's parse runs is refused with 429, never queued. The slot is
+ * freed once the parse settles: done, over budget (422 with the single `limit` issue), failed
+ * (500), or stopped because the client went away. On abort the worker is terminated rather than
+ * left to finish, so closing requests can't stack up parses past the one-per-user cap.
+ */
+export function uploadParser(options: UploadParserOptions): UploadParser {
+  const parsing = new Set<string>();
+  return async (req, res) => {
+    const file = requireFile(req);
+    const userId = getUser(res).id;
+    if (parsing.has(userId)) {
+      throw new HttpError(
+        429,
+        ApiErrorCode.RateLimited,
+        'Another guide is still being checked. Only one of your guides can be checked at a time.',
+      );
+    }
+    parsing.add(userId);
+    const aborter = new AbortController();
+    // Nothing has been written yet, so a close now means the client went away.
+    const onClose = (): void => {
+      aborter.abort(
+        new HttpError(
+          400,
+          ApiErrorCode.BadRequest,
+          'The upload was cancelled before it was checked.',
+        ),
+      );
+    };
+    res.once('close', onClose);
+    try {
+      const upload = await parseUpload(file, { ...options, signal: aborter.signal });
+      if (upload.timedOut) {
+        throw new HttpError(
+          422,
+          ApiErrorCode.InvalidGuide,
+          'The guide took too long to check.',
+          upload.result.issues,
+        );
+      }
+      return upload;
+    } finally {
+      res.off('close', onClose);
+      parsing.delete(userId);
+    }
+  };
 }

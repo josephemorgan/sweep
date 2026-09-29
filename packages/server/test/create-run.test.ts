@@ -3,8 +3,9 @@ import { MODEL_VERSION } from '@sweep/core';
 import { eq } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { guideVersions, runs } from '../src/db/schema.js';
-import { LIMITS } from '../src/guides/core-adapter.js';
-import { defaultRunName } from '../src/runs/create-run.js';
+import { LIMITS, parseUpload, requireValidGuide } from '../src/guides/core-adapter.js';
+import { QUOTAS } from '../src/limits.js';
+import { createRun, defaultRunName } from '../src/runs/create-run.js';
 import { createTestContext, type SignedIn, type TestContext } from './helpers/context.js';
 import {
   TINY_GUIDE,
@@ -208,21 +209,50 @@ describe('create flow (spec §6.3)', () => {
 });
 
 describe('create flow quotas', () => {
-  it('lets only one of several concurrent creates past a one-run quota', async () => {
-    const ctx = await createTestContext({ quotas: { runsPerUser: 1 } });
-    try {
-      const { agent, userId } = await ctx.signedInAgent('bea@example.com');
-      const results = await Promise.all(
-        Array.from({ length: 5 }, () =>
-          agent.post('/api/runs').attach('file', Buffer.from(TINY_YAML), 'tiny.yaml'),
-        ),
-      );
-      const statuses = results.map((r) => r.status).sort();
-      expect(statuses).toEqual([201, 409, 409, 409, 409]);
-      expect(await ctx.db.select().from(runs).where(eq(runs.userId, userId))).toHaveLength(1);
-    } finally {
-      await ctx.close();
+  let ctx: TestContext;
+  beforeAll(async () => {
+    ctx = await createTestContext({ quotas: { runsPerUser: 1 } });
+  });
+  afterAll(async () => {
+    await ctx.close();
+  });
+
+  // Over HTTP, one parse per user (spec §6.4) turns most same-user racers away with 429 before
+  // they reach the database, so the quota lock itself is raced here, below the route.
+  it('lets only one of several concurrent createRun calls past a one-run quota', async () => {
+    const userId = await ctx.createUser('bea@example.com');
+    const upload = await parseUpload({ originalname: 'tiny.yaml', buffer: Buffer.from(TINY_YAML) });
+    const input = {
+      userId,
+      upload,
+      guide: requireValidGuide(upload.result),
+      name: undefined,
+      quotas: { ...QUOTAS, runsPerUser: 1 },
+    };
+    const results = await Promise.allSettled(
+      Array.from({ length: 5 }, () => createRun(ctx.db, input)),
+    );
+    expect(results.filter((r) => r.status === 'fulfilled')).toHaveLength(1);
+    for (const r of results.filter((r) => r.status === 'rejected')) {
+      expect((r as PromiseRejectedResult).reason).toMatchObject({
+        status: 409,
+        code: 'quota-runs',
+      });
     }
+    expect(await ctx.db.select().from(runs).where(eq(runs.userId, userId))).toHaveLength(1);
+  });
+
+  it('creates exactly one run from concurrent uploads by one user (the rest are 409 or 429)', async () => {
+    const { agent, userId } = await ctx.signedInAgent('cid@example.com');
+    const results = await Promise.all(
+      Array.from({ length: 5 }, () =>
+        agent.post('/api/runs').attach('file', Buffer.from(TINY_YAML), 'tiny.yaml'),
+      ),
+    );
+    const statuses = results.map((r) => r.status);
+    expect(statuses.filter((s) => s === 201)).toHaveLength(1);
+    expect(statuses.filter((s) => s !== 201).every((s) => s === 409 || s === 429)).toBe(true);
+    expect(await ctx.db.select().from(runs).where(eq(runs.userId, userId))).toHaveLength(1);
   });
 });
 

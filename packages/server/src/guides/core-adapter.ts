@@ -1,15 +1,13 @@
-// The ONLY module that imports @sweep/core/parse (ADR 0009). Contract drift from core stays here.
+// With its worker (parse-worker.ts), the ONLY module that imports @sweep/core/parse (ADR 0009).
+// Contract drift from core stays here.
 import { createHash } from 'node:crypto';
+import { Worker } from 'node:worker_threads';
 import type { Guide, Issue } from '@sweep/core';
-import {
-  guideFileName,
-  guideJsonSchema,
-  LIMITS,
-  parseGuide,
-  type ParseResult,
-} from '@sweep/core/parse';
+import { guideFileName, guideJsonSchema, LIMITS, type ParseResult } from '@sweep/core/parse';
 import { GuideContainer } from '../db/schema.js';
 import { ApiErrorCode, HttpError } from '../http/errors.js';
+import { PARSE_TIMEOUT_MS } from '../limits.js';
+import type { ParseJob } from './parse-worker.js';
 
 export { LIMITS };
 export type { ParseResult };
@@ -32,9 +30,29 @@ export interface ParsedUpload {
   bytes: number;
   sha256: string;
   result: ParseResult;
+  /** The parse ran over its time budget: `result` is the single `limit` issue. */
+  timedOut: boolean;
+}
+
+export interface ParseOptions {
+  /** Time budget for the whole parse, worker start-up included. Default PARSE_TIMEOUT_MS. */
+  timeoutMs?: number | undefined;
+  /** Aborting stops the worker, and the call rejects with the signal's reason. */
+  signal?: AbortSignal | undefined;
+  /** Test hook: the worker entry to run instead of parse-worker. */
+  workerUrl?: URL | undefined;
 }
 
 const MAX_DISPLAY_NAME = 255;
+
+/**
+ * parse-worker next to this file: .ts when running from source (Vitest, tsx), .js when built.
+ * Node runs the .ts one with its own type stripping.
+ */
+const PARSE_WORKER_URL = new URL(
+  `./parse-worker${import.meta.url.endsWith('.ts') ? '.ts' : '.js'}`,
+  import.meta.url,
+);
 
 /**
  * Basename without control characters, at most 255 code points (Review Focus 1). Only the
@@ -54,99 +72,115 @@ function hasErrors(result: ParseResult): boolean {
   return result.issues.some((issue) => issue.severity === 'error');
 }
 
-/** Postgres text and jsonb can't hold U+0000, and jsonb refuses unpaired surrogates. */
-function storable(text: string): boolean {
-  return !text.includes('\u0000') && text.isWellFormed();
+interface WorkerOutcome {
+  result: ParseResult;
+  timedOut: boolean;
 }
 
-/**
- * The `id` of the innermost section, task or category holding an unstorable string ('' for the
- * guide's own fields), or null when every string is storable.
- */
-function unstorableOwner(value: unknown, owner = ''): string | null {
-  if (typeof value === 'string') return storable(value) ? null : owner;
-  if (typeof value !== 'object' || value === null) return null;
-  const id = 'id' in value && typeof value.id === 'string' ? value.id : owner;
-  for (const child of Object.values(value)) {
-    const found = unstorableOwner(child, id);
-    if (found !== null) return found;
-  }
-  return null;
-}
-
-/** 1-based line and column (UTF-16 units) of `index`, counting lines as core does. */
-function positionOf(text: string, index: number): { line: number; column: number } {
-  const lines = text.slice(text.charCodeAt(0) === 0xfeff ? 1 : 0, index).split(/\r\n?|\n/);
-  return { line: lines.length, column: (lines.at(-1)?.length ?? 0) + 1 };
-}
-
-function encodingError(message: string, file: GuideFileName, at: Partial<Issue> = {}): Issue {
-  return {
+function overBudget(timeoutMs: number): ParseResult {
+  const issue: Issue = {
     severity: 'error',
-    code: 'encoding',
-    message,
-    file,
+    code: 'limit',
+    message: `the guide took too long to parse (over ${timeoutMs / 1000} s)`,
+    file: null,
     line: null,
     column: null,
     path: null,
-    ...at,
   };
+  return { issues: [issue] };
+}
+
+/** The worker's error without its message, which could quote the guide. */
+function workerFailed(err: unknown): Error {
+  const kind = err instanceof Error ? err.name : typeof err;
+  const code = err instanceof Error && 'code' in err ? `, ${String(err.code)}` : '';
+  return new Error(`guide parse worker failed (${kind}${code})`);
 }
 
 /**
- * Core accepts U+0000 (CommonMark and YAML comments let it through, and YAML escapes such as
- * "\0" or "\ud800" produce it or an unpaired surrogate in the model), but Postgres can't store
- * either. Refuse them as an `encoding` error, so the upload is a 422 with issues, not a 500.
- * Runs only on otherwise valid guides: anything with errors is refused anyway.
+ * Runs one parse in a fresh worker thread, never on the main thread: the Markdown parser is
+ * superlinear on deep nesting, so the size limits don't bound CPU time (spec §6.4). Over budget
+ * or on abort, the worker is terminated, and the promise settles only once it has stopped, so a
+ * caller's per-user slot covers the thread's whole life.
  */
-function checkStorable(result: ParseResult, text: string, file: GuideFileName): ParseResult {
-  if (hasErrors(result)) return result;
-  let issue: Issue | undefined;
-  const nul = text.indexOf('\u0000');
-  if (nul >= 0) {
-    const message = 'the file contains a NUL character (U+0000), which guides may not contain';
-    issue = encodingError(message, file, positionOf(text, nul));
-  } else if (result.guide) {
-    const owner = unstorableOwner(result.guide);
-    if (owner !== null) {
-      const where = owner === '' ? "the guide's own fields" : `"${owner}"`;
-      const message = `a string in ${where} contains a NUL character or an unpaired surrogate (from a YAML escape), which guides may not contain`;
-      issue = encodingError(message, file);
-    }
-  }
-  if (!issue) return result;
-  const issues = [...result.issues, issue].sort(
-    (a, b) => (a.line ?? 0) - (b.line ?? 0) || (a.column ?? 0) - (b.column ?? 0),
-  );
-  return { issues };
+function parseInWorker(
+  job: ParseJob,
+  transfer: ArrayBuffer[],
+  options: ParseOptions,
+): Promise<WorkerOutcome> {
+  const timeoutMs = options.timeoutMs ?? PARSE_TIMEOUT_MS;
+  const { signal } = options;
+  return new Promise<WorkerOutcome>((resolve, reject) => {
+    signal?.throwIfAborted();
+    const worker = new Worker(options.workerUrl ?? PARSE_WORKER_URL, {
+      workerData: job,
+      transferList: transfer,
+    });
+    let settled = false;
+    const finish = (settle: () => void, terminate: boolean): void => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      signal?.removeEventListener('abort', onAbort);
+      if (terminate) void worker.terminate().then(settle, settle);
+      else settle();
+    };
+    const timer = setTimeout(() => {
+      finish(() => resolve({ result: overBudget(timeoutMs), timedOut: true }), true);
+    }, timeoutMs);
+    const onAbort = (): void => finish(() => reject(signal?.reason), true);
+    signal?.addEventListener('abort', onAbort, { once: true });
+    worker.once('message', (result: ParseResult) => {
+      finish(() => resolve({ result, timedOut: false }), false);
+    });
+    worker.once('error', (err) => finish(() => reject(workerFailed(err)), true));
+    worker.once('exit', (code) => {
+      const err = new Error(`guide parse worker exited with code ${code} before replying`);
+      finish(() => reject(err), false);
+    });
+  });
 }
 
 /**
- * Parses an upload. Async so the parse can move to a worker with a time budget later without
- * touching callers. Rejects with 422 `bad-extension` when the name isn't .yaml, .yml or .md.
+ * Parses an upload in a worker (see parseInWorker). Rejects with 422 `bad-extension` when the
+ * name isn't .yaml, .yml or .md, with the signal's reason on abort, and with an Error that
+ * carries no guide content when the worker fails.
  */
-export async function parseUpload(file: UploadedFile): Promise<ParsedUpload> {
+export async function parseUpload(
+  file: UploadedFile,
+  options: ParseOptions = {},
+): Promise<ParsedUpload> {
   const fileName = guideFileName(file.originalname);
   if (fileName === null) {
     throw new HttpError(422, ApiErrorCode.BadExtension, 'Upload a .yaml, .yml or .md guide file.');
   }
   // Core does the UTF-8 and 2 MiB checks on the raw bytes (spec §3.6 encoding / too-large).
-  const source = file.buffer.toString('utf8');
-  const result = checkStorable(parseGuide({ [fileName]: file.buffer }), source, fileName);
+  // The worker gets its own copy of the bytes, transferred rather than cloned.
+  const bytes = new Uint8Array(file.buffer);
+  const job: ParseJob = { fileName, input: bytes };
+  const { result, timedOut } = await parseInWorker(job, [bytes.buffer], options);
   return {
     fileName,
     displayName: displayFileName(file.originalname),
     container: fileName === 'guide.md' ? GuideContainer.Md : GuideContainer.Yaml,
-    source,
+    source: file.buffer.toString('utf8'),
     bytes: file.buffer.length,
     sha256: createHash('sha256').update(file.buffer).digest('hex'),
     result,
+    timedOut,
   };
 }
 
-/** Re-parses a stored source (re-normalization when MODEL_VERSION changes). Async like parseUpload. */
-export async function reparse(source: string, fileName: GuideFileName): Promise<ParseResult> {
-  return checkStorable(parseGuide({ [fileName]: source }), source, fileName);
+/**
+ * Re-parses a stored source in a worker (re-normalization when MODEL_VERSION changes). Over
+ * budget, the result is the single `limit` issue. Rejects like parseUpload otherwise.
+ */
+export async function reparse(
+  source: string,
+  fileName: GuideFileName,
+  options: ParseOptions = {},
+): Promise<ParseResult> {
+  return (await parseInWorker({ fileName, input: source }, [], options)).result;
 }
 
 export function validGuide(result: ParseResult): Guide | null {

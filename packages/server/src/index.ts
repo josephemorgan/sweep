@@ -25,6 +25,7 @@ const app = createApp({
   sameOrigin: env.betterAuthUrl,
   clientDistDir: env.clientDistDir,
   trustProxy: env.trustProxy,
+  parseTimeoutMs: env.parseTimeoutMs,
 });
 const server = app.listen(env.port, () => {
   console.log(`Sweep server listening on http://localhost:${env.port}`);

@@ -141,3 +141,16 @@ export const TINY_INVALID_YAML = edit(TINY_YAML, [['category: lore', 'category: 
 export const TINY_WARNING_YAML = edit(TINY_YAML, [
   ['categories:\n', 'categories:\n  spare:\n    name: Spare\n    about: Nobody uses this.\n'],
 ]);
+
+/**
+ * TINY_MD with its walkthrough replaced by a list nested `depth` levels deep: size-legal (about
+ * 17 kB at the default depth) but slow to parse, because the Markdown parser is superlinear on
+ * nesting (measured: 4,000 levels ≈ 3.4 s, 6,000 ≈ 8 s, so 8,000 takes well over 10 s).
+ */
+export function deeplyNestedMd(depth = 8_000): string {
+  return edit(TINY_MD, [['Talk to the elder.', `${'- '.repeat(depth)}x`]]);
+}
+
+/** YAML comment lines that make helpers/crash-worker.ts fail (it matches the same text). */
+export const CRASH_THROW = '# crash-worker: throw\n';
+export const CRASH_EXIT = '# crash-worker: exit\n';

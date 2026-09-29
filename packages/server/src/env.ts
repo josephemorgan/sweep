@@ -1,3 +1,5 @@
+import { PARSE_TIMEOUT_MS } from './limits.js';
+
 export interface Env {
   databaseUrl: string;
   port: number;
@@ -9,10 +11,14 @@ export interface Env {
   clientDistDir: string | undefined;
   /** Express `trust proxy` hop count, or false when TRUST_PROXY is unset. */
   trustProxy: number | false;
+  /** Time budget per guide parse, in ms (spec §6.4). */
+  parseTimeoutMs: number;
 }
 
 export const MIN_SECRET_LENGTH = 32;
 const MAX_PROXY_HOPS = 10;
+/** Spec §6.4 asks for a budget of a few seconds; a minute is already far past useful. */
+const MAX_PARSE_TIMEOUT_MS = 60_000;
 
 function readOrigin(raw: string | undefined): string {
   if (!raw) {
@@ -53,6 +59,17 @@ function readTrustProxy(raw: string | undefined): number | false {
   return hops;
 }
 
+function readParseTimeout(raw: string | undefined): number {
+  if (raw === undefined || raw.trim() === '') return PARSE_TIMEOUT_MS;
+  const ms = Number(raw);
+  if (!/^\d+$/.test(raw.trim()) || ms < 1 || ms > MAX_PARSE_TIMEOUT_MS) {
+    throw new Error(
+      `PARSE_TIMEOUT_MS must be a whole number of milliseconds (1-${MAX_PARSE_TIMEOUT_MS}), got "${raw}".`,
+    );
+  }
+  return ms;
+}
+
 export function readEnv(source: NodeJS.ProcessEnv = process.env): Env {
   const databaseUrl = source['DATABASE_URL'];
   if (!databaseUrl) {
@@ -75,5 +92,6 @@ export function readEnv(source: NodeJS.ProcessEnv = process.env): Env {
     betterAuthUrl: readOrigin(source['BETTER_AUTH_URL']),
     clientDistDir: source['CLIENT_DIST_DIR'] || undefined,
     trustProxy: readTrustProxy(source['TRUST_PROXY']),
+    parseTimeoutMs: readParseTimeout(source['PARSE_TIMEOUT_MS']),
   };
 }

@@ -12,12 +12,12 @@ import { and, desc, eq } from 'drizzle-orm';
 import { Router, type RequestHandler } from 'express';
 import type { Database } from '../db/client.js';
 import { guideVersions, runs } from '../db/schema.js';
-import { parseUpload, requireValidGuide, validGuide } from '../guides/core-adapter.js';
+import { requireValidGuide, validGuide } from '../guides/core-adapter.js';
 import { loadCurrentGuide, loadVersionMeta } from '../guides/store.js';
 import { ApiErrorCode, HttpError } from '../http/errors.js';
 import { loadRun } from '../http/load-run.js';
 import { getRun, getUser } from '../http/locals.js';
-import { requireFile, singleUpload } from '../http/upload.js';
+import { singleUpload, type UploadParser } from '../http/upload.js';
 import {
   createRunFields,
   dryRunQuery,
@@ -42,12 +42,14 @@ export interface RunsRouterOptions {
   quotas: Quotas;
   /** Per-user upload limiter shared by both POST upload routes (spec §6.4). */
   uploadLimiter: RequestHandler;
+  /** Parses the upload in a worker, one parse per user at a time (spec §6.4). */
+  parseUpload: UploadParser;
 }
 
 /** One consistent snapshot across several reads: no torn view if a write lands between them. */
 const SNAPSHOT = { isolationLevel: 'repeatable read', accessMode: 'read only' } as const;
 
-export function runsRouter({ db, quotas, uploadLimiter }: RunsRouterOptions): Router {
+export function runsRouter({ db, quotas, uploadLimiter, parseUpload }: RunsRouterOptions): Router {
   const router = Router();
 
   router.get('/runs', async (req, res) => {
@@ -78,7 +80,7 @@ export function runsRouter({ db, quotas, uploadLimiter }: RunsRouterOptions): Ro
   router.post('/runs', uploadLimiter, singleUpload(), async (req, res) => {
     const { dryRun } = parseInput(dryRunQuery, req.query);
     const fields = parseInput(createRunFields, req.body ?? {});
-    const upload = await parseUpload(requireFile(req));
+    const upload = await parseUpload(req, res);
     if (dryRun) {
       const guide = validGuide(upload.result);
       const body: DryRunCreateResponseDto = {

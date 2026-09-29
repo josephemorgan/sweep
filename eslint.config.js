@@ -97,10 +97,14 @@ export default defineConfig([
     },
   },
 
-  // Only the core adapter imports the parser entry point (keeps contract drift in one file).
+  // Only the core adapter and its parse worker import the parser entry point (keeps contract
+  // drift in one place).
   {
     files: ['packages/server/src/**/*.ts'],
-    ignores: ['packages/server/src/guides/core-adapter.ts'],
+    ignores: [
+      'packages/server/src/guides/core-adapter.ts',
+      'packages/server/src/guides/parse-worker.ts',
+    ],
     rules: {
       'no-restricted-imports': [
         'error',

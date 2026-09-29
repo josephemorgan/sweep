@@ -9,6 +9,9 @@ import {
   validGuide,
 } from '../src/guides/core-adapter.js';
 import {
+  CRASH_EXIT,
+  CRASH_THROW,
+  deeplyNestedMd,
   TINY_GROUPED_YAML,
   TINY_GUIDE,
   TINY_INVALID_YAML,
@@ -17,6 +20,7 @@ import {
   TINY_WARNING_YAML,
   TINY_YAML,
 } from './helpers/guides.js';
+import { CRASH_WORKER_URL, nextWorker } from './helpers/workers.js';
 
 const upload = (source: string | Buffer, originalname = 'tiny.yaml') =>
   parseUpload({ originalname, buffer: Buffer.isBuffer(source) ? source : Buffer.from(source) });
@@ -144,6 +148,98 @@ describe('core adapter', () => {
   it('decides acceptance by the extension alone, whatever the rest of the name', async () => {
     const parsed = await upload(TINY_YAML, 'C:\\ガイド\\bell\u0007 🗺.YAML');
     expect(parsed).toMatchObject({ fileName: 'guide.yaml', displayName: 'bell 🗺.YAML' });
+  });
+
+  describe('in a worker thread with a time budget (spec §6.4)', () => {
+    const nested = { originalname: 'slow.md', buffer: Buffer.from(deeplyNestedMd()) };
+    const limitIssue = (message: string) => ({
+      severity: 'error',
+      code: 'limit',
+      message,
+      file: null,
+      line: null,
+      column: null,
+      path: null,
+    });
+
+    it('never parses on the main thread', async () => {
+      const next = nextWorker();
+      expect((await upload(TINY_YAML)).result.guide).toEqual(TINY_GUIDE);
+      expect(await (await next).exited).toBe(0);
+    });
+
+    it('stops an upload parse that runs over its budget with exactly one limit issue', async () => {
+      const next = nextWorker();
+      const started = performance.now();
+      const parsed = await parseUpload(nested, { timeoutMs: 200 });
+      // The full parse takes well over 10 s: only terminating the worker gets back this fast.
+      expect(performance.now() - started).toBeLessThan(3_000);
+      expect(parsed.timedOut).toBe(true);
+      expect(parsed.result).toEqual({
+        issues: [limitIssue('the guide took too long to parse (over 0.2 s)')],
+      });
+      expect(validGuide(parsed.result)).toBeNull();
+      await (
+        await next
+      ).exited;
+    });
+
+    it('stops a reparse that runs over its budget the same way', async () => {
+      const result = await reparse(deeplyNestedMd(), 'guide.md', { timeoutMs: 1_500 });
+      expect(result).toEqual({
+        issues: [limitIssue('the guide took too long to parse (over 1.5 s)')],
+      });
+    });
+
+    it('marks an upload parse that finished as not timed out', async () => {
+      expect((await upload(TINY_YAML)).timedOut).toBe(false);
+    });
+
+    it('terminates the worker and rejects with the reason when the signal aborts', async () => {
+      const controller = new AbortController();
+      const next = nextWorker();
+      const parsing = parseUpload(nested, { timeoutMs: 60_000, signal: controller.signal });
+      const { exited } = await next;
+      controller.abort(new Error('client went away'));
+      await expect(parsing).rejects.toThrow('client went away');
+      await exited;
+    });
+
+    it('rejects at once for a signal that has already aborted', async () => {
+      const signal = AbortSignal.abort(new Error('already gone'));
+      await expect(parseUpload(nested, { signal })).rejects.toThrow('already gone');
+    });
+
+    it.each([
+      ['throws', CRASH_THROW, /^Error: guide parse worker failed \(Error\)/],
+      ['exits without replying', CRASH_EXIT, /^Error: guide parse worker exited with code 3/],
+    ])('rejects without guide content when the worker %s', async (_, marker, logged) => {
+      const parsing = parseUpload(
+        { originalname: 'tiny.yaml', buffer: Buffer.from(TINY_YAML + marker) },
+        { workerUrl: CRASH_WORKER_URL },
+      );
+      const err = await parsing.then(
+        () => new Error('resolved'),
+        (e: unknown) => e as Error,
+      );
+      expect(err.stack).toMatch(logged);
+      expect(err.stack).not.toMatch(/crash-worker|Tiny guide/);
+    });
+
+    it('rejects when the worker entry cannot be loaded', async () => {
+      const workerUrl = new URL('./helpers/no-such-worker.ts', import.meta.url);
+      await expect(reparse(TINY_YAML, 'guide.yaml', { workerUrl })).rejects.toThrow(
+        /guide parse worker failed/,
+      );
+    });
+
+    it('runs the real parser through the test worker when there is no marker', async () => {
+      const parsed = await parseUpload(
+        { originalname: 'tiny.yaml', buffer: Buffer.from(TINY_YAML) },
+        { workerUrl: CRASH_WORKER_URL },
+      );
+      expect(parsed.result.guide).toEqual(TINY_GUIDE);
+    });
   });
 
   it('exposes the JSON Schema', () => {

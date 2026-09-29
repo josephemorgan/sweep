@@ -9,8 +9,10 @@ import { authRateLimit, userRateLimit } from './http/rate-limits.js';
 import { requireSession } from './http/require-session.js';
 import { sameOriginGuard } from './http/same-origin.js';
 import { securityHeaders } from './http/security-headers.js';
+import { uploadParser } from './http/upload.js';
 import {
   JSON_BODY_LIMIT_BYTES,
+  PARSE_TIMEOUT_MS,
   QUOTAS,
   RATE_LIMITS,
   type Quotas,
@@ -32,6 +34,10 @@ export interface AppOptions {
   rateLimits?: Partial<RateLimits> | undefined;
   /** Overrides for spec §6.5 quotas. */
   quotas?: Partial<Quotas> | undefined;
+  /** Time budget per guide parse (PARSE_TIMEOUT_MS). Default 5 s; tests pass less. */
+  parseTimeoutMs?: number | undefined;
+  /** Test hook: the parse worker entry to run instead of src/guides/parse-worker. */
+  parseWorkerUrl?: URL | undefined;
 }
 
 /**
@@ -81,7 +87,15 @@ export function createApp(options: AppOptions): Express {
   app.use('/api', userRateLimit('api', limits.api));
   app.use(
     '/api',
-    runsRouter({ db, quotas, uploadLimiter: userRateLimit('uploads', limits.uploads) }),
+    runsRouter({
+      db,
+      quotas,
+      uploadLimiter: userRateLimit('uploads', limits.uploads),
+      parseUpload: uploadParser({
+        timeoutMs: options.parseTimeoutMs ?? PARSE_TIMEOUT_MS,
+        workerUrl: options.parseWorkerUrl,
+      }),
+    }),
   );
   app.use('/api', () => {
     throw new HttpError(404, ApiErrorCode.NotFound, 'No such API route.');

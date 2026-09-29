@@ -42,8 +42,12 @@ describe('package boundaries (spec §7)', () => {
     );
   });
 
-  it.each(['packages/server/src/probe.ts', 'packages/server/src/routes/probe.ts'])(
-    'rejects @sweep/core/parse in server code outside the core adapter (%s)',
+  it.each([
+    'packages/server/src/probe.ts',
+    'packages/server/src/routes/probe.ts',
+    'packages/server/src/guides/store.ts',
+  ])(
+    'rejects @sweep/core/parse in server code outside the core adapter and parse worker (%s)',
     async (filePath) => {
       for (const spec of ['@sweep/core/parse', '@sweep/core/parse/x', '@sweep/client']) {
         expect(await ruleIds(filePath, `import '${spec}';\n`), spec).toContain(
@@ -53,10 +57,11 @@ describe('package boundaries (spec §7)', () => {
     },
   );
 
-  it('allows @sweep/core/parse in the server core adapter and in server tests', async () => {
+  it('allows @sweep/core/parse in the core adapter, the parse worker and server tests', async () => {
     const code =
       "import { parseGuide } from '@sweep/core/parse';\nexport const probe = parseGuide;\n";
     expect(await ruleIds('packages/server/src/guides/core-adapter.ts', code)).toEqual([]);
+    expect(await ruleIds('packages/server/src/guides/parse-worker.ts', code)).toEqual([]);
     expect(await ruleIds('packages/server/test/probe.test.ts', code)).toEqual([]);
   });
 
