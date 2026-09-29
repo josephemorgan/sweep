@@ -161,14 +161,23 @@ export async function writeProgressChanges(
     .where(eq(runs.id, runId));
 }
 
-/** One progress write: lock the run, read, apply a core setter, write the difference. */
+/** Runs under the run lock, before the read: validates the write against the locked run. */
+export type ProgressCheck = (ex: Executor, run: RunRow) => Promise<void>;
+
+/**
+ * One progress write: lock the run, run `check`, read, apply a core setter, write the difference.
+ * `check` sees the run as locked, so the guide version it checks against is still current at
+ * commit: a guide update can't commit in between (it takes the same lock).
+ */
 export async function mutateProgress(
   db: Database,
   runId: string,
   change: (progress: RunProgress) => RunProgress,
+  check?: ProgressCheck,
 ): Promise<void> {
   await db.transaction(async (tx) => {
-    await lockRun(tx, runId);
+    const run = await lockRun(tx, runId);
+    await check?.(tx, run);
     const before = await readProgress(tx, runId);
     await writeProgressChanges(tx, runId, before, change(before));
   });

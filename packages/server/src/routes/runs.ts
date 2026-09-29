@@ -29,6 +29,7 @@ import {
   setPinBody,
   setSectionBody,
   setTaskBody,
+  updateGuideFields,
 } from '../http/validate.js';
 import type { Quotas } from '../limits.js';
 import { createRun } from '../runs/create-run.js';
@@ -36,6 +37,7 @@ import { buildPayload, toRunDto } from '../runs/dto.js';
 import { mutateProgress, readProgress } from '../runs/progress-store.js';
 import { requireId } from '../runs/require-id.js';
 import { runSummaryStats } from '../runs/summary-stats.js';
+import { applyGuideUpdate, previewGuideUpdate, staleVersion } from '../runs/update-guide.js';
 
 export interface RunsRouterOptions {
   db: Database;
@@ -138,9 +140,13 @@ export function runsRouter({ db, quotas, uploadLimiter, parseUpload }: RunsRoute
     const sectionId = parseInput(idSchema, req.params['sectionId']);
     const { cleared } = parseInput(setSectionBody, req.body);
     const run = getRun(res);
-    await requireId(db, run, 'leaves', sectionId);
     // setCleared also clears the pin when the pinned leaf is cleared (spec §6.2).
-    await mutateProgress(db, run.id, (p) => setCleared(p, sectionId, cleared));
+    await mutateProgress(
+      db,
+      run.id,
+      (p) => setCleared(p, sectionId, cleared),
+      (tx, locked) => requireId(tx, locked, 'leaves', sectionId),
+    );
     res.status(204).end();
   });
 
@@ -148,8 +154,13 @@ export function runsRouter({ db, quotas, uploadLimiter, parseUpload }: RunsRoute
     parseInput(noQuery, req.query);
     const { sectionId } = parseInput(setPinBody, req.body);
     const run = getRun(res);
-    if (sectionId !== null) await requireId(db, run, 'leaves', sectionId);
-    await mutateProgress(db, run.id, (p) => setPin(p, sectionId));
+    await mutateProgress(
+      db,
+      run.id,
+      (p) => setPin(p, sectionId),
+      (tx, locked) =>
+        sectionId === null ? Promise.resolve() : requireId(tx, locked, 'leaves', sectionId),
+    );
     res.status(204).end();
   });
 
@@ -158,8 +169,12 @@ export function runsRouter({ db, quotas, uploadLimiter, parseUpload }: RunsRoute
     const taskId = parseInput(idSchema, req.params['taskId']);
     const { state } = parseInput(setTaskBody, req.body);
     const run = getRun(res);
-    await requireId(db, run, 'tasks', taskId);
-    await mutateProgress(db, run.id, (p) => setTaskState(p, taskId, state));
+    await mutateProgress(
+      db,
+      run.id,
+      (p) => setTaskState(p, taskId, state),
+      (tx, locked) => requireId(tx, locked, 'tasks', taskId),
+    );
     res.status(204).end();
   });
 
@@ -168,9 +183,36 @@ export function runsRouter({ db, quotas, uploadLimiter, parseUpload }: RunsRoute
     const categoryId = parseInput(idSchema, req.params['categoryId']);
     const { tracked } = parseInput(setCategoryBody, req.body);
     const run = getRun(res);
-    await requireId(db, run, 'categories', categoryId);
-    await mutateProgress(db, run.id, (p) => setTracked(p, categoryId, tracked));
+    await mutateProgress(
+      db,
+      run.id,
+      (p) => setTracked(p, categoryId, tracked),
+      (tx, locked) => requireId(tx, locked, 'categories', categoryId),
+    );
     res.status(204).end();
+  });
+
+  router.post('/runs/:runId/guide', uploadLimiter, singleUpload(), async (req, res) => {
+    const { dryRun } = parseInput(dryRunQuery, req.query);
+    const { baseVersion } = parseInput(updateGuideFields, req.body ?? {});
+    const run = getRun(res);
+    // Checked again under the run lock (apply) or in the preview's snapshot; this one saves a parse.
+    if (baseVersion !== run.currentVersion) throw staleVersion();
+    const upload = await parseUpload(req, res);
+    if (dryRun) {
+      res.json(await previewGuideUpdate(db, run, upload));
+      return;
+    }
+    // A parse over its time budget is the single `limit` issue: 422 like any invalid guide.
+    const guide = requireValidGuide(upload.result);
+    const body = await applyGuideUpdate(db, run.id, {
+      userId: getUser(res).id,
+      upload,
+      guide,
+      baseVersion,
+      quotas,
+    });
+    res.json(body);
   });
 
   return router;

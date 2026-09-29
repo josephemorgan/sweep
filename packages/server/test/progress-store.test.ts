@@ -1,4 +1,14 @@
-import { emptyProgress, ProgressKind, setCleared, setPin, type RunProgress } from '@sweep/core';
+import {
+  diffGuides,
+  emptyProgress,
+  migrateProgress,
+  ProgressKind,
+  setCleared,
+  setPin,
+  type Guide,
+  type RunProgress,
+} from '@sweep/core';
+import { parseGuide } from '@sweep/core/parse';
 import { and, eq } from 'drizzle-orm';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { runs, sectionProgress, taskProgress } from '../src/db/schema.js';
@@ -8,6 +18,7 @@ import {
   readProgress,
   writeProgressChanges,
 } from '../src/runs/progress-store.js';
+import { TINY_GUIDE, TINY_RENAMED_YAML } from './helpers/guides.js';
 import { seedRun, seedUser } from './helpers/seed.js';
 import { createTestDb, type TestDb } from './helpers/test-db.js';
 
@@ -106,6 +117,77 @@ describe('progress store', () => {
       { kind: ProgressKind.Cleared, from: 'marsh', to: 'swamp' },
     ]);
     expect((await readProgress(testDb.db, runId)).cleared).toEqual(new Set(['marsh', 'swamp']));
+  });
+
+  describe('with real diffGuides + migrateProgress output', () => {
+    let renamed: Guide;
+    beforeAll(() => {
+      const { guide } = parseGuide({ 'guide.yaml': TINY_RENAMED_YAML });
+      if (!guide) throw new Error('TINY_RENAMED_YAML should parse');
+      renamed = guide;
+    });
+
+    /** What the apply transaction does: diff, migrate, write only the diff's moves. */
+    async function apply(before: RunProgress, diffFrom: RunProgress): Promise<RunProgress> {
+      const diff = diffGuides(TINY_GUIDE, renamed, diffFrom);
+      const after = migrateProgress(before, diff);
+      await writeProgressChanges(testDb.db, runId, before, after, diff.progress?.migrated ?? []);
+      return after;
+    }
+
+    it('moves renamed progress and keeps a task whose rename target already has progress', async () => {
+      const before = progress({
+        cleared: new Set(['village', 'marsh']),
+        pin: 'keep',
+        tasks: new Map([
+          ['herbs', 'done'],
+          ['swamp-herbs', 'dont-care'],
+          ['chest', 'done'],
+        ]),
+        tracked: new Map([['lore', true]]),
+      });
+      await writeProgressChanges(testDb.db, runId, emptyProgress(), before);
+      const diff = diffGuides(TINY_GUIDE, renamed, before);
+      expect(diff.progress?.migrated).toEqual([
+        { kind: ProgressKind.Cleared, from: 'marsh', to: 'swamp' },
+        { kind: ProgressKind.Pin, from: 'keep', to: 'castle' },
+      ]);
+
+      const after = await apply(before, before);
+      const stored = await readProgress(testDb.db, runId);
+      expect(stored).toEqual(after);
+      expect(stored).toEqual(
+        progress({
+          cleared: new Set(['village', 'swamp']),
+          pin: 'castle',
+          // The target wins; the old row stays as orphaned progress.
+          tasks: new Map([
+            ['herbs', 'done'],
+            ['swamp-herbs', 'dont-care'],
+            ['chest', 'done'],
+          ]),
+          tracked: new Map([['lore', true]]),
+        }),
+      );
+    });
+
+    it('skips a task move from a diff computed before the target got progress', async () => {
+      const stale = progress({ tasks: new Map([['herbs', 'done']]) });
+      const before = progress({
+        tasks: new Map([
+          ['herbs', 'done'],
+          ['swamp-herbs', 'dont-care'],
+        ]),
+      });
+      await writeProgressChanges(testDb.db, runId, emptyProgress(), before);
+      expect(diffGuides(TINY_GUIDE, renamed, stale).progress?.migrated).toEqual([
+        { kind: ProgressKind.Task, from: 'herbs', to: 'swamp-herbs' },
+      ]);
+
+      const after = await apply(before, stale);
+      expect(after.tasks).toEqual(before.tasks);
+      expect(await readProgress(testDb.db, runId)).toEqual(before);
+    });
   });
 
   it('writes large batches', async () => {

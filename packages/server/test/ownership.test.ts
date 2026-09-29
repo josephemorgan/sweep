@@ -1,5 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { createTestContext, type SignedIn, type TestContext } from './helpers/context.js';
+import { TINY_YAML } from './helpers/guides.js';
 import { countRows, seedRun } from './helpers/seed.js';
 
 describe("another user's run is always 404 (spec §6.4)", () => {
@@ -31,6 +32,22 @@ describe("another user's run is always 404 (spec §6.4)", () => {
     [
       'PUT category',
       (s) => s.agent.put(`/api/runs/${runId}/categories/lore`).send({ tracked: true }),
+    ],
+    [
+      'POST guide (dry run)',
+      (s) =>
+        s.agent
+          .post(`/api/runs/${runId}/guide?dryRun=true`)
+          .field('baseVersion', '1')
+          .attach('file', Buffer.from(TINY_YAML), 'tiny.yaml'),
+    ],
+    [
+      'POST guide (apply)',
+      (s) =>
+        s.agent
+          .post(`/api/runs/${runId}/guide`)
+          .field('baseVersion', '1')
+          .attach('file', Buffer.from(TINY_YAML), 'tiny.yaml'),
     ],
   ];
 
