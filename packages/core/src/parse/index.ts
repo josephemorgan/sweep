@@ -9,6 +9,7 @@ import { normalize } from './normalize.js';
 import { checkReferences } from './references.js';
 import { checkStructure } from './structure.js';
 import { readSource } from './text.js';
+import { checkWindows } from './windows.js';
 import { parseYamlSource } from './yaml.js';
 
 export { ErrorCode, WarningCode } from './issue-codes.js';
@@ -65,6 +66,8 @@ export function parseGuide(files: GuideFiles): ParseResult {
   const { guide, sources } = normalize(raw, new Map());
   // Phase 7: graph.
   issues.push(...checkGraph(guide, sources, source.file, parsed.locator));
+  // Phase 8: windows. Independent of the requires graph, so it runs after graph errors too.
+  issues.push(...checkWindows(guide, sources, source.file, parsed.locator));
   const hasErrors = issues.some((i) => i.severity === 'error');
   return { guide: hasErrors ? undefined : guide, issues: sortIssues(issues) };
 }

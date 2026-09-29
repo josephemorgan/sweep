@@ -152,15 +152,15 @@ describe('defaults', () => {
           '    title: Chest',
           '    category: loot',
           '    windows:',
-          '      - from: g',
           '      - from: a',
+          '      - from: g',
           '        until: end',
         ],
       ),
     );
     expect(guide.tasks[0]!.windows).toEqual([
-      { from: 'g', until: 'g', home: 'b' },
-      { from: 'a', until: 'end', home: 'a' },
+      { from: 'a', until: 'a', home: 'a' },
+      { from: 'g', until: 'end', home: 'b' },
     ]);
   });
 
