@@ -1,0 +1,11 @@
+pnpm-lock.yaml
+**/dist/
+**/coverage/
+**/.angular/
+**/*.md
+guides/
+schema/*.json
+packages/core/test/fixtures/
+packages/server/drizzle/
+packages/client/playwright-report/
+packages/client/test-results/

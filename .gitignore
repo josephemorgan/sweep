@@ -1,0 +1,33 @@
+# Dependencies and build output
+node_modules/
+dist/
+out-tsc/
+coverage/
+.angular/
+.vite/
+__screenshots__/
+
+# Local env and tool state
+.env
+*.local
+.claude/settings.local.json
+.claude/worktrees/
+
+# Playwright
+packages/client/playwright-report/
+packages/client/test-results/
+packages/client/blob-report/
+
+# Editors (keep the client's shared VS Code files)
+.idea/
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+!.vscode/mcp.json
+.history/
+
+# OS
+.DS_Store
+Thumbs.db
