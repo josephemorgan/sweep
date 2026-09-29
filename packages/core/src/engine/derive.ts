@@ -1,6 +1,6 @@
 import { END, type Guide, type Requires, type Task } from '../model/guide.js';
 import type { RunProgress } from '../model/progress.js';
-import type { RunView } from './cards.js';
+import { deriveExtras, type RunView } from './cards.js';
 import { indexGuide, isLeaf, type LeafRange } from './structure.js';
 
 export const SectionState = {
@@ -161,7 +161,6 @@ function countIn(prefix: readonly number[], r: LeafRange): number {
 }
 
 export function deriveRun(guide: Guide, progress: RunProgress): RunView {
-  void guide;
-  void progress;
-  throw new Error('not implemented yet (session A, Task 15)');
+  const core = deriveCore(guide, progress);
+  return { ...core, ...deriveExtras(guide, progress, core) };
 }
