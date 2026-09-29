@@ -71,7 +71,7 @@ Also used in code:
 | `pnpm build` | Builds all packages |
 | `pnpm e2e` | Playwright, projects `phone` (390×844) and `handheld-4x3` (1024×768) |
 | `pnpm schema` | Regenerate `schema/sweep-guide.v1.schema.json` from core's Zod schema (commit the result) |
-| `pnpm sweep validate <file> [--json]` | Guide validator CLI (stub until session A). Relative paths resolve from the repo root, so run it there or pass an absolute path. |
+| `pnpm sweep validate <file> [--json]` | Guide validator CLI. Relative paths resolve from the directory you run it in. |
 | `pnpm db:generate` / `pnpm db:migrate` / `pnpm db:studio` | drizzle-kit, run in `packages/server` (review generated SQL before committing) |
 | `pnpm build:core` | Rebuild core's `dist/` (consumers import built output) |
 | `docker compose up -d postgres` | Dev database (sweep/sweep@localhost:5432/sweep) |

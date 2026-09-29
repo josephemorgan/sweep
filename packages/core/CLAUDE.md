@@ -7,7 +7,7 @@ Pure TypeScript: guide model, parser and validator (`@sweep/core/parse`), engine
 - `pnpm --filter @sweep/core test`: Vitest (`test/**/*.test.ts`)
 - `pnpm --filter @sweep/core typecheck`: purity check (`tsconfig.lib.json`, no Node or DOM types) + full check
 - `pnpm --filter @sweep/core build` (= root `pnpm build:core`), and `dev` for watch mode
-- `pnpm sweep validate <file> [--json]` (root script): stub until session A. Relative paths resolve from the repo root, so run it there or pass an absolute path.
+- `pnpm sweep validate <file> [--json]` (root script). Relative paths resolve from the directory you run it in.
 
 ## Rules
 
