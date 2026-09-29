@@ -4,6 +4,7 @@ import express, { type Express } from 'express';
 import type { Auth } from './auth.js';
 import type { Database } from './db/client.js';
 import { renormalizer, type RenormalizerHooks } from './guides/renormalize.js';
+import { authBodyLimit } from './http/auth-body.js';
 import { describeError, errorHandler } from './http/error-handler.js';
 import { ApiErrorCode, HttpError } from './http/errors.js';
 import { authRateLimit, userRateLimit } from './http/rate-limits.js';
@@ -12,6 +13,7 @@ import { sameOriginGuard } from './http/same-origin.js';
 import { securityHeaders } from './http/security-headers.js';
 import { uploadParser } from './http/upload.js';
 import {
+  AUTH_BODY_LIMIT_BYTES,
   JSON_BODY_LIMIT_BYTES,
   PARSE_TIMEOUT_MS,
   QUOTAS,
@@ -67,8 +69,9 @@ const NO_CACHE_FILES = new Set(['index.html', 'ngsw-worker.js', 'ngsw.json']);
 const IMMUTABLE_ASSET = /-[A-Z0-9]{8}\.[a-z0-9]+$/;
 
 /**
- * Order: helmet, trust proxy, /api/auth (limit + Better Auth), JSON, same-origin, health,
- * schema (public), session guard, per-user limit, routers, /api 404, static/SPA, errors.
+ * Order: helmet, trust proxy, /api/auth (rate limit, body limit, Better Auth), JSON,
+ * same-origin, health, schema (public), session guard, per-user limit, routers, /api 404,
+ * static/SPA, errors.
  */
 export function createApp(options: AppOptions): Express {
   const { db, auth, sameOrigin, clientDistDir } = options;
@@ -80,8 +83,10 @@ export function createApp(options: AppOptions): Express {
   app.use(securityHeaders());
   app.set('trust proxy', options.trustProxy ?? false);
 
-  // Better Auth reads the raw request stream, so it mounts before express.json().
+  // Better Auth mounts before express.json(). authBodyLimit reads its bodies with a size limit
+  // (better-call applies none) and hands them over as a string.
   app.use('/api/auth', authRateLimit(limits.auth));
+  app.use('/api/auth', authBodyLimit(AUTH_BODY_LIMIT_BYTES));
   app.all('/api/auth/*splat', toNodeHandler(safeAuthHandler(auth)));
   app.use(express.json({ limit: JSON_BODY_LIMIT_BYTES }));
 

@@ -5,6 +5,12 @@
 export const JSON_BODY_LIMIT_BYTES = 100 * 1024;
 
 /**
+ * /api/auth request body limit. Sign-in, sign-out and session bodies are a few hundred bytes;
+ * better-call itself reads auth bodies with no limit, so src/http/auth-body.ts enforces this.
+ */
+export const AUTH_BODY_LIMIT_BYTES = 16 * 1024;
+
+/**
  * Time budget for one guide parse in its worker thread (spec §6.4), start-up included. Size
  * limits don't bound the parser's CPU time. PARSE_TIMEOUT_MS overrides it; tests pass less.
  */

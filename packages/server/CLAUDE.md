@@ -11,7 +11,7 @@ Express 5 (ESM) API, Drizzle ORM on Postgres 16, Better Auth (email and password
 
 ## Layout
 
-- `src/app.ts`: `createApp({ db, auth, sameOrigin, clientDistDir?, trustProxy?, rateLimits?, quotas?, parseTimeoutMs?, parseWorkerUrl?, renormalize? })`. The last three are test hooks or overrides. Order: helmet → trust proxy → `/api/auth` (limit + Better Auth, before `express.json`) → JSON → same-origin → health → `/schema/…` → session guard → per-user limit → runs router → `/api` 404 → static/SPA → error handler.
+- `src/app.ts`: `createApp({ db, auth, sameOrigin, clientDistDir?, trustProxy?, rateLimits?, quotas?, parseTimeoutMs?, parseWorkerUrl?, renormalize? })`. The last three are test hooks or overrides. Order: helmet → trust proxy → `/api/auth` (rate limit, body limit (`src/http/auth-body.ts`: better-call reads auth bodies unbounded), Better Auth; before `express.json`) → JSON → same-origin → health → `/schema/…` → session guard → per-user limit → runs router → `/api` 404 → static/SPA → error handler.
 - `src/auth.ts`: `createAuth(...)`. Sign-up follows `SIGNUP_ENABLED`; only the create-user script builds a sign-up-enabled instance. Better Auth's own rate limiter is off (ours covers `/api/auth`).
 - `src/env.ts` (`readEnv`): validates `DATABASE_URL`, `PORT`, `SIGNUP_ENABLED`, `BETTER_AUTH_SECRET` (32+ characters), `BETTER_AUTH_URL`, `TRUST_PROXY`, `PARSE_TIMEOUT_MS`. Production guard: with `NODE_ENV=production` a non-https `BETTER_AUTH_URL` is refused, except loopback origins (`localhost`, `127.0.0.1`, `[::1]`). `src/load-env.ts` loads the repo-root `.env` whatever the cwd.
 - `src/http/`: errors (`HttpError`, `ApiErrorCode`), error handler, typed `res.locals` (`getUser`, `getRun`), session guard, same-origin guard, CSP (`security-headers.ts`), rate limits, zod validation (`parseInput`, `ID_PATTERN`), ownership guard (`loadRun`), multer upload (`upload.ts`).
@@ -21,7 +21,7 @@ Express 5 (ESM) API, Drizzle ORM on Postgres 16, Better Auth (email and password
 - `src/guides/renormalize.ts`: when `MODEL_VERSION` changes, stale models are re-parsed in the worker BEFORE any transaction opens (routes call `ensureCurrentModel` / `ensureUserModels` first), one shared parse per version. A source that deterministically no longer parses is remembered in-process and served as stored; a timeout or worker crash is served as stored and retried after `RENORMALIZE_RETRY_MS` (60 s). `GET /runs` lists a run whose stats throw with zero stats rather than failing the list.
 - `src/runs/`: progress store (`writeProgressChanges`, `mutateProgress` with a run row lock), summary stats, quotas (advisory lock per user), create and update flows, DTO builders.
 - `src/routes/`: `health.ts`, `runs.ts` (the one runs router), `schema.ts`.
-- `src/limits.ts`: `JSON_BODY_LIMIT_BYTES` (100 kB; uploads are multipart, so JSON stays small), `PARSE_TIMEOUT_MS`, `RENORMALIZE_RETRY_MS`, `RATE_LIMITS`, `QUOTAS`.
+- `src/limits.ts`: `JSON_BODY_LIMIT_BYTES` (100 kB; uploads are multipart, so JSON stays small), `AUTH_BODY_LIMIT_BYTES` (16 kB), `PARSE_TIMEOUT_MS`, `RENORMALIZE_RETRY_MS`, `RATE_LIMITS`, `QUOTAS`.
 - `src/scripts/create-user.ts`: the create-user CLI.
 
 ## Rules
