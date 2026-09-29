@@ -757,7 +757,7 @@ The `hyrule` group gates the open world, and each region opts out of the default
         requires: []
 ```
 
-Every task is available from `hyrule` to the end of the game, and `home` puts each one on its region's card:
+Every Korok is available from `hyrule` to the end of the game, and `home` puts each one on its region's card. The plateau shrine opens at `plateau-shrines` and keeps the default `home`:
 
 <!-- from: guides/examples/botw-open-world.yaml -->
 ```yaml
@@ -895,7 +895,25 @@ Shorter patterns, without example files.
   requires: [forest, mines, coast]
 ```
 
-**Any one of.** When one of several sections is enough, such as either of two routes into a fortress, use `requires: {any: [a, b]}`. The section unlocks when at least one of them is cleared.
+**Any one of.** When clearing any one of several sections is enough, use `requires: {any: [a, b]}`. The section unlocks when at least one of them is cleared. Use it for sections the player visits anyway, where either one is enough to go on: for example, the vault key can be found in the crypt or in the bell tower. Give each option its own explicit `requires`, so one doesn't default to the other. Without `requires: [courtyard]` on `tower`, it would default to requiring `crypt`, and the `any` would add nothing.
+
+```yaml
+- id: courtyard
+  title: Courtyard
+  overview: A crypt and a bell tower open off the courtyard.
+- id: crypt
+  title: Crypt
+  overview: Search the tombs below the chapel.
+  requires: [courtyard]
+- id: tower
+  title: Bell tower
+  overview: Climb to the belfry.
+  requires: [courtyard]
+- id: vault
+  title: Vault
+  overview: Open the vault with the key.
+  requires: {any: [crypt, tower]}
+```
 
 **A revisit.** Give a second visit to a place its own leaf with its own ID, such as `balamb-garden-d1` and `balamb-garden-d3`. A task that can be done on either visit gets one window per visit.
 
