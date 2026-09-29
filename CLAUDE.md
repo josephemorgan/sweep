@@ -112,6 +112,6 @@ Per package: `pnpm --filter @sweep/<core|server|client> <script>`.
 ## Docs
 
 - Spec: `docs/superpowers/specs/2026-09-28-sweep-design.md`. Plans: `docs/superpowers/plans/`.
-- Guide format (authoritative once written): `docs/guide-format.md`. JSON Schema: `schema/`.
+- Guide format (authoritative, together with the validator): `docs/guide-format.md`. JSON Schema: `schema/`.
 - Decisions: `docs/adr/` (index in `docs/adr/README.md`).
 - Per-package notes: `packages/*/CLAUDE.md`.

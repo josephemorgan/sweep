@@ -12,4 +12,4 @@ Valid example guides, used as documentation and as CI fixtures (spec §8).
 
 The §3.9 samples are illustrative, not factual guides to those games.
 
-Every `.yaml`/`.yml`/`.md` here except this README must pass `pnpm sweep validate`; `pnpm test` checks every example through `test/examples.test.ts` (no issues at all, and the Lantern Keep `.yaml`/`.md` pair gives the same model), and CI runs `pnpm test`. This directory is `.prettierignore`d, so files keep their exact bytes.
+Every `.yaml`/`.yml`/`.md` here except this README must pass `pnpm sweep validate`; `pnpm test` checks every example through `test/examples.test.ts` (no issues at all, and the Lantern Keep `.yaml`/`.md` pair gives the same model), and CI runs `pnpm test` and `pnpm validate:examples` (the root script that validates every example). This directory is `.prettierignore`d, so files keep their exact bytes.

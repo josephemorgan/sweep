@@ -120,7 +120,17 @@ Sections, tasks, categories and exclusive groups are named by IDs.
 - **Reserved:** `end` can't be a section or task ID (`id-reserved`). It's the special `until` value that means "never closes".
 - **Flat and bare.** IDs are unique within their namespace across the whole guide, and never paths. Write `west-tower`, never `act-2/west-tower` (that's `id-format`). Nesting doesn't namespace IDs.
 
-IDs start with a letter so YAML never reads them as numbers. The slugs `true`, `false` and `null` are still read by YAML as a boolean or null, and fail validation. Any non-string in an ID or reference field (`id`, `category`, `exclusive`, `from`, `until`, `home`, `requires` entries, `renamed_from` entries), such as an unquoted `null`, `true` or `false`, is a `type` error. The validator doesn't convert these to strings. Quote such values (`"null"`, `"true"`, `"false"`), as in `id: "true"`, or pick another ID.
+IDs start with a letter so YAML never reads them as numbers. The slugs `true`, `false` and `null` are still read by YAML as a boolean or null, and fail validation.
+
+The rule: **plain-text fields accept numbers and booleans (used as written); IDs and references must be strings.** Any non-string in an ID or reference field (`id`, `category`, `exclusive`, `from`, `until`, `home`, `requires` entries, `renamed_from` entries) is a `type` error. In practice this means an unquoted `null`, `true` or `false` (or `~`) used as an ID must be quoted (`"null"`, `"true"`, `"false"`), or you can pick another ID. The validator doesn't convert these to strings, and the message shows the fix:
+
+```text
+guides/my-guide.yaml:22:15 error type `from` must be a string; YAML read `null` as null, so quote it: from: "null"
+guides/my-guide.yaml:18:9 error type `id` must be a string; YAML read `true` as boolean, so quote it: id: "true"
+guides/my-guide.yaml:15:16 error type `requires[0]` must be a string; YAML read `false` as boolean, so quote it: "false"
+```
+
+A key with nothing after it is the same kind of mistake, and the message names the kind of value it wants: `` `from` is empty; give it a section ID `` (also `` `requires[0]` is empty; give it a section ID ``, and for `category` and `home` a category ID and a leaf section ID). An ID that is present but is the empty string `""` is an `id-format` error instead.
 
 ## Field reference
 
@@ -189,8 +199,8 @@ Window rules compare positions of leaves in route order (0 for the first leaf, 1
 
 ### Plain text, `renamed_from` and defaults
 
-- **Plain-text scalars.** In the plain-text fields (`game`, `title`, `overview`, category `name` and `about`) and in `walkthrough` and `how`, a value YAML reads as a number or boolean is kept as you wrote it: `game: 1942` becomes the text `"1942"`. Other fields aren't converted: `spoiler: "true"` is a `type` error.
-- **Empty text.** A plain-text field set to `""` is a `required` error ("must not be empty"). A `walkthrough` or `how` that is empty after trimming counts as absent. A key with nothing after it (`how:`) is different: YAML reads it as `null`, and that's a `type` error ("found an empty value").
+- **Plain-text scalars.** In the plain-text fields (`game`, `title`, `overview`, category `name` and `about`) and in `walkthrough` and `how`, a value YAML reads as a number or boolean is kept as you wrote it: `game: 1942` becomes the text `"1942"`, and the JSON Schema accepts them too. The same rule in short: plain-text fields accept numbers and booleans (used as written); IDs and references must be strings (see [IDs](#ids)). Other fields aren't converted: `spoiler: "true"` is a `type` error.
+- **Empty text.** A plain-text field set to `""` is a `required` error ("must not be empty"). A `walkthrough` or `how` that is empty after trimming counts as absent. A key with nothing after it (`how:`) is different: YAML reads it as `null`, and that's a `type` error ("must be text; found an empty value").
 - **`renamed_from`.** When you rename a section or task in a later version of a guide, list its old IDs here so the run's progress carries over. A string is the same as a one-item list. An entry must not equal any current section or task ID, or an entry claimed by another element (`rename-conflict`).
 
 ## Requires
@@ -216,6 +226,8 @@ Two graph errors:
 
 - **`requires-lineage`**: a section requires itself, one of its ancestors, or one of its descendants. For example, leaf `west-tower` inside group `act-2` with `requires: [act-2]`: the group is cleared only when `west-tower` is, so it could never unlock.
 - **`requires-cycle`**: the requirements form a loop. For example, `village` then `marsh` in route order, and `village` has `requires: [marsh]`: `marsh` defaults to requiring `village`, so neither can unlock. The check includes default `requires`, group gates, and both `all` and `any` edges. It's conservative: an `any` list that could escape the loop through another option still counts as a cycle.
+
+  The message lists the cycle in the direction of "needs". With `village`, `marsh`, `keep` in route order and `requires: [keep]` on `village`, the validator says `requires cycle: village → keep → marsh → village`: `village` needs `keep`, `keep` needs `marsh` (its default), and `marsh` needs `village` (its default). The error is located at the `requires` of the first cycle member in route order whose explicit `requires` points into the cycle.
 
 ## Windows and home
 
@@ -355,7 +367,7 @@ The validator works in phases. Some errors stop it before later phases run, beca
 | `md-front-matter` | A `.md` file doesn't start with a closed `---` front-matter block. | Line 1, column 1. |
 | `format-version` | `sweep` is missing or isn't `1`, or the YAML is empty or isn't a mapping. | The `sweep` value, or the start of the file's top-level mapping when `sweep` is absent, or the start of the YAML when it's empty or not a mapping. |
 | `required` | A required field is missing, a plain-text field is empty, or `categories` is missing or empty while tasks exist. | The start of the mapping that lacks the field; the empty value; for `categories`, the `tasks` value. |
-| `type` | A field has the wrong type, a group's `sections` or a task's `windows` is an empty list, or `requires` is in an unsupported shape. | The field's value. |
+| `type` | A field has the wrong type (including a null or boolean in an ID or reference field, or an ID or reference key with no value), a group's `sections` or a task's `windows` is an empty list, or `requires` is in an unsupported shape. | The field's value. |
 | `id-format` | An ID, category ID, exclusive name, `renamed_from` entry, or reference to one isn't a valid slug of 64 characters or fewer. | The offending value (for a category ID, the key). |
 | `id-duplicate` | An ID is used twice in the section/task namespace, or a category key is duplicated. | The second (and later) `id` value, or the second category key. |
 | `id-reserved` | A section or task uses the ID `end`. | The `id` value. |
@@ -364,7 +376,7 @@ The validator works in phases. Some errors stop it before later phases run, beca
 | `unknown-category` | A task's `category` isn't defined. | The `category` value. |
 | `requires-empty-any` | `{any: []}`. | The empty `any` list. |
 | `requires-lineage` | A section requires itself, one of its ancestors, or one of its descendants. | The offending ID in `requires`. |
-| `requires-cycle` | The dependency graph has a cycle, including default `requires`, group gates and `any` edges. | The `requires` of the first section in route order on the cycle that has an explicit `requires`. |
+| `requires-cycle` | The dependency graph has a cycle, including default `requires`, group gates and `any` edges. The message reads `requires cycle: a → c → b → a`, following the needs direction. | The `requires` of the first cycle member in route order whose explicit `requires` points into the cycle. |
 | `home-not-leaf` | `home` names a group. | The `home` value. |
 | `home-outside-window` | `home` isn't within `first(from)` … `last(until)`. | The `home` value. |
 | `until-before-from` | `last(until)` < `first(from)`. | The `until` value. |
@@ -382,7 +394,7 @@ The validator works in phases. Some errors stop it before later phases run, beca
 
 | Code | Rule | Points at |
 |---|---|---|
-| `unknown-key` | An unrecognized field is present. It's ignored, and the message suggests the closest known key. | The key. |
+| `unknown-key` | An unrecognized field is present. It's ignored. The message suggests the closest known key when the edit distance is 3 or less and smaller than the key's length (for `titel`, it says "did you mean `title`?"), otherwise it lists the known keys (`known keys: id, title, category, windows, how, exclusive, spoiler, renamed_from`). | The key. |
 | `unused-category` | A category no task uses. | The category key. |
 | `overview-long` | An overview longer than 200 characters, or containing a line break. | The `overview` value. |
 | `md-html` | Raw HTML in prose. It will be shown escaped. | The HTML in a `.md` body, or the field's value in YAML. |
@@ -397,13 +409,15 @@ How common structural mistakes map to codes:
 |---|---|
 | A required key is absent | `required`, at the mapping that lacks it (a missing `categories` is reported at `tasks`) |
 | A plain-text field is `""` | `required` ("must not be empty") |
-| A key with no value (`how:`), which YAML reads as `null` | `type` ("found an empty value") |
+| A plain-text key with no value (`how:`), which YAML reads as `null` | `type` ("must be text; found an empty value") |
+| An ID or reference key with no value (`from:`, or an empty `requires` entry) | `type` ("`from` is empty; give it a section ID") |
 | Wrong type, `sections: []` on a group, `windows: []`, an unsupported `requires` shape, a value that isn't one of its allowed literals | `type` |
 | Top-level `sections: []` | `no-leaves` |
-| A non-string in an ID or reference field, such as an unquoted `true`, `false` or `null` | `type` |
+| A non-string in an ID or reference field, such as an unquoted `true`, `false` or `null` | `type` ("must be a string; YAML read `null` as null, so quote it") |
+| An ID or reference that is the empty string `""` | `id-format` |
 | A string fails the slug rule or is over 64 characters: IDs, category keys, `category`, `exclusive`, `from`, `until`, `home`, `requires` entries, `renamed_from` entries | `id-format` |
 | A string over its maximum length; too many windows, `requires` IDs or `renamed_from` entries; too many sections, tasks or categories; nesting deeper than 5 levels | `limit` |
-| An unknown key | warning `unknown-key` ("did you mean `x`?" for a close match, otherwise the list of known keys) |
+| An unknown key | warning `unknown-key` ("did you mean `x`?" only when the edit distance is 3 or less and smaller than the key's length, otherwise the list of known keys) |
 | An overview over 200 characters or with a line break | warning `overview-long` |
 
 ### `sweep validate`

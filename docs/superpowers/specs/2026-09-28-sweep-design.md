@@ -1227,13 +1227,13 @@ Write endpoints check that the ID exists and has the right kind in the **current
   - A run the user doesn't own returns `404`, never `403`.
   - No endpoint can reach another user's guide or progress. There are no public or share URLs.
 - **Sessions:**
-  - Better Auth cookies are `httpOnly`, `Secure` and `SameSite=Lax`.
+  - Better Auth cookies are `httpOnly`, `Secure` and `SameSite=Lax`. `Secure` follows the scheme of `BETTER_AUTH_URL`: on for https, off for `http://localhost` dev and http test agents. In production the server refuses to start unless `BETTER_AUTH_URL` is https, so production cookies are always `Secure`.
   - Better Auth checks the origin, and state-changing `/api` requests must come from the same origin (the `Origin` header is checked).
 - **Input validation:**
   - Every body, param and query is schema-validated.
   - ID params must match the slug regex.
   - Uploads are a single file of 2 MiB or less, held in memory, UTF-8, with a `.yaml`, `.yml` or `.md` extension. The declared content type is ignored.
-- **Parser hardening:** YAML follows §3.5 (alias cap, no custom tags) and the limits in §3.7. Parsing is synchronous and bounded by those limits.
+- **Parser hardening:** YAML follows §3.5 (alias cap, no custom tags) and the limits in §3.7. The size limits don't bound CPU time: the Markdown parser is superlinear on deeply nested lists and containers. So uploads are parsed off the main thread, in a `worker_thread` with a configurable time budget of a few seconds and at most one parse per user at a time. A parse that runs out of time is terminated, and the request fails with 422 and a single `limit` issue.
 - **Prose rendering (client):**
   - Markdown is rendered with raw HTML disabled, images disabled and a link-scheme allowlist.
   - The output then goes through **DOMPurify** before being bound. Angular's sanitizer runs as a further layer.
