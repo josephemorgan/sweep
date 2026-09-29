@@ -141,6 +141,63 @@ describe('diffGuides', () => {
     expect(d.sections).toEqual({ ...NONE, edited: [{ id: 'm', fields: ['position'] }] });
   });
 
+  describe('position among siblings in both guides under the same parent', () => {
+    /** A section: an ID, or `[id, children]`; `id<old` renames from `old`. */
+    type Spec = string | [string, Spec[]];
+    const flow = (spec: Spec): string => {
+      const [name, children] = typeof spec === 'string' ? [spec, undefined] : spec;
+      const [id, from] = name.split('<');
+      const renamed = from === undefined ? '' : `, renamed_from: [${from}]`;
+      const kids = children === undefined ? '' : `, sections: [${children.map(flow).join(', ')}]`;
+      return `{ id: ${id}, title: ${id}, overview: o, requires: []${renamed}${kids} }`;
+    };
+    const tree = (...specs: Spec[]): ReturnType<typeof parseOk> =>
+      guide(`sections:\n${specs.map((s) => `  - ${flow(s)}\n`).join('')}`);
+
+    it('flags only a leaf moved out of its group', () => {
+      const d = diffGuides(tree(['g', ['a', 'b', 'c', 'd']]), tree(['g', ['b', 'c', 'd']], 'a'));
+      expect(d.sections.edited).toEqual([{ id: 'a', fields: ['position'] }]);
+    });
+
+    it('flags only a leaf moved into a group', () => {
+      const d = diffGuides(tree('a', ['g', ['b', 'c', 'd']]), tree(['g', ['a', 'b', 'c', 'd']]));
+      expect(d.sections.edited).toEqual([{ id: 'a', fields: ['position'] }]);
+    });
+
+    it('flags only a leaf moved from one group to another', () => {
+      const d = diffGuides(
+        tree(['g', ['a', 'b', 'c', 'd']], ['h', ['x']]),
+        tree(['g', ['b', 'c', 'd']], ['h', ['x', 'a']]),
+      );
+      expect(d.sections.edited).toEqual([{ id: 'a', fields: ['position'] }]);
+    });
+
+    it('flags a group moved to another parent, but not its children', () => {
+      const d = diffGuides(
+        tree(['p', [['g', ['a', 'b']], 'x']], ['q', ['y']]),
+        tree(['p', ['x']], ['q', [['g', ['a', 'b']], 'y']]),
+      );
+      expect(d.sections.edited).toEqual([{ id: 'g', fields: ['position'] }]);
+    });
+
+    it("does not flag a renamed group's children", () => {
+      const d = diffGuides(tree(['g', ['a', 'b']], 'x'), tree(['g2<g', ['a', 'b']], 'x'));
+      expect(d.sections.edited).toEqual([]);
+      expect(d.sections.renamed).toEqual([{ from: 'g', to: 'g2', fields: ['title'] }]);
+    });
+  });
+
+  it('compares windows field by field, whatever the key order', () => {
+    const next = structuredClone(BASE);
+    next.tasks[0]!.windows = next.tasks[0]!.windows.map(({ from, until, home }) => ({
+      home,
+      until,
+      from,
+    }));
+    expect(JSON.stringify(next.tasks[0]!.windows)).not.toBe(JSON.stringify(BASE.tasks[0]!.windows));
+    expect(diffGuides(BASE, next).tasks).toEqual(NONE);
+  });
+
   it('reports a rename via renamed_from', () => {
     const next = guide(`sections:
   - { id: a, title: a, overview: o }

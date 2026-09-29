@@ -92,21 +92,41 @@ function renameMap(m: Matching): RenameMap {
   return new Map(m.renames.map((r) => [r.from, r.to]));
 }
 
+interface Position {
+  /** The parent's ID in the new guide's ID space, or null at the top level. */
+  parent: string | null;
+  index: number;
+}
+
+/** Each section's parent ID (null at the top level), translated by `translate`. */
+function parents(guide: Guide, translate: (id: string) => string): Map<string, string | null> {
+  const out = new Map<string, string | null>();
+  const walk = (siblings: readonly Section[], parent: string | null): void => {
+    for (const s of siblings) {
+      out.set(s.id, parent === null ? null : translate(parent));
+      walk(s.children, s.id);
+    }
+  };
+  walk(guide.sections, null);
+  return out;
+}
+
 /**
- * Parent ID and index among siblings, for every section. `translate` maps an ID into the new
- * guide's ID space, or to null to leave a section out of the sibling count (it has no counterpart
- * in the other guide, so its insertion or removal must not shift the others).
+ * Translated parent and index among siblings, for every section. Only `stable` siblings count
+ * toward the index: those in both guides under the same translated parent. So inserting, removing
+ * or moving one section never shifts the others.
  */
 function positions(
   guide: Guide,
-  translate: (id: string) => string | null,
-): Map<string, { parent: string | null; index: number }> {
-  const out = new Map<string, { parent: string | null; index: number }>();
+  translate: (id: string) => string,
+  stable: ReadonlySet<string>,
+): Map<string, Position> {
+  const out = new Map<string, Position>();
   const walk = (siblings: readonly Section[], parent: string | null): void => {
     let index = 0;
     for (const s of siblings) {
-      out.set(s.id, { parent: parent === null ? null : (translate(parent) ?? parent), index });
-      if (translate(s.id) !== null) index++;
+      out.set(s.id, { parent: parent === null ? null : translate(parent), index });
+      if (stable.has(s.id)) index++;
       walk(s.children, s.id);
     }
   };
@@ -154,16 +174,23 @@ export function diffGuides(oldGuide: Guide, newGuide: Guide, progress?: RunProgr
 
   const oldSections = new Map(flatten(oldGuide.sections).map((s) => [s.id, s]));
   const newSections = new Map(flatten(newGuide.sections).map((s) => [s.id, s]));
-  const addedSections = new Set(sec.added);
-  const oldPos = positions(oldGuide, (id) => {
-    const to = secTr(id);
-    return newSections.has(to) && !addedSections.has(to) ? to : null;
-  });
-  const newPos = positions(newGuide, (id) => (addedSections.has(id) ? null : id));
+  const oldParents = parents(oldGuide, secTr);
+  const newParents = parents(newGuide, (id) => id);
+  const stableOld = new Set<string>();
+  const stableNew = new Set<string>();
+  const pairs = [...sec.matched.map((id) => ({ from: id, to: id })), ...sec.renames];
+  for (const { from, to } of pairs) {
+    if (oldParents.get(from) !== newParents.get(to)) continue;
+    stableOld.add(from);
+    stableNew.add(to);
+  }
+  const oldPos = positions(oldGuide, secTr, stableOld);
+  const newPos = positions(newGuide, (id) => id, stableNew);
   const sections = diffKind(sec, (oldId, newId) => {
     const a = oldSections.get(oldId)!;
     const b = newSections.get(newId)!;
     const pa = oldPos.get(oldId)!;
+    const pb = newPos.get(newId)!;
     const differs: Record<string, boolean> = {
       title: a.title !== b.title,
       overview: a.overview !== b.overview,
@@ -173,7 +200,7 @@ export function diffGuides(oldGuide: Guide, newGuide: Guide, progress?: RunProgr
         requiresOf(b.requires, (id) => id),
       ),
       spoiler: a.spoiler !== b.spoiler,
-      position: !same({ parent: pa.parent, index: pa.index }, newPos.get(newId)),
+      position: pa.parent !== pb.parent || pa.index !== pb.index,
     };
     return SECTION_FIELDS.filter((f) => differs[f]);
   });
@@ -183,16 +210,19 @@ export function diffGuides(oldGuide: Guide, newGuide: Guide, progress?: RunProgr
   const tasks = diffKind(tsk, (oldId, newId) => {
     const a = oldTasks.get(oldId)!;
     const b = newTasks.get(newId)!;
-    const windows = a.windows.map((w) => ({
-      from: secTr(w.from),
-      until: w.until === END ? END : secTr(w.until),
-      home: secTr(w.home),
-    }));
+    // Field by field in index order: stored guides (jsonb) don't keep key order.
+    const windowsDiffer =
+      a.windows.length !== b.windows.length ||
+      a.windows.some((w, i) => {
+        const v = b.windows[i]!;
+        const until = w.until === END ? END : secTr(w.until);
+        return secTr(w.from) !== v.from || until !== v.until || secTr(w.home) !== v.home;
+      });
     const differs: Record<string, boolean> = {
       title: a.title !== b.title,
       category: a.category !== b.category,
       how: a.how !== b.how,
-      windows: !same(windows, b.windows),
+      windows: windowsDiffer,
       exclusive: a.exclusive !== b.exclusive,
       spoiler: a.spoiler !== b.spoiler,
     };
