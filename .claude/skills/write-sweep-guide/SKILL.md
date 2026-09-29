@@ -7,7 +7,7 @@ description: Use when converting an existing game walkthrough or guide into a Sw
 
 ## Overview
 
-A Sweep guide is one file that lists a game's sections in play order and the tasks worth doing in each. Sweep turns it into a checklist that warns the player, as they clear a section, which tasks close for good.
+A Sweep guide is one file that lists a game's sections in play order and the tasks worth doing in each. Sweep turns it into a checklist that warns the player, as they clear a leaf, which tasks close for good.
 
 - `docs/guide-format.md` is authoritative. This skill is the conversion process; it doesn't repeat the format. Read the doc before writing a line.
 - Working examples: `guides/examples/` (Lantern Keep uses every feature).
@@ -30,28 +30,28 @@ Ask, or state your assumption, before converting:
 
 - Areas and story steps, in play order. Note where the player can return and where the source says they can't.
 - Branch and hub points (any-order areas).
-- **Closures.** Search the source for: "no going back", "point of no return", "last chance", "won't be able", "can't return", "unavailable", "sealed", "blocked", "missable", "make sure", "before you", disc or chapter ends, and characters leaving the party. Read each hit and classify it with [Deciding `until`](#deciding-until). A "last chance" or "make sure you've already" list is a closure for every item on it.
+- **Closures.** Search the source for: "no going back", "point of no return", "last chance", "won't be able", "can't return", "unavailable", "sealed", "blocked", "missable", "make sure", "before you", disc or chapter ends, and characters leaving the party. Read each hit and classify it with [Deciding `until`](#deciding-until). A list framed by a stated closure ("last chance", "no going back") is a closure for every item on it. "Make sure" or "before you" on its own is advice (rule 3): search for them to find framed lists, but they count only when a stated closure frames them.
 - Tasks: every collectible, optional fight, side quest or choice, with where it's available and where the source says it's lost or offered again.
 
-**c. Categories.** Each one says what a task *is* (Loot, Cards, Side quests), never whether it's missable. `about` describes the category only ("Magic, Speed and Power Tabs."), with no game facts the source doesn't state and no wording that invites non-tasks ("…and story rewards").
+**c. Categories.** Each one says what a task *is* (Loot, Cards, Side quests), never whether it's missable. `about` describes the category only ("Triple Triad cards worth chasing.", "Hidden Korok seeds."), with no game facts the source doesn't state, and never widens it to things that aren't tasks, such as rewards the story hands over automatically.
 
 **d. Section tree, in route order.**
 
 - A leaf is a step of the main path, named for that step. Optional errands are tasks on a leaf, not leaves.
 - **A leaf ends at every point of no return.** Sweep warns when a leaf is cleared. If the irreversible step (a door, a boss, a departure) happens mid-section, split it: the last-chance leaf ends just before it, and the next leaf starts with it.
-- When the source places items area by area or floor by floor, make one leaf per area. Don't pile 15+ tasks on one card.
+- When the source places items area by area or floor by floor, make one leaf per area. Don't pile a whole dungeon's tasks onto one card.
 - A revisit is a new leaf with its own ID (`balamb-garden-d1`, `balamb-garden-d3`).
 - Group leaves by chapter or disc. Write `requires` only where progression isn't "the previous leaf" (hubs, any-order branches).
 
 **e. Tasks and windows.**
 
-- A task is something the player could skip or miss. Automatic rewards and mandatory story steps aren't tasks. Add main-path steps as tasks only if the user asks for them.
-- One task per thing. The location goes in the tree (its leaf, or `home`), never in the title: not "Shield (second area)".
+- A task is something the player could skip or miss. Automatic rewards and mandatory story steps aren't tasks. (Lantern Keep's Story category is an author's choice; add main-path steps only if the user asks.)
+- One task per thing. The location goes in the tree (its leaf, or `home`), never in the title: not "Chest (east wing)", but "Chest" on an `east-wing` leaf.
 - Every window's `from` is where the source says the task becomes available. Every `until` is a deliberate decision: see below.
 - `home`: set it when the task belongs on a card other than the first leaf of `from`, especially when `from` is a group.
 - Exclusive groups only when the source says only one can be had. 2nd chances only for later chances the source names, each on its own revisit leaf.
 
-**f. Spoilers.** Section titles and overviews, task titles and category text are visible before the player gets there. Keep them spoiler-light: never name a future plot event, a surprise party member or why an area closes. Windows already say *that* it closes; the reason goes in the walkthrough, or behind `spoiler: true`. Use `spoiler: true` on story reveals and surprise rewards, and on any `how` that hints at future events.
+**f. Spoilers.** Section titles and overviews, task titles and category text are visible before the player gets there. Keep them spoiler-light: never name a future plot event, who joins or leaves the party, or why an area closes. Windows already say *that* it closes; the reason goes in the walkthrough, or behind `spoiler: true`. Use `spoiler: true` on story reveals and surprise rewards, and on any `how` that hints at future events.
 
 **g. Prose.** Walkthroughs and `how` are Markdown; titles, overviews, `name` and `about` are plain text. In `.md`, each walkthrough sits under `# <section-id>`, and headings inside it are `##` or deeper. Follow the source's order and places: a fact stays with the place the source puts it. Write in the guide's own voice. Never "the source says" or "the author recommends".
 
@@ -65,8 +65,8 @@ Ask, or state your assumption, before converting:
 
 Omitting `until` is itself a closure claim: it means "gone once `from` is cleared". Decide every window, in this order:
 
-1. **The source states a closure** (a point of no return, an area that becomes unreachable, a disc or chapter ending, a character leaving the party, a "last chance" list): `until` = the last leaf before that point. Quote the sentence in the closure table.
-2. **The task is a one-time event the source describes** (a boss fight, a scene you can't repeat): `until` = that event's leaf. Quote it.
+1. **The source states a closure** (a point of no return, an area that becomes unreachable, a disc or chapter ending, a character leaving the party, a list framed by "last chance" or "no going back"): `until` = the last leaf before that point. Quote the sentence in the closure table.
+2. **The task is a one-time event the source describes, where nothing in the source says it can be repeated** (a boss fight, a scene): `until` = that event's leaf. Quote it.
 3. **The source only advises an order** ("make sure to", "before X", "I'd recommend doing this first"): that is not unavailability. Check whether the source later sends the player back. If nothing else applies, use rule 4, and list the call under ambiguous calls with the quote.
 4. **No sign that the task or area becomes unavailable:** `until: end`.
 
@@ -76,7 +76,7 @@ Never invent a closure the source doesn't support, and never drop one it states 
 
 ## Fidelity
 
-- **Every sentence traces to a source sentence about the same place.** Paraphrase only what's stated: no embellishment ("in the same spot as …"), no game knowledge (what an item does), no fact moved to another location.
+- **Every sentence traces to a source sentence about the same place.** Paraphrase only what's stated: no embellishment (details the source doesn't give), no game knowledge (what an item does), no fact moved to another location.
 - A list under a section's "Items" header belongs to the section, not to one task. Don't pin it onto a task.
 - If the source doesn't say, leave it out. A task you can't place or close from the source goes in "left out", with the reason.
 - Every inferred closure cites its source sentence. Every assumption is recorded, with a quote.
@@ -89,6 +89,8 @@ pnpm sweep validate <file> --json   # read issues by code and path
 ```
 
 Fix errors first, then warnings. Re-run after every batch of fixes: some errors stop later checks, so fixing one can reveal others. **Stop only at 0 errors.** Fix every warning you can; explain each one left in the report. Key on the code, not the message. For any code not below, see the doc's Errors and Warnings tables.
+
+Exit `0` means no errors and `1` means the guide has errors. Exit `2` is a usage problem (bad path, unsupported extension, unreadable file), not a guide error: fix the command. For the output format, see the doc's `sweep validate` section.
 
 | Code | Usual cause → fix |
 |---|---|
@@ -145,14 +147,14 @@ If you catch yourself thinking one of these, stop and apply the rule.
 | Thought | Rule |
 |---|---|
 | "I'll leave `until` out; the default is fine." | Omitting `until` is a closure claim. Decide it with the four rules and quote the reason. |
-| "There's a later fallback, so `until: end`." | A "last chance" or "make sure you've already" list is a closure. Model each named chance as a window; a fallback past the last leaf goes in the report. |
+| "There's a later fallback, so `until: end`." | A list framed by a stated closure ("last chance", "no going back") is a closure for every item on it; "make sure" or "before you" on its own is advice (rule 3). Model each named chance as a window; a fallback past the last leaf goes in the report. |
 | "The source says 'make sure to' or 'before X', so it closes at X." | Advice isn't unavailability. Close only on a stated loss of access, and check whether the source sends the player back. |
 | "The point of no return is somewhere in this section." | Split the leaf so the last-chance leaf is cleared before the irreversible step. |
 | "I'll put the sub-area in the title." | Locations belong in the tree: area leaves, or `home`. |
 | "The overview should say why it closes." | Visible text is spoiler-light. The reason goes in the walkthrough or behind `spoiler: true`. |
 | "This detail is true in the game, and helpful." | Every sentence traces to a source sentence about the same place. No outside knowledge. |
 | "These items are listed under this section, so they're this task's." | A section's item header isn't a task's contents. |
-| "The player receives it, so it's loot." | Automatic rewards and mandatory steps aren't tasks. |
+| "The player receives it, so it's loot." | Automatic rewards and mandatory steps aren't tasks, unless the user asked for main-path steps. |
 | "My summary mentions the assumptions." | Inventory closures first; the report quotes the source for every closure, assumption and omission. |
 | "The validator isn't available, so I'm done." | Run the hand checklist. Never skip it. |
 | "I'll tell the player what the source recommends." | Write in the guide's voice. Credit goes in the top comment and the report. |
