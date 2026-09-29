@@ -22,6 +22,19 @@ export function describeError(err: unknown): string {
   return err instanceof Error ? (err.stack ?? err.message) : 'Unknown error';
 }
 
+interface ErrorBody {
+  code: ApiErrorCode;
+  message: string;
+}
+
+/** Bodies for 4xx errors that aren't HttpErrors (body-parser, multer, http-errors). */
+const BAD_REQUEST: ErrorBody = { code: ApiErrorCode.BadRequest, message: 'Malformed request.' };
+const CLIENT_ERRORS: Partial<Record<number, ErrorBody>> = {
+  401: { code: ApiErrorCode.Unauthorized, message: 'Sign in to continue.' },
+  404: { code: ApiErrorCode.NotFound, message: 'Not found.' },
+  413: { code: ApiErrorCode.TooLarge, message: 'Request body too large.' },
+};
+
 export function errorHandler(): ErrorRequestHandler {
   return (err: unknown, _req, res, next) => {
     if (res.headersSent) {
@@ -36,11 +49,7 @@ export function errorHandler(): ErrorRequestHandler {
     const status = clientErrorStatus(err);
     if (status !== undefined) {
       // Fixed messages: a JSON.parse error message can quote part of the request body.
-      const error =
-        status === 413
-          ? { code: ApiErrorCode.TooLarge, message: 'Request body too large.' }
-          : { code: ApiErrorCode.BadRequest, message: 'Malformed request.' };
-      res.status(status).json({ error });
+      res.status(status).json({ error: CLIENT_ERRORS[status] ?? BAD_REQUEST });
       return;
     }
     console.error(describeError(err));

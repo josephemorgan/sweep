@@ -84,6 +84,21 @@ describe('errorHandler', () => {
     expect(spy).toHaveBeenCalledOnce();
   });
 
+  it.each([
+    [400, 'bad-request', 'Malformed request.'],
+    [401, 'unauthorized', 'Sign in to continue.'],
+    [404, 'not-found', 'Not found.'],
+    [405, 'bad-request', 'Malformed request.'],
+    [413, 'too-large', 'Request body too large.'],
+  ])('maps a non-HttpError %i to code %s with a fixed message', async (status, code, message) => {
+    const spy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    const err = Object.assign(new Error('may quote the body'), { status });
+    const res = await request(appThrowing(err)).get('/boom');
+    expect(res.status).toBe(status);
+    expect(res.body).toEqual({ error: { code, message } });
+    expect(spy).not.toHaveBeenCalled();
+  });
+
   it('hands the error on once headers are sent', () => {
     const next = vi.fn();
     const err = new Error('late');
