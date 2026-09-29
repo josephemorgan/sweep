@@ -134,9 +134,21 @@ export function splitBody(
   return { walkthroughs, walkthroughLines, issues };
 }
 
-/** Every heading in the tree, in document order. */
-function headings(node: Root | RootContent): Heading[] {
-  if (node.type === 'heading') return [node];
-  const children = 'children' in node ? (node.children as RootContent[]) : [];
-  return children.flatMap(headings);
+/**
+ * Every heading in the tree, in document order. Uses an explicit stack, so deeply nested Markdown
+ * can't overflow the call stack.
+ */
+function headings(root: Root): Heading[] {
+  const found: Heading[] = [];
+  const stack: (Root | RootContent)[] = [root];
+  while (stack.length > 0) {
+    const node = stack.pop()!;
+    if (node.type === 'heading') {
+      found.push(node);
+      continue;
+    }
+    const children: RootContent[] = 'children' in node ? node.children : [];
+    for (let i = children.length - 1; i >= 0; i -= 1) stack.push(children[i]!);
+  }
+  return found;
 }

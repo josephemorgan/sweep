@@ -1,0 +1,4 @@
+# yaml-syntax: the sections list holds an alias to itself
+sweep: 1
+game: Tiny Linear
+sections: &s [{id: a, title: A, overview: One., sections: *s}]

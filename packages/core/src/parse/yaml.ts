@@ -64,6 +64,8 @@ export function parseYamlSource(
     schema: 'core',
     uniqueKeys: false,
     prettyErrors: false,
+    // Otherwise `yaml` hands its warnings, which quote guide text, to process.emitWarning.
+    logLevel: 'error',
     lineCounter,
   });
   const issues: Issue[] = [];
@@ -127,72 +129,91 @@ export function parseYamlSource(
     return formatVersion(message, locator.value(['sweep']), ['sweep']);
   }
   if (root.sweep !== FORMAT_VERSION) {
-    const message = `sweep is ${JSON.stringify(root.sweep)}, but Sweep only reads sweep: ${FORMAT_VERSION}`;
+    // Numbers as written: `1e400` reads as Infinity, which JSON would print as null.
+    const found =
+      typeof root.sweep === 'number'
+        ? (locator.sourceOf(['sweep']) ?? String(root.sweep))
+        : JSON.stringify(root.sweep);
+    const message = `sweep is ${found}, but Sweep only reads sweep: ${FORMAT_VERSION}`;
     return formatVersion(message, locator.value(['sweep']), ['sweep']);
   }
   return { parsed: { value, locator }, issues };
 }
 
 /**
- * Walks every node in document order and reports each duplicate key, custom tag and alias to an
- * undefined anchor. A duplicate key directly under the top-level `categories` map is a duplicate
- * category ID. Returns the aliases in document order.
+ * Walks every node in document order and reports each duplicate key, custom tag, alias to an
+ * undefined anchor, and alias to a node that contains it (it would expand forever). A duplicate key
+ * directly under the top-level `categories` map is a duplicate category ID. Returns the aliases in
+ * document order. The walk keeps an explicit stack, so deep nesting can't overflow the call stack.
  */
 function checkNodes(doc: Document.Parsed, report: Report): AliasRef[] {
   const aliases: AliasRef[] = [];
+  /** Collections on the path from the root to the node being visited. */
+  const ancestors = new Set<unknown>();
+  /** Pending steps, run last in, first out. A step may queue more. */
+  const work: (() => void)[] = [];
+  /** Queues `steps` to run next, in the order given. */
+  const next = (steps: (() => void)[]): void => {
+    for (let i = steps.length - 1; i >= 0; i -= 1) work.push(steps[i]!);
+  };
 
-  const walk = (node: unknown, path: PathSegment[]): void => {
+  const duplicateKey = (name: string, key: unknown, path: PathSegment[]): void => {
+    const keyPath = [...path, name];
+    if (path.length === 1 && path[0] === 'categories') {
+      report(ErrorCode.IdDuplicate, `category ${name} is defined twice`, startOf(key), keyPath);
+    } else {
+      report(ErrorCode.YamlSyntax, `duplicate key ${name}`, startOf(key), keyPath);
+    }
+  };
+
+  const visit = (node: unknown, path: PathSegment[]): void => {
     if (isPair(node)) {
       // A `key: value` pair written inside a flow sequence.
-      walk(node.key, path);
-      walk(node.value, path);
+      next([() => visit(node.key, path), () => visit(node.value, path)]);
       return;
     }
     if (!isNode(node)) return;
     if (node.tag !== undefined && !CORE_TAGS.has(node.tag)) {
-      report(
-        ErrorCode.YamlSyntax,
-        `custom YAML tag ${node.tag} is not allowed`,
-        startOf(node),
-        path,
-      );
+      const message = `custom YAML tag ${node.tag} is not allowed`;
+      report(ErrorCode.YamlSyntax, message, startOf(node), path);
     }
     if (isAlias(node)) {
       aliases.push({ node, path });
-      if (node.resolve(doc) === undefined) {
+      const target = node.resolve(doc);
+      if (target === undefined) {
         const message = `YAML alias *${node.source} has no anchor &${node.source} before it`;
         report(ErrorCode.YamlSyntax, message, startOf(node), path);
+      } else if (ancestors.has(target)) {
+        const message = `YAML alias *${node.source} refers to a node that contains it`;
+        report(ErrorCode.YamlSyntax, message, startOf(node), path);
       }
-    } else if (isMap(node)) {
+      return;
+    }
+    if (!isMap(node) && !isSeq(node)) return;
+    ancestors.add(node);
+    const steps: (() => void)[] = [];
+    if (isMap(node)) {
       const seen = new Set<string>();
       for (const pair of node.items) {
-        walk(pair.key, path);
+        steps.push(() => visit(pair.key, path));
         const name = isScalar(pair.key) ? String(pair.key.value) : undefined;
         if (name === undefined) {
-          walk(pair.value, path);
+          steps.push(() => visit(pair.value, path));
           continue;
         }
-        const keyPath = [...path, name];
-        if (seen.has(name)) {
-          if (path.length === 1 && path[0] === 'categories') {
-            report(
-              ErrorCode.IdDuplicate,
-              `category ${name} is defined twice`,
-              startOf(pair.key),
-              keyPath,
-            );
-          } else {
-            report(ErrorCode.YamlSyntax, `duplicate key ${name}`, startOf(pair.key), keyPath);
-          }
-        }
-        seen.add(name);
-        walk(pair.value, keyPath);
+        steps.push(() => {
+          if (seen.has(name)) duplicateKey(name, pair.key, path);
+          seen.add(name);
+        });
+        steps.push(() => visit(pair.value, [...path, name]));
       }
-    } else if (isSeq(node)) {
-      node.items.forEach((item, i) => walk(item, [...path, i]));
+    } else {
+      node.items.forEach((item, i) => steps.push(() => visit(item, [...path, i])));
     }
+    next([...steps, () => ancestors.delete(node)]);
   };
 
-  walk(doc.contents, []);
+  visit(doc.contents, []);
+  while (work.length > 0) work.pop()!();
   return aliases;
 }

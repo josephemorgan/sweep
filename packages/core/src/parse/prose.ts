@@ -23,7 +23,10 @@ export function checkProse(
   path: PathSegment[] | null,
 ): Issue[] {
   const issues: Issue[] = [];
-  const visit = (node: Nodes): void => {
+  // Depth-first in document order, with an explicit stack: deeply nested Markdown can't overflow.
+  const stack: Nodes[] = [fromMarkdown(markdown)];
+  while (stack.length > 0) {
+    const node = stack.pop()!;
     let code: WarningCode | null = null;
     let message = '';
     if (node.type === 'html') {
@@ -41,8 +44,8 @@ export function checkProse(
           : { line: where.bodyLine + start.line - 1, column: start.column };
       issues.push(issue('warning', code, message, file, at, path));
     }
-    if ('children' in node) (node.children as Nodes[]).forEach(visit);
-  };
-  visit(fromMarkdown(markdown));
+    const children: Nodes[] = 'children' in node ? node.children : [];
+    for (let i = children.length - 1; i >= 0; i -= 1) stack.push(children[i]!);
+  }
   return issues;
 }

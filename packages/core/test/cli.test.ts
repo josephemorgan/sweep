@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { USAGE, run, type CliIo } from '../src/cli/run.js';
+import { validateFile } from '../src/cli/validate.js';
 
 const VALID = readFileSync(new URL('./fixtures/valid/tiny-linear.yaml', import.meta.url), 'utf8');
 const WARNING = VALID.replace(
@@ -135,4 +136,23 @@ describe('sweep validate', () => {
       expect(r.out).toContain(USAGE);
     },
   );
+});
+
+describe('sweep validate internal errors', () => {
+  it('exits 2 with an internal-error line when the parser throws', () => {
+    const out: string[] = [];
+    const err: string[] = [];
+    const io: CliIo = {
+      stdout: (l) => out.push(l),
+      stderr: (l) => err.push(l),
+      readFile: () => new TextEncoder().encode(VALID),
+      cwd: '/work',
+    };
+    const code = validateFile('g.yaml', false, io, () => {
+      throw new RangeError('Maximum call stack size exceeded');
+    });
+    expect(code).toBe(2);
+    expect(err).toEqual(['sweep validate: internal error: Maximum call stack size exceeded']);
+    expect(out).toEqual([]);
+  });
 });

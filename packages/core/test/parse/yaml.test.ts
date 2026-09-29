@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { parseYamlSource } from '../../src/parse/yaml.js';
 
 function parse(text: string, lineOffset = 0): ReturnType<typeof parseYamlSource> {
@@ -66,6 +66,57 @@ describe('parseYamlSource', () => {
   it('reports an alias to an undefined anchor at that alias', () => {
     expect(parse('sweep: 1\na: &x 1\nb: *nope\n').issues).toEqual([
       expect.objectContaining({ code: 'yaml-syntax', line: 3, column: 4, path: 'b' }),
+    ]);
+  });
+
+  it('reports an alias inside its own anchor at the alias, and stops', () => {
+    const text = 'sweep: 1\nsections: &s [{id: a, sections: *s}]\n';
+    expect(parse(text)).toEqual({
+      issues: [
+        expect.objectContaining({
+          code: 'yaml-syntax',
+          message: 'YAML alias *s refers to a node that contains it',
+          line: 2,
+          column: 33,
+          path: 'sections[0].sections',
+        }),
+      ],
+    });
+  });
+
+  it('reports an alias to an ancestor mapping', () => {
+    const text = 'sweep: 1\ng: &g\n  id: g\n  sections:\n    - *g\n';
+    expect(parse(text).issues).toEqual([
+      expect.objectContaining({
+        code: 'yaml-syntax',
+        message: 'YAML alias *g refers to a node that contains it',
+        line: 5,
+        column: 7,
+        path: 'g.sections[0]',
+      }),
+    ]);
+  });
+
+  it('still allows an alias to an earlier sibling', () => {
+    expect(parse('sweep: 1\na: &x {b: 1}\nc: [*x, *x]\n').issues).toEqual([]);
+  });
+
+  it('never emits a process warning with guide text', () => {
+    const spy = vi.spyOn(process, 'emitWarning').mockImplementation(() => undefined);
+    try {
+      parse('sweep: 1\n? [secret, key]\n: 1\n');
+      expect(spy).not.toHaveBeenCalled();
+    } finally {
+      spy.mockRestore();
+    }
+  });
+
+  it('reports the source text of an out-of-range sweep number', () => {
+    expect(parse('sweep: 1e400\n').issues).toEqual([
+      expect.objectContaining({
+        code: 'format-version',
+        message: 'sweep is 1e400, but Sweep only reads sweep: 1',
+      }),
     ]);
   });
 

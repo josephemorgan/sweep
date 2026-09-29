@@ -103,6 +103,22 @@ const CASES: InvalidCase[] = [
     path: 'notes[0]',
   },
   {
+    name: 'YAML alias inside its own anchor',
+    fixture: 'yaml-syntax-recursive-alias.yaml',
+    code: 'yaml-syntax',
+    line: 4,
+    column: 59,
+    path: 'sections[0].sections',
+  },
+  {
+    name: 'YAML alias to an ancestor section',
+    fixture: 'yaml-syntax-recursive-alias-section.yaml',
+    code: 'yaml-syntax',
+    line: 10,
+    column: 9,
+    path: 'sections[0].sections[0]',
+  },
+  {
     name: 'duplicate category key',
     fixture: 'id-duplicate-category.yaml',
     code: 'id-duplicate',

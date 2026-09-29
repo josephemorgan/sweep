@@ -1,6 +1,6 @@
 import { resolve } from 'node:path';
 import type { Issue } from '../model/issue.js';
-import { guideFileName, parseGuide } from '../parse/index.js';
+import { guideFileName, parseGuide, type GuideFiles, type ParseResult } from '../parse/index.js';
 import type { CliIo } from './run.js';
 
 function plural(n: number, noun: string): string {
@@ -12,8 +12,16 @@ function formatIssue(i: Issue, file: string): string {
   return `${where} ${i.severity} ${i.code} ${i.message}`;
 }
 
-/** Validates one guide file (spec §9). Returns 0 with no errors, 1 with errors, 2 when it can't be read. */
-export function validateFile(arg: string, json: boolean, io: CliIo): number {
+/**
+ * Validates one guide file (spec §9). Returns 0 with no errors, 1 with errors, 2 when it can't be
+ * read or the parser fails unexpectedly (never a validation verdict). `parse` is a test seam.
+ */
+export function validateFile(
+  arg: string,
+  json: boolean,
+  io: CliIo,
+  parse: (files: GuideFiles) => ParseResult = parseGuide,
+): number {
   if (arg === '-') {
     io.stderr("sweep validate: reading from stdin isn't supported; pass a file path");
     return 2;
@@ -32,7 +40,16 @@ export function validateFile(arg: string, json: boolean, io: CliIo): number {
     return 2;
   }
 
-  const issues = parseGuide({ [virtual]: bytes }).issues.map((i): Issue => ({ ...i, file: arg }));
+  let result: ParseResult;
+  try {
+    result = parse({ [virtual]: bytes });
+  } catch (e) {
+    // parseGuide should never throw; if it does, don't let a crash read as "the guide has errors".
+    const reason = e instanceof Error ? e.message : String(e);
+    io.stderr(`sweep validate: internal error: ${reason}`);
+    return 2;
+  }
+  const issues = result.issues.map((i): Issue => ({ ...i, file: arg }));
   const errors = issues.filter((i) => i.severity === 'error').length;
   const warnings = issues.length - errors;
 
