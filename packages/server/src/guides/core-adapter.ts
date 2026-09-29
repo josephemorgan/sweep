@@ -133,7 +133,7 @@ function parseInWorker(
     worker.once('message', (result: ParseResult) => {
       finish(() => resolve({ result, timedOut: false }), false);
     });
-    worker.once('error', (err) => finish(() => reject(workerFailed(err)), true));
+    worker.on('error', (err) => finish(() => reject(workerFailed(err)), true));
     worker.once('exit', (code) => {
       const err = new Error(`guide parse worker exited with code ${code} before replying`);
       finish(() => reject(err), false);

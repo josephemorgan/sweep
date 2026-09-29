@@ -30,10 +30,12 @@ function readOrigin(raw: string | undefined): string {
   try {
     url = new URL(raw);
   } catch {
-    throw new Error(`BETTER_AUTH_URL must be a valid URL, got "${raw}".`);
+    throw new Error('BETTER_AUTH_URL must be a valid http or https URL.');
   }
   if (url.protocol !== 'http:' && url.protocol !== 'https:') {
-    throw new Error(`BETTER_AUTH_URL must use http or https, got "${raw}".`);
+    throw new Error(
+      `BETTER_AUTH_URL must use http or https, got scheme "${url.protocol.slice(0, -1)}".`,
+    );
   }
   return url.origin;
 }

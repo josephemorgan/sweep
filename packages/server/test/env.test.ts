@@ -64,6 +64,21 @@ describe('readEnv', () => {
     },
   );
 
+  it.each(['https://user:secret@', 'ftp://user:secret@host.example'])(
+    'keeps credentials in BETTER_AUTH_URL=%s out of the error',
+    (value) => {
+      let message = '';
+      try {
+        readEnv({ ...base, BETTER_AUTH_URL: value });
+      } catch (err) {
+        message = (err as Error).message;
+      }
+      expect(message).toMatch(/BETTER_AUTH_URL/);
+      expect(message).not.toContain('user');
+      expect(message).not.toContain('secret');
+    },
+  );
+
   describe('in production (spec §6.4: cookies are always Secure)', () => {
     const production = (url: string) =>
       readEnv({ ...base, NODE_ENV: 'production', BETTER_AUTH_URL: url });
