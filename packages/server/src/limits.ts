@@ -20,7 +20,7 @@ export interface RateLimits {
   auth: RateLimitRule;
   /** Per user, both POST upload routes together. */
   uploads: RateLimitRule;
-  /** Per user, every other /api call after the session guard. */
+  /** Per user, every /api call after the session guard, uploads included. */
   api: RateLimitRule;
 }
 

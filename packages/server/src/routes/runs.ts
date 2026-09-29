@@ -13,12 +13,14 @@ import { Router, type RequestHandler } from 'express';
 import type { Database } from '../db/client.js';
 import { guideVersions, runs } from '../db/schema.js';
 import { requireValidGuide, validGuide } from '../guides/core-adapter.js';
+import type { Renormalizer } from '../guides/renormalize.js';
 import { loadCurrentGuide, loadVersionMeta } from '../guides/store.js';
 import { ApiErrorCode, HttpError } from '../http/errors.js';
 import { loadRun } from '../http/load-run.js';
 import { getRun, getUser } from '../http/locals.js';
 import { singleUpload, type UploadParser } from '../http/upload.js';
 import {
+  checkQuery,
   createRunFields,
   dryRunQuery,
   idSchema,
@@ -46,17 +48,26 @@ export interface RunsRouterOptions {
   uploadLimiter: RequestHandler;
   /** Parses the upload in a worker, one parse per user at a time (spec §6.4). */
   parseUpload: UploadParser;
+  /** Re-normalizes stale stored models; called before each transaction that loads the guide. */
+  models: Renormalizer;
 }
 
 /** One consistent snapshot across several reads: no torn view if a write lands between them. */
 const SNAPSHOT = { isolationLevel: 'repeatable read', accessMode: 'read only' } as const;
 
-export function runsRouter({ db, quotas, uploadLimiter, parseUpload }: RunsRouterOptions): Router {
+export function runsRouter({
+  db,
+  quotas,
+  uploadLimiter,
+  parseUpload,
+  models,
+}: RunsRouterOptions): Router {
   const router = Router();
 
   router.get('/runs', async (req, res) => {
     parseInput(noQuery, req.query);
     const userId = getUser(res).id;
+    await models.ensureUserModels(db, userId);
     const list = await db.transaction(async (tx) => {
       const rows = await tx
         .select({ run: runs, game: guideVersions.game, title: guideVersions.title })
@@ -79,7 +90,8 @@ export function runsRouter({ db, quotas, uploadLimiter, parseUpload }: RunsRoute
     res.json(list);
   });
 
-  router.post('/runs', uploadLimiter, singleUpload(), async (req, res) => {
+  // The query is checked before the limiter and multer: a bad one costs no upload.
+  router.post('/runs', checkQuery(dryRunQuery), uploadLimiter, singleUpload(), async (req, res) => {
     const { dryRun } = parseInput(dryRunQuery, req.query);
     const fields = parseInput(createRunFields, req.body ?? {});
     const upload = await parseUpload(req, res);
@@ -109,10 +121,11 @@ export function runsRouter({ db, quotas, uploadLimiter, parseUpload }: RunsRoute
 
   router.get('/runs/:runId', async (req, res) => {
     parseInput(noQuery, req.query);
-    const { id } = getRun(res);
+    const loaded = getRun(res);
+    await models.ensureCurrentModel(db, loaded);
     const payload = await db.transaction(async (tx) => {
       // Re-read the run inside the snapshot: the pin lives on the run row, and loadRun's copy may be stale.
-      const [run] = await tx.select().from(runs).where(eq(runs.id, id));
+      const [run] = await tx.select().from(runs).where(eq(runs.id, loaded.id));
       if (!run) throw new HttpError(404, ApiErrorCode.NotFound, 'No such run.');
       return buildPayload(tx, run);
     }, SNAPSHOT);
@@ -140,6 +153,7 @@ export function runsRouter({ db, quotas, uploadLimiter, parseUpload }: RunsRoute
     const sectionId = parseInput(idSchema, req.params['sectionId']);
     const { cleared } = parseInput(setSectionBody, req.body);
     const run = getRun(res);
+    await models.ensureCurrentModel(db, run);
     // setCleared also clears the pin when the pinned leaf is cleared (spec §6.2).
     await mutateProgress(
       db,
@@ -154,6 +168,7 @@ export function runsRouter({ db, quotas, uploadLimiter, parseUpload }: RunsRoute
     parseInput(noQuery, req.query);
     const { sectionId } = parseInput(setPinBody, req.body);
     const run = getRun(res);
+    await models.ensureCurrentModel(db, run);
     await mutateProgress(
       db,
       run.id,
@@ -169,6 +184,7 @@ export function runsRouter({ db, quotas, uploadLimiter, parseUpload }: RunsRoute
     const taskId = parseInput(idSchema, req.params['taskId']);
     const { state } = parseInput(setTaskBody, req.body);
     const run = getRun(res);
+    await models.ensureCurrentModel(db, run);
     await mutateProgress(
       db,
       run.id,
@@ -183,6 +199,7 @@ export function runsRouter({ db, quotas, uploadLimiter, parseUpload }: RunsRoute
     const categoryId = parseInput(idSchema, req.params['categoryId']);
     const { tracked } = parseInput(setCategoryBody, req.body);
     const run = getRun(res);
+    await models.ensureCurrentModel(db, run);
     await mutateProgress(
       db,
       run.id,
@@ -192,28 +209,35 @@ export function runsRouter({ db, quotas, uploadLimiter, parseUpload }: RunsRoute
     res.status(204).end();
   });
 
-  router.post('/runs/:runId/guide', uploadLimiter, singleUpload(), async (req, res) => {
-    const { dryRun } = parseInput(dryRunQuery, req.query);
-    const { baseVersion } = parseInput(updateGuideFields, req.body ?? {});
-    const run = getRun(res);
-    // Checked again under the run lock (apply) or in the preview's snapshot; this one saves a parse.
-    if (baseVersion !== run.currentVersion) throw staleVersion();
-    const upload = await parseUpload(req, res);
-    if (dryRun) {
-      res.json(await previewGuideUpdate(db, run, upload));
-      return;
-    }
-    // A parse over its time budget is the single `limit` issue: 422 like any invalid guide.
-    const guide = requireValidGuide(upload.result);
-    const body = await applyGuideUpdate(db, run.id, {
-      userId: getUser(res).id,
-      upload,
-      guide,
-      baseVersion,
-      quotas,
-    });
-    res.json(body);
-  });
+  router.post(
+    '/runs/:runId/guide',
+    checkQuery(dryRunQuery),
+    uploadLimiter,
+    singleUpload(),
+    async (req, res) => {
+      const { dryRun } = parseInput(dryRunQuery, req.query);
+      const { baseVersion } = parseInput(updateGuideFields, req.body ?? {});
+      const run = getRun(res);
+      // Checked again under the run lock (apply) or in the preview's snapshot; this one saves a parse.
+      if (baseVersion !== run.currentVersion) throw staleVersion();
+      const upload = await parseUpload(req, res);
+      await models.ensureCurrentModel(db, run);
+      if (dryRun) {
+        res.json(await previewGuideUpdate(db, run, upload));
+        return;
+      }
+      // A parse over its time budget is the single `limit` issue: 422 like any invalid guide.
+      const guide = requireValidGuide(upload.result);
+      const body = await applyGuideUpdate(db, run.id, {
+        userId: getUser(res).id,
+        upload,
+        guide,
+        baseVersion,
+        quotas,
+      });
+      res.json(body);
+    },
+  );
 
   return router;
 }

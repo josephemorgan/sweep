@@ -5,6 +5,7 @@ import type {
   SetSectionBody,
   SetTaskBody,
 } from '@sweep/core';
+import type { RequestHandler } from 'express';
 import { z } from 'zod';
 import { ApiErrorCode, HttpError } from './errors.js';
 
@@ -66,6 +67,17 @@ export const updateGuideFields = z.strictObject({
     .regex(/^[1-9][0-9]{0,8}$/)
     .transform(Number),
 });
+
+/**
+ * The query check as middleware, so a malformed query is 400 before anything costly runs: the
+ * upload routes mount it ahead of their limiter and multer. Handlers re-parse for the typed value.
+ */
+export function checkQuery(schema: z.ZodType): RequestHandler {
+  return (req, _res, next) => {
+    parseInput(schema, req.query);
+    next();
+  };
+}
 
 /** Parses a body, param or query; anything malformed is 400 bad-request (spec §6.4). */
 export function parseInput<S extends z.ZodType>(schema: S, value: unknown): z.output<S> {

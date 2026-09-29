@@ -1,5 +1,5 @@
 import { MODEL_VERSION, type Guide } from '@sweep/core';
-import { and, eq } from 'drizzle-orm';
+import { and, eq, type SQL } from 'drizzle-orm';
 import type { Executor } from '../db/client.js';
 import { guideVersions, type RunRow } from '../db/schema.js';
 import type { ParsedUpload } from './core-adapter.js';
@@ -13,7 +13,8 @@ export interface CurrentGuide {
   guide: Guide;
 }
 
-function currentVersionOf(run: RunRef) {
+/** WHERE clause for the run's current guide version row. */
+export function currentVersionOf(run: RunRef): SQL | undefined {
   return and(eq(guideVersions.runId, run.id), eq(guideVersions.version, run.currentVersion));
 }
 
@@ -31,6 +32,11 @@ export async function loadVersionMeta(ex: Executor, run: RunRef): Promise<{ game
   return row;
 }
 
+/**
+ * Pure read: it runs inside read-only snapshots and run-locked transactions. Routes call
+ * Renormalizer.ensureCurrentModel first, outside any transaction, so a stale model is already
+ * re-normalized here (or, if its source no longer parses, served as stored).
+ */
 export async function loadCurrentGuide(ex: Executor, run: RunRef): Promise<CurrentGuide> {
   const [row] = await ex
     .select({

@@ -13,7 +13,15 @@ const upload = multer({
   storage: multer.memoryStorage(),
   // Busboy's default is latin1; browsers send UTF-8 file names (Review Focus 1).
   defParamCharset: 'utf8',
-  limits: { fileSize: LIMITS.fileBytes, files: 1, fields: 5, parts: 7 },
+  // Text fields are a run name or a baseVersion: short names, small values.
+  limits: {
+    fileSize: LIMITS.fileBytes,
+    files: 1,
+    fields: 5,
+    parts: 7,
+    fieldSize: 1024,
+    fieldNameSize: 32,
+  },
 });
 
 /** One in-memory file in field `file` (spec §6.4). The declared content type is ignored. */

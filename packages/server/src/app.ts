@@ -3,6 +3,7 @@ import { toNodeHandler } from 'better-auth/node';
 import express, { type Express } from 'express';
 import type { Auth } from './auth.js';
 import type { Database } from './db/client.js';
+import { renormalizer, type Reparse } from './guides/renormalize.js';
 import { describeError, errorHandler } from './http/error-handler.js';
 import { ApiErrorCode, HttpError } from './http/errors.js';
 import { authRateLimit, userRateLimit } from './http/rate-limits.js';
@@ -20,6 +21,7 @@ import {
 } from './limits.js';
 import { healthRouter } from './routes/health.js';
 import { runsRouter } from './routes/runs.js';
+import { schemaRouter } from './routes/schema.js';
 
 export interface AppOptions {
   db: Database;
@@ -38,6 +40,8 @@ export interface AppOptions {
   parseTimeoutMs?: number | undefined;
   /** Test hook: the parse worker entry to run instead of src/guides/parse-worker. */
   parseWorkerUrl?: URL | undefined;
+  /** Test hook: wraps the adapter's reparse for re-normalization (tests count parses). */
+  reparse?: Reparse | undefined;
 }
 
 /**
@@ -64,12 +68,13 @@ const IMMUTABLE_ASSET = /-[A-Z0-9]{8}\.[a-z0-9]+$/;
 
 /**
  * Order: helmet, trust proxy, /api/auth (limit + Better Auth), JSON, same-origin, health,
- * session guard, per-user limit, routers, /api 404, static/SPA, errors.
+ * schema (public), session guard, per-user limit, routers, /api 404, static/SPA, errors.
  */
 export function createApp(options: AppOptions): Express {
   const { db, auth, sameOrigin, clientDistDir } = options;
   const limits: RateLimits = { ...RATE_LIMITS, ...options.rateLimits };
   const quotas: Quotas = { ...QUOTAS, ...options.quotas };
+  const parseTimeoutMs = options.parseTimeoutMs ?? PARSE_TIMEOUT_MS;
   const app = express();
   app.disable('x-powered-by');
   app.use(securityHeaders());
@@ -83,6 +88,7 @@ export function createApp(options: AppOptions): Express {
   app.use('/api', sameOriginGuard(sameOrigin));
 
   app.use('/api', healthRouter(db));
+  app.use(schemaRouter());
   app.use('/api', requireSession(auth));
   app.use('/api', userRateLimit('api', limits.api));
   app.use(
@@ -91,9 +97,11 @@ export function createApp(options: AppOptions): Express {
       db,
       quotas,
       uploadLimiter: userRateLimit('uploads', limits.uploads),
-      parseUpload: uploadParser({
-        timeoutMs: options.parseTimeoutMs ?? PARSE_TIMEOUT_MS,
+      parseUpload: uploadParser({ timeoutMs: parseTimeoutMs, workerUrl: options.parseWorkerUrl }),
+      models: renormalizer({
+        timeoutMs: parseTimeoutMs,
         workerUrl: options.parseWorkerUrl,
+        reparse: options.reparse,
       }),
     }),
   );
