@@ -9,14 +9,34 @@
       "const": 1
     },
     "game": {
-      "type": "string",
-      "minLength": 1,
-      "maxLength": 120
+      "anyOf": [
+        {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        {
+          "type": "number"
+        },
+        {
+          "type": "boolean"
+        }
+      ]
     },
     "title": {
-      "type": "string",
-      "minLength": 1,
-      "maxLength": 120
+      "anyOf": [
+        {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        {
+          "type": "number"
+        },
+        {
+          "type": "boolean"
+        }
+      ]
     },
     "categories": {
       "type": "object",
@@ -29,14 +49,34 @@
         "type": "object",
         "properties": {
           "name": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 40
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 40
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "boolean"
+              }
+            ]
           },
           "about": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 300
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 300
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "boolean"
+              }
+            ]
           },
           "tracked": {
             "type": "boolean"
@@ -67,9 +107,19 @@
             "pattern": "^[a-z][a-z0-9]*(-[a-z0-9]+)*$"
           },
           "title": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 200
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 200
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "boolean"
+              }
+            ]
           },
           "category": {
             "type": "string",
@@ -106,8 +156,18 @@
             }
           },
           "how": {
-            "type": "string",
-            "maxLength": 10000
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 10000
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "boolean"
+              }
+            ]
           },
           "exclusive": {
             "type": "string",
@@ -162,18 +222,48 @@
           "pattern": "^[a-z][a-z0-9]*(-[a-z0-9]+)*$"
         },
         "title": {
-          "type": "string",
-          "minLength": 1,
-          "maxLength": 120
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 120
+            },
+            {
+              "type": "number"
+            },
+            {
+              "type": "boolean"
+            }
+          ]
         },
         "overview": {
-          "type": "string",
-          "minLength": 1,
-          "maxLength": 500
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 500
+            },
+            {
+              "type": "number"
+            },
+            {
+              "type": "boolean"
+            }
+          ]
         },
         "walkthrough": {
-          "type": "string",
-          "maxLength": 100000
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 100000
+            },
+            {
+              "type": "number"
+            },
+            {
+              "type": "boolean"
+            }
+          ]
         },
         "requires": {
           "anyOf": [

@@ -36,6 +36,38 @@ describe('guide JSON Schema', () => {
     expect(validate(data), JSON.stringify(validate.errors)).toBe(true);
   });
 
+  const loot = { loot: { name: 'Loot', about: 'Things.' } };
+  const task = { id: 't', title: 'T', category: 'loot', windows: [{ from: 'a' }] };
+  it.each([
+    ['game: 1942', { ...base, game: 1942 }],
+    ['title: true', { ...base, title: true }],
+    [
+      'numbers and booleans in section text',
+      { ...base, sections: [{ ...leaf, title: 3.1, overview: false, walkthrough: 7 }] },
+    ],
+    [
+      'numbers and booleans in task text',
+      { ...base, categories: loot, tasks: [{ ...task, title: 42, how: true }] },
+    ],
+    [
+      'numbers and booleans in category text',
+      { ...base, categories: { loot: { name: 1, about: false } }, tasks: [task] },
+    ],
+  ])('accepts %s in plain-text fields, as the validator does', (_label, doc) => {
+    expect(validate(doc), JSON.stringify(validate.errors)).toBe(true);
+  });
+
+  it('keeps the length bounds on the string branch of plain-text fields', () => {
+    const properties = guideJsonSchema().properties as Record<string, unknown>;
+    expect(properties.game).toEqual({
+      anyOf: [
+        { type: 'string', minLength: 1, maxLength: 120 },
+        { type: 'number' },
+        { type: 'boolean' },
+      ],
+    });
+  });
+
   const nineWindows = Array.from({ length: 9 }, () => ({ from: 'a' }));
   it.each([
     ['sweep: 2', { ...base, sweep: 2 }],
@@ -51,6 +83,9 @@ describe('guide JSON Schema', () => {
     ['a bad ID', { ...base, sections: [{ ...leaf, id: 'Bad_ID' }] }],
     ['an unknown key', { ...base, sections: [{ ...leaf, titel: 'x' }] }],
     ['a bad category key', { ...base, categories: { Bad_Key: { name: 'B', about: 'b' } } }],
+    ['from: null', { ...base, categories: loot, tasks: [{ ...task, windows: [{ from: null }] }] }],
+    ['a numeric section ID', { ...base, sections: [{ ...leaf, id: 5 }] }],
+    ['an empty game', { ...base, game: '' }],
   ])('rejects %s', (_label, doc) => {
     expect(validate(doc)).toBe(false);
   });

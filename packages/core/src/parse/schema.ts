@@ -7,8 +7,19 @@ import { LIMITS } from './limits.js';
 /** Slug rule for IDs, category keys and exclusive-group names (spec §3.3). */
 export const SLUG_PATTERN = /^[a-z][a-z0-9]*(-[a-z0-9]+)*$/;
 
+const plainText = new Set<unknown>();
+/**
+ * Plain-text field schemas. YAML numbers and booleans there are kept as written before validation,
+ * so the generated JSON Schema accepts them too (ruling R9; see json-schema.ts).
+ */
+export const PLAIN_TEXT_SCHEMAS: ReadonlySet<unknown> = plainText;
+function plain<T extends z.ZodType>(schema: T): T {
+  plainText.add(schema);
+  return schema;
+}
+
 const slug = z.string().max(64).regex(SLUG_PATTERN);
-const text = (max: number) => z.string().min(1).max(max);
+const text = (max: number) => plain(z.string().min(1).max(max));
 const idList = z.array(slug).max(LIMITS.requiresIds);
 const anyOf = z.strictObject({ any: idList });
 const requires = z.union([idList, anyOf]);
@@ -21,7 +32,7 @@ const section = z
     id: slug,
     title: text(120),
     overview: text(500),
-    walkthrough: z.string().max(LIMITS.walkthroughChars).optional(),
+    walkthrough: plain(z.string().max(LIMITS.walkthroughChars)).optional(),
     requires: requires.optional(),
     spoiler: z.boolean().optional(),
     renamed_from: renamedFrom.optional(),
@@ -36,7 +47,7 @@ const task = z.strictObject({
   title: text(200),
   category: slug,
   windows: z.array(window).min(1).max(LIMITS.windowsPerTask),
-  how: z.string().max(LIMITS.howChars).optional(),
+  how: plain(z.string().max(LIMITS.howChars)).optional(),
   exclusive: slug.optional(),
   spoiler: z.boolean().optional(),
   renamed_from: renamedFrom.optional(),
