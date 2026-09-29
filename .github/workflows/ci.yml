@@ -60,6 +60,12 @@ jobs:
       - name: Test
         run: pnpm test
 
+      - name: Schema drift
+        run: pnpm schema && git diff --exit-code -- schema/
+
+      - name: Validate example guides
+        run: pnpm validate:examples
+
       - name: Build
         run: pnpm build
 

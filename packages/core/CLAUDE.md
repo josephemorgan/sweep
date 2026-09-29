@@ -7,6 +7,7 @@ Pure TypeScript: guide model, parser and validator (`@sweep/core/parse`), engine
 - `pnpm --filter @sweep/core test`: Vitest (`test/**/*.test.ts`)
 - `pnpm --filter @sweep/core typecheck`: purity check (`tsconfig.lib.json`, no Node or DOM types) + full check
 - `pnpm --filter @sweep/core build` (= root `pnpm build:core`), and `dev` for watch mode
+- `pnpm --filter @sweep/core schema` (root `pnpm schema`): regenerate `schema/`
 - `pnpm sweep validate <file> [--json]` (root script). Relative paths resolve from the directory you run it in.
 
 ## Rules
@@ -18,8 +19,11 @@ Pure TypeScript: guide model, parser and validator (`@sweep/core/parse`), engine
 - Allowed runtime deps: pure libraries only (`yaml`, a CommonMark parser, Zod 4). Add them with `pnpm --filter @sweep/core add …`.
 - Consumers import `dist/`, so rebuild after changes (`pnpm build:core`).
 
-## Scaffold stubs to replace in session A
+## Layout
 
-- `sweep validate` prints "not implemented yet" and exits 1. Implement per spec §9: `file:line:col severity code message`, `--json`, exit codes 0/1/2. Resolve file arguments against `process.env.INIT_CWD ?? process.cwd()`, because `pnpm sweep` runs from the repo root, then drop the run-from-root caveat in the root and core CLAUDE.md.
-- `Issue` (`src/model/issue.ts`) uses `null` for missing locations. Refine it if the validator needs to.
-- Add `deriveRun`, `clearImpact`, `diffGuides`, `migrateProgress` and the API DTO types to the main entry (spec §4.12). Bump `MODEL_VERSION` whenever `Guide`'s shape changes.
+- Parse phases, in order (`src/parse/`, orchestrated by `index.ts`): `text.ts` (size, decode), `container.ts` (md front matter), `yaml.ts` (syntax, `format-version`), `structure.ts` + `schema.ts` (Zod), `references.ts` (ids, references), `normalize.ts`, `graph.ts` (lineage, cycles), `windows.ts`, `container.ts` again for the md body split, `prose.ts` (warnings). Codes live in `issue-codes.ts`.
+- Engine (`src/engine/`): `structure`, `derive`, `cards`, `clear-impact`, `metrics`, `summary`.
+- Diff (`src/diff/`): `diff-guides`, `progress-moves`, `progress-kind`, `migrate-progress`.
+- Fixtures: `test/fixtures/valid/` and `test/fixtures/invalid/`. `test/parse/invalid-fixtures.test.ts` holds the table: every new error code needs a `CASES` row, every warning a `WARNING_CASES` row.
+- `pnpm schema` regenerates `schema/`; CI fails on drift.
+- The main entry must stay browser-safe; `test/entry-size.test.ts` guards it.

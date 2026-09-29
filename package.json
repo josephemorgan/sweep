@@ -18,6 +18,7 @@
     "test:repo": "vitest run",
     "e2e": "pnpm --filter @sweep/client e2e",
     "schema": "pnpm --filter @sweep/core schema",
+    "validate:examples": "bash scripts/validate-examples.sh",
     "db:generate": "pnpm --filter @sweep/server db:generate",
     "db:migrate": "pnpm --filter @sweep/server db:migrate",
     "db:studio": "pnpm --filter @sweep/server db:studio",
