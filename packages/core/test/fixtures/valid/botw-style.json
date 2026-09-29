@@ -1,0 +1,189 @@
+{
+  "formatVersion": 1,
+  "game": "The Legend of Zelda: Breath of the Wild",
+  "title": "Open-world sample",
+  "categories": [
+    {
+      "id": "shrines",
+      "name": "Shrines",
+      "about": "Shrines of Trials.",
+      "tracked": true
+    },
+    {
+      "id": "koroks",
+      "name": "Korok seeds",
+      "about": "Hidden Korok seeds.",
+      "tracked": true
+    }
+  ],
+  "sections": [
+    {
+      "id": "great-plateau",
+      "title": "Great Plateau",
+      "overview": "The tutorial plateau; earn the paraglider to leave.",
+      "walkthrough": null,
+      "requires": {
+        "all": []
+      },
+      "spoiler": false,
+      "renamedFrom": [],
+      "children": [
+        {
+          "id": "plateau-shrines",
+          "title": "Plateau shrines",
+          "overview": "Clear the four plateau shrines.",
+          "walkthrough": null,
+          "requires": {
+            "all": []
+          },
+          "spoiler": false,
+          "renamedFrom": [],
+          "children": []
+        },
+        {
+          "id": "paraglider",
+          "title": "The paraglider",
+          "overview": "Meet the old man at the Temple of Time.",
+          "walkthrough": null,
+          "requires": {
+            "all": [
+              "plateau-shrines"
+            ]
+          },
+          "spoiler": false,
+          "renamedFrom": [],
+          "children": []
+        }
+      ]
+    },
+    {
+      "id": "hyrule",
+      "title": "Hyrule",
+      "overview": "The open world. Go anywhere, in any order.",
+      "walkthrough": null,
+      "requires": {
+        "all": [
+          "great-plateau"
+        ]
+      },
+      "spoiler": false,
+      "renamedFrom": [],
+      "children": [
+        {
+          "id": "kakariko",
+          "title": "Kakariko Village",
+          "overview": "Meet Impa.",
+          "walkthrough": null,
+          "requires": {
+            "all": []
+          },
+          "spoiler": false,
+          "renamedFrom": [],
+          "children": []
+        },
+        {
+          "id": "hateno",
+          "title": "Hateno Village",
+          "overview": "Visit the Ancient Tech Lab.",
+          "walkthrough": null,
+          "requires": {
+            "all": []
+          },
+          "spoiler": false,
+          "renamedFrom": [],
+          "children": []
+        },
+        {
+          "id": "zoras-domain",
+          "title": "Zora's Domain",
+          "overview": "Help the Zora with Vah Ruta.",
+          "walkthrough": null,
+          "requires": {
+            "all": []
+          },
+          "spoiler": false,
+          "renamedFrom": [],
+          "children": []
+        },
+        {
+          "id": "hyrule-castle",
+          "title": "Hyrule Castle",
+          "overview": "Face Calamity Ganon whenever you're ready.",
+          "walkthrough": null,
+          "requires": {
+            "all": []
+          },
+          "spoiler": false,
+          "renamedFrom": [],
+          "children": []
+        }
+      ]
+    }
+  ],
+  "tasks": [
+    {
+      "id": "oman-au-shrine",
+      "title": "Oman Au Shrine",
+      "category": "shrines",
+      "how": null,
+      "windows": [
+        {
+          "from": "plateau-shrines",
+          "until": "end",
+          "home": "plateau-shrines"
+        }
+      ],
+      "exclusive": null,
+      "spoiler": false,
+      "renamedFrom": []
+    },
+    {
+      "id": "korok-hateno-rock-circle",
+      "title": "Korok: rock circle above Hateno",
+      "category": "koroks",
+      "how": null,
+      "windows": [
+        {
+          "from": "hyrule",
+          "until": "end",
+          "home": "hateno"
+        }
+      ],
+      "exclusive": null,
+      "spoiler": false,
+      "renamedFrom": []
+    },
+    {
+      "id": "korok-kakariko-pinwheel",
+      "title": "Korok: pinwheel balloons near Kakariko",
+      "category": "koroks",
+      "how": null,
+      "windows": [
+        {
+          "from": "hyrule",
+          "until": "end",
+          "home": "kakariko"
+        }
+      ],
+      "exclusive": null,
+      "spoiler": false,
+      "renamedFrom": []
+    },
+    {
+      "id": "korok-zora-waterfall",
+      "title": "Korok: top of the waterfall",
+      "category": "koroks",
+      "how": null,
+      "windows": [
+        {
+          "from": "hyrule",
+          "until": "end",
+          "home": "zoras-domain"
+        }
+      ],
+      "exclusive": null,
+      "spoiler": false,
+      "renamedFrom": []
+    }
+  ]
+}

@@ -1,0 +1,87 @@
+{
+  "formatVersion": 1,
+  "game": "Tiny Linear",
+  "title": "Tiny Linear",
+  "categories": [
+    {
+      "id": "loot",
+      "name": "Loot",
+      "about": "Things to pick up.",
+      "tracked": true
+    }
+  ],
+  "sections": [
+    {
+      "id": "start",
+      "title": "Start",
+      "overview": "The first area.",
+      "walkthrough": null,
+      "requires": {
+        "all": []
+      },
+      "spoiler": false,
+      "renamedFrom": [],
+      "children": []
+    },
+    {
+      "id": "forest",
+      "title": "Forest",
+      "overview": "The second area.",
+      "walkthrough": null,
+      "requires": {
+        "all": [
+          "start"
+        ]
+      },
+      "spoiler": false,
+      "renamedFrom": [],
+      "children": []
+    },
+    {
+      "id": "cave",
+      "title": "Cave",
+      "overview": "The third area.",
+      "walkthrough": null,
+      "requires": {
+        "all": [
+          "forest"
+        ]
+      },
+      "spoiler": false,
+      "renamedFrom": [],
+      "children": []
+    },
+    {
+      "id": "summit",
+      "title": "Summit",
+      "overview": "The last area.",
+      "walkthrough": null,
+      "requires": {
+        "all": [
+          "cave"
+        ]
+      },
+      "spoiler": false,
+      "renamedFrom": [],
+      "children": []
+    }
+  ],
+  "tasks": [
+    {
+      "id": "forest-chest",
+      "title": "Chest in the forest",
+      "category": "loot",
+      "how": null,
+      "windows": [
+        {
+          "from": "forest",
+          "until": "cave",
+          "home": "forest"
+        }
+      ],
+      "exclusive": null,
+      "spoiler": false,
+      "renamedFrom": []
+    }
+  ]
+}

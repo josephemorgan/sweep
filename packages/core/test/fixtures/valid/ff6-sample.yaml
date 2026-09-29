@@ -1,0 +1,38 @@
+sweep: 1
+game: Final Fantasy VI
+title: Relic choice sample
+categories:
+  relics:
+    name: Relics
+    about: Relics worth planning around.
+sections:
+  - id: world-of-balance
+    title: World of Balance
+    overview: The first half of the game.
+    sections:
+      - id: south-figaro
+        title: South Figaro
+        overview: Pass through the town on the way to the hideout.
+      - id: returner-hideout
+        title: Returner Hideout
+        overview: Meet Banon and hear the Returners' plan.
+      - id: lete-river
+        title: Lete River
+        overview: Ride the raft downstream with Banon.
+tasks:
+  - id: gauntlet
+    title: Gauntlet
+    category: relics
+    exclusive: banon-relic
+    spoiler: true
+    how: A Returner hands you one relic; which one depends on how you answer Banon.
+    windows:
+      - from: returner-hideout
+  - id: genji-glove
+    title: Genji Glove
+    category: relics
+    exclusive: banon-relic
+    spoiler: true
+    how: A Returner hands you one relic; which one depends on how you answer Banon.
+    windows:
+      - from: returner-hideout

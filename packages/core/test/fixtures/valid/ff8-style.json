@@ -1,0 +1,175 @@
+{
+  "formatVersion": 1,
+  "game": "Final Fantasy VIII",
+  "title": "Card sample",
+  "categories": [
+    {
+      "id": "cards",
+      "name": "Cards",
+      "about": "Triple Triad cards worth chasing.",
+      "tracked": true
+    }
+  ],
+  "sections": [
+    {
+      "id": "disc-1",
+      "title": "Disc 1",
+      "overview": "From the SeeD exam to the Timber mission.",
+      "walkthrough": null,
+      "requires": {
+        "all": []
+      },
+      "spoiler": false,
+      "renamedFrom": [],
+      "children": [
+        {
+          "id": "balamb-garden",
+          "title": "Balamb Garden",
+          "overview": "Get to class and prepare for the field exam.",
+          "walkthrough": null,
+          "requires": {
+            "all": []
+          },
+          "spoiler": false,
+          "renamedFrom": [],
+          "children": []
+        },
+        {
+          "id": "fire-cavern",
+          "title": "Fire Cavern",
+          "overview": "Obtain Ifrit before the exam.",
+          "walkthrough": null,
+          "requires": {
+            "all": [
+              "balamb-garden"
+            ]
+          },
+          "spoiler": false,
+          "renamedFrom": [],
+          "children": []
+        },
+        {
+          "id": "dollet",
+          "title": "Dollet",
+          "overview": "The SeeD field exam.",
+          "walkthrough": null,
+          "requires": {
+            "all": [
+              "fire-cavern"
+            ]
+          },
+          "spoiler": false,
+          "renamedFrom": [],
+          "children": []
+        },
+        {
+          "id": "timber",
+          "title": "Timber",
+          "overview": "Meet the Forest Owls.",
+          "walkthrough": null,
+          "requires": {
+            "all": [
+              "dollet"
+            ]
+          },
+          "spoiler": false,
+          "renamedFrom": [],
+          "children": []
+        }
+      ]
+    },
+    {
+      "id": "disc-2",
+      "title": "Disc 2",
+      "overview": "Galbadia and beyond.",
+      "walkthrough": null,
+      "requires": {
+        "all": []
+      },
+      "spoiler": false,
+      "renamedFrom": [],
+      "children": [
+        {
+          "id": "deling-city",
+          "title": "Deling City",
+          "overview": "The sorceress parade.",
+          "walkthrough": null,
+          "requires": {
+            "all": [
+              "timber"
+            ]
+          },
+          "spoiler": false,
+          "renamedFrom": [],
+          "children": []
+        }
+      ]
+    },
+    {
+      "id": "disc-3",
+      "title": "Disc 3",
+      "overview": "The Garden takes to the sea.",
+      "walkthrough": null,
+      "requires": {
+        "all": []
+      },
+      "spoiler": false,
+      "renamedFrom": [],
+      "children": [
+        {
+          "id": "garden-return",
+          "title": "Balamb Garden (Disc 3)",
+          "overview": "Explore the mobile Garden.",
+          "walkthrough": null,
+          "requires": {
+            "all": [
+              "deling-city"
+            ]
+          },
+          "spoiler": false,
+          "renamedFrom": [],
+          "children": []
+        }
+      ]
+    }
+  ],
+  "tasks": [
+    {
+      "id": "quistis-card",
+      "title": "Quistis card",
+      "category": "cards",
+      "how": "Challenge the Trepies, Quistis's fan club, in the Garden.",
+      "windows": [
+        {
+          "from": "balamb-garden",
+          "until": "dollet",
+          "home": "balamb-garden"
+        },
+        {
+          "from": "garden-return",
+          "until": "end",
+          "home": "garden-return"
+        }
+      ],
+      "exclusive": null,
+      "spoiler": false,
+      "renamedFrom": []
+    },
+    {
+      "id": "dollet-pub-card",
+      "title": "Card from the Dollet pub owner",
+      "category": "cards",
+      "how": null,
+      "windows": [
+        {
+          "from": "dollet",
+          "until": "dollet",
+          "home": "dollet"
+        }
+      ],
+      "exclusive": null,
+      "spoiler": false,
+      "renamedFrom": []
+    }
+  ]
+}

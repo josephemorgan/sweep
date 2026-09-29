@@ -1,0 +1,291 @@
+{
+  "formatVersion": 1,
+  "game": "Lantern Keep",
+  "title": "Completionist checklist",
+  "categories": [
+    {
+      "id": "story",
+      "name": "Story",
+      "about": "Main-path steps.",
+      "tracked": true
+    },
+    {
+      "id": "loot",
+      "name": "Loot",
+      "about": "Chests, hidden items and rewards.",
+      "tracked": true
+    },
+    {
+      "id": "quests",
+      "name": "Side quests",
+      "about": "Optional quests given by villagers.",
+      "tracked": true
+    },
+    {
+      "id": "lore",
+      "name": "Lore",
+      "about": "Readable books. Off by default.",
+      "tracked": false
+    }
+  ],
+  "sections": [
+    {
+      "id": "act-1",
+      "title": "Act 1",
+      "overview": "Leave the village and cross the marsh.",
+      "walkthrough": null,
+      "requires": {
+        "all": []
+      },
+      "spoiler": false,
+      "renamedFrom": [],
+      "children": [
+        {
+          "id": "village",
+          "title": "Harrow Village",
+          "overview": "Stock up and find passage across the river.",
+          "walkthrough": "## Arrival\nTalk to the elder, then buy a **lantern** from the shop.\n\n## Leaving\nYou can row back from the marsh, but not once you reach the keep.",
+          "requires": {
+            "all": []
+          },
+          "spoiler": false,
+          "renamedFrom": [],
+          "children": []
+        },
+        {
+          "id": "marsh",
+          "title": "Whisper Marsh",
+          "overview": "Follow the lantern posts to the keep.",
+          "walkthrough": "Keep to the lit path. The herb patch is north of the second post.",
+          "requires": {
+            "all": [
+              "village"
+            ]
+          },
+          "spoiler": false,
+          "renamedFrom": [],
+          "children": []
+        }
+      ]
+    },
+    {
+      "id": "act-2",
+      "title": "Act 2",
+      "overview": "Explore the keep's towers in either order.",
+      "walkthrough": null,
+      "requires": {
+        "all": []
+      },
+      "spoiler": false,
+      "renamedFrom": [],
+      "children": [
+        {
+          "id": "keep-gate",
+          "title": "Keep Gate",
+          "overview": "Open the gate and enter the courtyard.",
+          "walkthrough": null,
+          "requires": {
+            "all": [
+              "marsh"
+            ]
+          },
+          "spoiler": false,
+          "renamedFrom": [],
+          "children": []
+        },
+        {
+          "id": "east-tower",
+          "title": "East Tower",
+          "overview": "Climb the library tower.",
+          "walkthrough": null,
+          "requires": {
+            "all": [
+              "keep-gate"
+            ]
+          },
+          "spoiler": false,
+          "renamedFrom": [],
+          "children": []
+        },
+        {
+          "id": "west-tower",
+          "title": "West Tower",
+          "overview": "Climb the armory tower.",
+          "walkthrough": null,
+          "requires": {
+            "all": [
+              "keep-gate"
+            ]
+          },
+          "spoiler": false,
+          "renamedFrom": [],
+          "children": []
+        },
+        {
+          "id": "throne-room",
+          "title": "Throne Room",
+          "overview": "Confront the keeper of the lantern.",
+          "walkthrough": null,
+          "requires": {
+            "all": [
+              "east-tower",
+              "west-tower"
+            ]
+          },
+          "spoiler": true,
+          "renamedFrom": [],
+          "children": []
+        }
+      ]
+    },
+    {
+      "id": "epilogue",
+      "title": "Epilogue",
+      "overview": "Return to the village as a hero.",
+      "walkthrough": null,
+      "requires": {
+        "all": [
+          "throne-room"
+        ]
+      },
+      "spoiler": false,
+      "renamedFrom": [],
+      "children": []
+    }
+  ],
+  "tasks": [
+    {
+      "id": "ferry-passage",
+      "title": "Pay the ferryman",
+      "category": "story",
+      "how": null,
+      "windows": [
+        {
+          "from": "village",
+          "until": "village",
+          "home": "village"
+        }
+      ],
+      "exclusive": null,
+      "spoiler": false,
+      "renamedFrom": []
+    },
+    {
+      "id": "village-chest",
+      "title": "Chest behind the mill",
+      "category": "loot",
+      "how": "Push the crate at the back of the mill aside.",
+      "windows": [
+        {
+          "from": "village",
+          "until": "marsh",
+          "home": "village"
+        }
+      ],
+      "exclusive": null,
+      "spoiler": false,
+      "renamedFrom": []
+    },
+    {
+      "id": "lost-cat",
+      "title": "Find the elder's cat",
+      "category": "quests",
+      "how": "The cat hides in the village well. Lower the bucket.",
+      "windows": [
+        {
+          "from": "village",
+          "until": "village",
+          "home": "village"
+        },
+        {
+          "from": "epilogue",
+          "until": "end",
+          "home": "epilogue"
+        }
+      ],
+      "exclusive": null,
+      "spoiler": false,
+      "renamedFrom": []
+    },
+    {
+      "id": "marsh-herbs",
+      "title": "Marsh herb patch",
+      "category": "loot",
+      "how": null,
+      "windows": [
+        {
+          "from": "marsh",
+          "until": "end",
+          "home": "marsh"
+        }
+      ],
+      "exclusive": null,
+      "spoiler": false,
+      "renamedFrom": []
+    },
+    {
+      "id": "keep-history",
+      "title": "Book: A History of the Keep",
+      "category": "lore",
+      "how": null,
+      "windows": [
+        {
+          "from": "act-2",
+          "until": "end",
+          "home": "east-tower"
+        }
+      ],
+      "exclusive": null,
+      "spoiler": false,
+      "renamedFrom": []
+    },
+    {
+      "id": "sunblade",
+      "title": "Sunblade",
+      "category": "loot",
+      "how": "Take it from the armory rack. The other item vanishes.",
+      "windows": [
+        {
+          "from": "west-tower",
+          "until": "throne-room",
+          "home": "west-tower"
+        }
+      ],
+      "exclusive": "armory-reward",
+      "spoiler": false,
+      "renamedFrom": []
+    },
+    {
+      "id": "moonshield",
+      "title": "Moonshield",
+      "category": "loot",
+      "how": "Take it from the armory rack. The other item vanishes.",
+      "windows": [
+        {
+          "from": "west-tower",
+          "until": "throne-room",
+          "home": "west-tower"
+        }
+      ],
+      "exclusive": "armory-reward",
+      "spoiler": false,
+      "renamedFrom": []
+    },
+    {
+      "id": "keepers-lantern",
+      "title": "The keeper's lantern",
+      "category": "loot",
+      "how": "After the fight, examine the throne.",
+      "windows": [
+        {
+          "from": "throne-room",
+          "until": "throne-room",
+          "home": "throne-room"
+        }
+      ],
+      "exclusive": null,
+      "spoiler": true,
+      "renamedFrom": []
+    }
+  ]
+}
