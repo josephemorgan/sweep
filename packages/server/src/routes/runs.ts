@@ -1,4 +1,4 @@
-import type { RunSummaryDto } from '@sweep/core';
+import { setCleared, setPin, setTaskState, setTracked, type RunSummaryDto } from '@sweep/core';
 import { and, desc, eq } from 'drizzle-orm';
 import { Router } from 'express';
 import type { Database } from '../db/client.js';
@@ -7,9 +7,19 @@ import { loadCurrentGuide, loadVersionMeta } from '../guides/store.js';
 import { ApiErrorCode, HttpError } from '../http/errors.js';
 import { loadRun } from '../http/load-run.js';
 import { getRun, getUser } from '../http/locals.js';
-import { noQuery, parseInput, renameRunBody } from '../http/validate.js';
+import {
+  idSchema,
+  noQuery,
+  parseInput,
+  renameRunBody,
+  setCategoryBody,
+  setPinBody,
+  setSectionBody,
+  setTaskBody,
+} from '../http/validate.js';
 import { buildPayload, toRunDto } from '../runs/dto.js';
-import { readProgress } from '../runs/progress-store.js';
+import { mutateProgress, readProgress } from '../runs/progress-store.js';
+import { requireId } from '../runs/require-id.js';
 import { runSummaryStats } from '../runs/summary-stats.js';
 
 export interface RunsRouterOptions {
@@ -75,6 +85,46 @@ export function runsRouter({ db }: RunsRouterOptions): Router {
   router.delete('/runs/:runId', async (req, res) => {
     parseInput(noQuery, req.query);
     await db.delete(runs).where(eq(runs.id, getRun(res).id));
+    res.status(204).end();
+  });
+
+  router.put('/runs/:runId/sections/:sectionId', async (req, res) => {
+    parseInput(noQuery, req.query);
+    const sectionId = parseInput(idSchema, req.params['sectionId']);
+    const { cleared } = parseInput(setSectionBody, req.body);
+    const run = getRun(res);
+    await requireId(db, run, 'leaves', sectionId);
+    // setCleared also clears the pin when the pinned leaf is cleared (spec §6.2).
+    await mutateProgress(db, run.id, (p) => setCleared(p, sectionId, cleared));
+    res.status(204).end();
+  });
+
+  router.put('/runs/:runId/pin', async (req, res) => {
+    parseInput(noQuery, req.query);
+    const { sectionId } = parseInput(setPinBody, req.body);
+    const run = getRun(res);
+    if (sectionId !== null) await requireId(db, run, 'leaves', sectionId);
+    await mutateProgress(db, run.id, (p) => setPin(p, sectionId));
+    res.status(204).end();
+  });
+
+  router.put('/runs/:runId/tasks/:taskId', async (req, res) => {
+    parseInput(noQuery, req.query);
+    const taskId = parseInput(idSchema, req.params['taskId']);
+    const { state } = parseInput(setTaskBody, req.body);
+    const run = getRun(res);
+    await requireId(db, run, 'tasks', taskId);
+    await mutateProgress(db, run.id, (p) => setTaskState(p, taskId, state));
+    res.status(204).end();
+  });
+
+  router.put('/runs/:runId/categories/:categoryId', async (req, res) => {
+    parseInput(noQuery, req.query);
+    const categoryId = parseInput(idSchema, req.params['categoryId']);
+    const { tracked } = parseInput(setCategoryBody, req.body);
+    const run = getRun(res);
+    await requireId(db, run, 'categories', categoryId);
+    await mutateProgress(db, run.id, (p) => setTracked(p, categoryId, tracked));
     res.status(204).end();
   });
 
