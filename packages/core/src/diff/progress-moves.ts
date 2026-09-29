@@ -1,5 +1,6 @@
 import type { RunProgress } from '../model/progress.js';
-import { ProgressKind, type ProgressMigration } from './diff-guides.js';
+import type { ProgressMigration } from './diff-guides.js';
+import { ProgressKind } from './progress-kind.js';
 
 interface Rename {
   from: string;

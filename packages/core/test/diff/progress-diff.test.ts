@@ -192,6 +192,27 @@ tasks: []
     expect(progressToDto(migrateProgress(p, d))).toEqual(progressToDto(p));
   });
 
+  it('never overwrites existing progress when applying a stale diff', () => {
+    const stale = diffGuides(
+      OLD,
+      RENAMED,
+      progress({ cleared: ['b'], pin: 'b', tasks: { t: 'done' } }),
+    );
+    const p = progress({
+      cleared: ['b', 'bee'],
+      pin: 'a',
+      tasks: { t: 'done', tee: 'dont-care' },
+    });
+    const moved = migrateProgress(p, stale);
+    expect(progressToDto(moved)).toEqual(progressToDto(p));
+  });
+
+  it('keeps the old cleared entry when the new ID is already cleared', () => {
+    const stale = diffGuides(OLD, RENAMED, progress({ cleared: ['b'] }));
+    const p = progress({ cleared: ['b', 'bee'] });
+    expect(progressToDto(migrateProgress(p, stale)).cleared).toEqual(['b', 'bee']);
+  });
+
   it('restores progress whose ID comes back', () => {
     const old = guide(`sections:
   - { id: a, title: A, overview: o }

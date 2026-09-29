@@ -1,6 +1,9 @@
 import { END, type Guide, type Requires, type Section } from '../model/guide.js';
 import type { RunProgress } from '../model/progress.js';
+import { ProgressKind } from './progress-kind.js';
 import { progressMoves } from './progress-moves.js';
+
+export { ProgressKind };
 
 export interface Edited {
   id: string;
@@ -17,14 +20,6 @@ export interface KindDiff {
   edited: Edited[];
   renamed: Renamed[];
 }
-
-export const ProgressKind = {
-  Cleared: 'cleared',
-  Pin: 'pin',
-  Task: 'task',
-  Tracked: 'tracked',
-} as const;
-export type ProgressKind = (typeof ProgressKind)[keyof typeof ProgressKind];
 
 export interface ProgressRef {
   kind: ProgressKind;
