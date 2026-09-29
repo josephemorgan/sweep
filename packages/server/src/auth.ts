@@ -33,6 +33,12 @@ function buildAuth({ db, secret, baseURL, signupEnabled }: AuthOptions) {
     // Our own express-rate-limit limiter covers /api/auth (spec §6.4); one limiter, one policy.
     rateLimit: { enabled: false },
     telemetry: { enabled: false },
+    // Better Auth's own logging can print SQL and params (a failed query's message embeds both:
+    // emails, session tokens, password hashes). Silence its logger, and rethrow unexpected errors
+    // so the handler in app.ts logs them through describeError instead of better-call's
+    // console.error (which prints the raw error).
+    logger: { disabled: true },
+    onAPIError: { throw: true },
     // Defaults already give httpOnly + SameSite=Lax. Secure follows the scheme explicitly, so
     // NODE_ENV=production on http://localhost doesn't produce cookies the browser drops.
     // Explicit false: Better Auth otherwise skips its origin check when NODE_ENV=test.

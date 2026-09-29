@@ -1,6 +1,13 @@
 import request from 'supertest';
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { TEST_PASSWORD, createTestContext, type TestContext } from './helpers/context.js';
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
+import { createDb } from '../src/db/client.js';
+import {
+  TEST_ORIGIN,
+  TEST_PASSWORD,
+  createTestContext,
+  offlineApp,
+  type TestContext,
+} from './helpers/context.js';
 
 function sessionCookie(res: { headers: Record<string, unknown> }): string {
   const cookies = (res.headers['set-cookie'] ?? []) as unknown as string[];
@@ -97,5 +104,33 @@ describe('Better Auth over https', () => {
     expect(cookie).toMatch(/;\s*Secure/i);
     expect(cookie).toMatch(/HttpOnly/i);
     expect(cookie).toMatch(/SameSite=Lax/i);
+  });
+});
+
+describe('Better Auth logging', () => {
+  it('never logs SQL, params, emails or passwords when the database is down', async () => {
+    const dead = createDb('postgres://sweep:sweep@127.0.0.1:1/sweep');
+    const spies = (['error', 'warn', 'log', 'info'] as const).map((m) =>
+      vi.spyOn(console, m).mockImplementation(() => undefined),
+    );
+    try {
+      const email = 'leak-check@example.com';
+      const password = 'leak-check-password-999';
+      const res = await request(offlineApp(dead.db))
+        .post('/api/auth/sign-in/email')
+        .set('Origin', TEST_ORIGIN)
+        .send({ email, password });
+      expect(res.status).toBeGreaterThanOrEqual(500);
+      const logged = spies
+        .flatMap((s) => s.mock.calls)
+        .map((c) => c.map(String).join(' '))
+        .join('\n');
+      for (const secret of ['Failed query', 'params:', email, password]) {
+        expect(logged).not.toContain(secret);
+      }
+    } finally {
+      spies.forEach((s) => s.mockRestore());
+      await dead.pool.end();
+    }
   });
 });

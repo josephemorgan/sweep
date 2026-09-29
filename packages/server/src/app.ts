@@ -3,7 +3,7 @@ import { toNodeHandler } from 'better-auth/node';
 import express, { type Express } from 'express';
 import type { Auth } from './auth.js';
 import type { Database } from './db/client.js';
-import { errorHandler } from './http/error-handler.js';
+import { describeError, errorHandler } from './http/error-handler.js';
 import { ApiErrorCode, HttpError } from './http/errors.js';
 import { requireSession } from './http/require-session.js';
 import { JSON_BODY_LIMIT_BYTES } from './limits.js';
@@ -16,6 +16,24 @@ export interface AppOptions {
   clientDistDir?: string | undefined;
 }
 
+/**
+ * Better Auth's handler with unexpected errors (auth.ts sets onAPIError.throw) logged through
+ * describeError, so SQL and params never reach the logs, and answered as our JSON 500.
+ */
+function safeAuthHandler(auth: Auth): (request: Request) => Promise<Response> {
+  return async (request) => {
+    try {
+      return await auth.handler(request);
+    } catch (err) {
+      console.error(describeError(err));
+      return Response.json(
+        { error: { code: ApiErrorCode.Internal, message: 'Internal server error.' } },
+        { status: 500 },
+      );
+    }
+  };
+}
+
 const NO_CACHE_FILES = new Set(['index.html', 'ngsw-worker.js', 'ngsw.json']);
 
 export function createApp(options: AppOptions): Express {
@@ -24,7 +42,7 @@ export function createApp(options: AppOptions): Express {
   app.disable('x-powered-by');
 
   // Better Auth reads the raw request stream, so it mounts before express.json().
-  app.all('/api/auth/*splat', toNodeHandler(auth));
+  app.all('/api/auth/*splat', toNodeHandler(safeAuthHandler(auth)));
   app.use(express.json({ limit: JSON_BODY_LIMIT_BYTES }));
 
   app.use('/api', healthRouter(db));
