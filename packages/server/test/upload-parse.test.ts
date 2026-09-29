@@ -6,6 +6,8 @@ import { CRASH_WORKER_URL, nextWorker } from './helpers/workers.js';
 
 const NESTED = Buffer.from(deeplyNestedMd());
 const TINY = Buffer.from(TINY_YAML);
+// Slow through depth (over 10 s to parse in full), so it hits the context's budget, not a short one.
+const SLOW = Buffer.from(deeplyNestedMd(10_000));
 
 /** Spec §6.4: uploads parse in a worker, with a time budget and one parse per user at a time. */
 describe('upload parsing in a worker (spec §6.4)', () => {
@@ -20,42 +22,46 @@ describe('upload parsing in a worker (spec §6.4)', () => {
       await ctx.close();
     });
 
-    it.each([
-      ['create', '/api/runs'],
-      ['dry run', '/api/runs?dryRun=true'],
-    ])(
-      '%s: a parse over budget is 422 with one limit issue, fast, writing nothing',
-      async (_, url) => {
-        const before = await countRows(ctx.db);
-        const next = nextWorker();
-        const started = performance.now();
-        const res = await ann.agent.post(url).attach('file', NESTED, 'slow.md');
-        // The full parse takes well over 10 s: only terminating the worker answers this fast.
-        expect(performance.now() - started).toBeLessThan(3_000);
-        expect(res.status).toBe(422);
-        expect(res.body).toEqual({
-          error: {
-            code: 'invalid-guide',
-            message: 'The guide took too long to check.',
-            issues: [
-              {
-                severity: 'error',
-                code: 'limit',
-                message: 'the guide took too long to parse (over 0.2 s)',
-                file: null,
-                line: null,
-                column: null,
-                path: null,
-              },
-            ],
-          },
-        });
-        await (
-          await next
-        ).exited;
-        expect(await countRows(ctx.db)).toEqual(before);
-      },
-    );
+    const LIMIT_ISSUE = {
+      severity: 'error',
+      code: 'limit',
+      message: 'the guide took too long to parse (over 0.2 s)',
+      file: null,
+      line: null,
+      column: null,
+      path: null,
+    };
+
+    it('create: a parse over budget is 422 with one limit issue, fast, writing nothing', async () => {
+      const before = await countRows(ctx.db);
+      const next = nextWorker();
+      const started = performance.now();
+      const res = await ann.agent.post('/api/runs').attach('file', NESTED, 'slow.md');
+      // The full parse takes well over 10 s: only terminating the worker answers this fast.
+      expect(performance.now() - started).toBeLessThan(3_000);
+      expect(res.status).toBe(422);
+      expect(res.body).toEqual({
+        error: { code: 'invalid-guide', message: 'The guide has errors.', issues: [LIMIT_ISSUE] },
+      });
+      await (
+        await next
+      ).exited;
+      expect(await countRows(ctx.db)).toEqual(before);
+    });
+
+    it('dry run: a parse over budget is 200 with one limit issue and no summary, writing nothing', async () => {
+      const before = await countRows(ctx.db);
+      const next = nextWorker();
+      const started = performance.now();
+      const res = await ann.agent.post('/api/runs?dryRun=true').attach('file', NESTED, 'slow.md');
+      expect(performance.now() - started).toBeLessThan(3_000);
+      expect(res.status).toBe(200);
+      expect(res.body).toEqual({ issues: [LIMIT_ISSUE], summary: null });
+      await (
+        await next
+      ).exited;
+      expect(await countRows(ctx.db)).toEqual(before);
+    });
   });
 
   describe('one parse per user', () => {
@@ -63,7 +69,7 @@ describe('upload parsing in a worker (spec §6.4)', () => {
     let ann: SignedIn;
     let bob: SignedIn;
     beforeAll(async () => {
-      ctx = await createTestContext({ parseTimeoutMs: 2_000 });
+      ctx = await createTestContext({ parseTimeoutMs: 6_000 });
       ann = await ctx.signedInAgent('ann@example.com');
       bob = await ctx.signedInAgent('bob@example.com');
     });
@@ -75,7 +81,7 @@ describe('upload parsing in a worker (spec §6.4)', () => {
       const next = nextWorker();
       const first = ann.agent
         .post('/api/runs')
-        .attach('file', NESTED, 'slow.md')
+        .attach('file', SLOW, 'slow.md')
         .then((r) => r);
       await next; // Ann's slow parse is running.
 
@@ -96,7 +102,7 @@ describe('upload parsing in a worker (spec §6.4)', () => {
       expect((await first).status).toBe(422); // over budget
       const again = await ann.agent.post('/api/runs').attach('file', TINY, 'tiny.yaml');
       expect(again.status).toBe(201);
-    });
+    }, 30_000);
   });
 
   describe('client abort', () => {

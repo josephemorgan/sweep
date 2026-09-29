@@ -1234,7 +1234,7 @@ Write endpoints check that the ID exists and has the right kind in the **current
   - Every body, param and query is schema-validated.
   - ID params must match the slug regex.
   - Uploads are a single file of 2 MiB or less, held in memory, UTF-8, with a `.yaml`, `.yml` or `.md` extension. The declared content type is ignored.
-- **Parser hardening:** YAML follows §3.5 (alias cap, no custom tags) and the limits in §3.7. The size limits don't bound CPU time: the Markdown parser is superlinear on deeply nested lists and containers. So uploads are parsed off the main thread, in a `worker_thread` with a configurable time budget of a few seconds and at most one parse per user at a time. A parse that runs out of time is terminated, and the request fails with 422 and a single `limit` issue.
+- **Parser hardening:** YAML follows §3.5 (alias cap, no custom tags) and the limits in §3.7. The size limits don't bound CPU time: the Markdown parser is superlinear on deeply nested lists and containers. So uploads are parsed off the main thread, in a `worker_thread` with a configurable time budget of a few seconds and at most one parse per user at a time. A parse that runs out of time is terminated and reported as a single `limit` issue, in the same response an invalid guide gets at that endpoint (a dry run answers 200 with the issue; create and apply answer 422).
 - **Prose rendering (client):**
   - Markdown is rendered with raw HTML disabled, images disabled and a link-scheme allowlist.
   - The output then goes through **DOMPurify** before being bound. Angular's sanitizer runs as a further layer.

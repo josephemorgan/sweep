@@ -61,7 +61,7 @@ export type UploadParser = (req: Request, res: Response) => Promise<ParsedUpload
 /**
  * Parses uploads in a worker with a time budget, one parse per user at a time (spec §6.4).
  * A second upload while the user's parse runs is refused with 429, never queued. The slot is
- * freed once the parse settles: done, over budget (422 with the single `limit` issue), failed
+ * freed once the parse settles: done, over budget (the result is the single `limit` issue, answered like any invalid guide), failed
  * (500), or stopped because the client went away. On abort the worker is terminated rather than
  * left to finish, so closing requests can't stack up parses past the one-per-user cap.
  */
@@ -89,17 +89,10 @@ export function uploadParser(options: UploadParserOptions): UploadParser {
         ),
       );
     };
-    res.once('close', onClose);
+    if (res.closed || req.socket.destroyed) onClose();
+    else res.once('close', onClose);
     try {
       const upload = await parseUpload(file, { ...options, signal: aborter.signal });
-      if (upload.timedOut) {
-        throw new HttpError(
-          422,
-          ApiErrorCode.InvalidGuide,
-          'The guide took too long to check.',
-          upload.result.issues,
-        );
-      }
       return upload;
     } finally {
       res.off('close', onClose);
