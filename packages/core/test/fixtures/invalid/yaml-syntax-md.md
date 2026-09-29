@@ -1,0 +1,33 @@
+---
+# yaml-syntax: an unquoted title contains ": " (in the front matter)
+sweep: 1
+game: Tiny Linear
+categories:
+  loot:
+    name: Loot
+    about: Things to pick up.
+sections:
+  - id: start
+    title: Start
+    overview: The first area.
+  - id: forest
+    title: Forest: Deep
+    overview: The second area.
+  - id: cave
+    title: Cave
+    overview: The third area.
+  - id: summit
+    title: Summit
+    overview: The last area.
+tasks:
+  - id: forest-chest
+    title: Chest in the forest
+    category: loot
+    windows:
+      - from: forest
+        until: cave
+---
+
+# forest
+
+Walk north.

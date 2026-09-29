@@ -5,6 +5,7 @@ import { splitFrontMatter } from './container.js';
 import { ErrorCode, NOT_IMPLEMENTED } from './issue-codes.js';
 import { issue, sortIssues } from './issues.js';
 import { readSource } from './text.js';
+import { parseYamlSource } from './yaml.js';
 
 export { ErrorCode, NOT_IMPLEMENTED, WarningCode } from './issue-codes.js';
 export type { IssueCode } from './issue-codes.js';
@@ -30,15 +31,22 @@ export function parseGuide(files: GuideFiles): ParseResult {
   const { source, issues: textIssues } = readSource(files);
   if (source === undefined) return { issues: sortIssues(textIssues) };
   // Phase 2: container.
-  if (source.file === 'guide.md' && splitFrontMatter(source.text) === null) {
-    const message = 'a .md guide must start with a closed --- front-matter block';
-    return {
-      issues: [
-        issue('error', ErrorCode.MdFrontMatter, message, source.file, { line: 1, column: 1 }, null),
-      ],
-    };
+  let yamlText = source.text;
+  let lineOffset = 0;
+  if (source.file === 'guide.md') {
+    const split = splitFrontMatter(source.text);
+    if (split === null) {
+      const message = 'a .md guide must start with a closed --- front-matter block';
+      const at = { line: 1, column: 1 };
+      return { issues: [issue('error', ErrorCode.MdFrontMatter, message, source.file, at, null)] };
+    }
+    yamlText = split.frontMatter;
+    lineOffset = split.frontMatterLine - 1;
   }
-  // Later phases (YAML onwards) arrive in the following tasks.
+  // Phase 3: YAML and format version.
+  const { parsed, issues: yamlIssues } = parseYamlSource(yamlText, source.file, lineOffset);
+  if (parsed === undefined) return { issues: sortIssues(yamlIssues) };
+  // Later phases (structure onwards) arrive in the following tasks.
   return { issues: [issue('error', NOT_IMPLEMENTED, NOT_IMPLEMENTED_MESSAGE, null, null, null)] };
 }
 
