@@ -44,6 +44,8 @@ const HEADING_MESSAGE =
 export interface BodySections {
   /** Raw text under each section's heading, by section ID. Normalization trims it. */
   walkthroughs: Map<string, string>;
+  /** File line of each walkthrough's first line (its heading's line), by section ID. */
+  walkthroughLines: Map<string, number>;
   issues: Issue[];
 }
 
@@ -94,6 +96,7 @@ export function splitBody(
     }
   }
   const walkthroughs = new Map<string, string>();
+  const walkthroughLines = new Map<string, number>();
   const seen = new Set<string>();
   points.forEach((point, i) => {
     let error: Issue | null = null;
@@ -120,6 +123,7 @@ export function splitBody(
       issues.push(issue('error', ErrorCode.Limit, message, file, at(point.line), null));
     }
     walkthroughs.set(point.id, text);
+    walkthroughLines.set(point.id, at(point.line).line);
   });
   const preamble = body.slice(0, points[0]?.start ?? body.length).split('\n');
   const first = preamble.findIndex((line) => line.trim() !== '');
@@ -127,7 +131,7 @@ export function splitBody(
     const message = 'text before the first heading belongs to no section and is ignored';
     issues.push(issue('warning', WarningCode.MdPreamble, message, file, at(first + 1), null));
   }
-  return { walkthroughs, issues };
+  return { walkthroughs, walkthroughLines, issues };
 }
 
 /** Every heading in the tree, in document order. */

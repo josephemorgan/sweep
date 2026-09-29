@@ -1,10 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import {
-  parseGuide,
-  type ErrorCode,
-  type GuideFiles,
-  type WarningCode,
-} from '../../src/parse/index.js';
+import { parseGuide, ErrorCode, WarningCode, type GuideFiles } from '../../src/parse/index.js';
 import { readFixture } from '../helpers.js';
 
 interface InvalidCase {
@@ -599,6 +594,29 @@ const WARNING_CASES: WarningCase[] = [
     column: 1,
     path: null,
   },
+  {
+    name: 'raw HTML in a task how',
+    files: { 'guide.yaml': readFixture('valid/md-html.yaml') },
+    code: 'md-html',
+    line: 16,
+    column: 10,
+    path: 'tasks[0].how',
+  },
+  {
+    name: 'raw HTML in a markdown body section',
+    files: { 'guide.md': readFixture('valid/md-html-body.md') },
+    code: 'md-html',
+    line: 12,
+    column: 5,
+  },
+  {
+    name: 'image in a walkthrough',
+    files: { 'guide.yaml': readFixture('valid/md-image.yaml') },
+    code: 'md-image',
+    line: 8,
+    column: 18,
+    path: 'sections[0].walkthrough',
+  },
 ];
 
 describe.each(WARNING_CASES)('$name', (c) => {
@@ -615,5 +633,17 @@ describe.each(WARNING_CASES)('$name', (c) => {
         ...(c.path !== undefined ? { path: c.path } : {}),
       }),
     );
+  });
+});
+
+describe('catalogue completeness (spec §3.6)', () => {
+  it('has an invalid-fixture row for every error code', () => {
+    const covered = new Set<string>(CASES.map((c) => c.code));
+    expect(Object.values(ErrorCode).filter((code) => !covered.has(code))).toEqual([]);
+  });
+
+  it('has a warning row for every warning code', () => {
+    const covered = new Set<string>(WARNING_CASES.map((c) => c.code));
+    expect(Object.values(WarningCode).filter((code) => !covered.has(code))).toEqual([]);
   });
 });

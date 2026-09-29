@@ -1,0 +1,8 @@
+# md-image (warning): an image in a section's walkthrough
+sweep: 1
+game: Tiny Linear
+sections:
+  - id: start
+    title: Start
+    overview: The first area.
+    walkthrough: "![map](m.png)"

@@ -5,6 +5,8 @@ import { splitBody, splitFrontMatter } from './container.js';
 import { checkGraph } from './graph.js';
 import { ErrorCode } from './issue-codes.js';
 import { issue, sortIssues } from './issues.js';
+import type { Locator, PathSegment } from './locate.js';
+import { checkProse } from './prose.js';
 import { normalize } from './normalize.js';
 import { checkReferences } from './references.js';
 import type { RawGuide } from './schema.js';
@@ -68,6 +70,7 @@ export function parseGuide(files: GuideFiles): ParseResult {
   // Phase 6: the `.md` body (needs the raw section IDs), then normalize. Body errors don't block
   // normalization, but they do block `guide`.
   let bodyWalkthroughs = new Map<string, string>();
+  let bodyLines = new Map<string, number>();
   if (bodyStart !== null) {
     const ids = new Set<string>();
     const inline = new Set<string>();
@@ -80,6 +83,7 @@ export function parseGuide(files: GuideFiles): ParseResult {
     const taskIds = new Set((raw.tasks ?? []).map((task) => task.id));
     const body = splitBody(bodyStart.body, bodyStart.line, ids, inline, taskIds);
     bodyWalkthroughs = body.walkthroughs;
+    bodyLines = body.walkthroughLines;
     issues.push(...body.issues);
   }
   const { guide, sources } = normalize(raw, bodyWalkthroughs);
@@ -87,6 +91,35 @@ export function parseGuide(files: GuideFiles): ParseResult {
   issues.push(...checkGraph(guide, sources, source.file, parsed.locator));
   // Phase 8: windows. Independent of the requires graph, so it runs after graph errors too.
   issues.push(...checkWindows(guide, sources, source.file, parsed.locator));
+  // Phase 10: prose warnings, on the source text (not the trimmed model).
+  issues.push(...checkAllProse(raw, bodyWalkthroughs, bodyLines, source.file, parsed.locator));
   const hasErrors = issues.some((i) => i.severity === 'error');
   return { guide: hasErrors ? undefined : guide, issues: sortIssues(issues) };
+}
+
+/** Runs `checkProse` over every section `walkthrough` and task `how` (YAML fields and `.md` bodies). */
+function checkAllProse(
+  raw: RawGuide,
+  bodyWalkthroughs: Map<string, string>,
+  bodyLines: Map<string, number>,
+  file: string,
+  locator: Locator,
+): Issue[] {
+  const issues: Issue[] = [];
+  const field = (text: string | undefined, path: PathSegment[]): void => {
+    if (text === undefined) return;
+    issues.push(...checkProse(text, { node: locator.value(path) }, file, path));
+  };
+  const visit = (section: RawGuide['sections'][number], path: PathSegment[]): void => {
+    field(section.walkthrough, [...path, 'walkthrough']);
+    const bodyLine = bodyLines.get(section.id);
+    const body = bodyWalkthroughs.get(section.id);
+    if (body !== undefined && bodyLine !== undefined) {
+      issues.push(...checkProse(body, { bodyLine }, file, null));
+    }
+    (section.sections ?? []).forEach((child, i) => visit(child, [...path, 'sections', i]));
+  };
+  raw.sections.forEach((section, i) => visit(section, ['sections', i]));
+  (raw.tasks ?? []).forEach((task, i) => field(task.how, ['tasks', i, 'how']));
+  return issues;
 }
