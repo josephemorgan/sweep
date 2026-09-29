@@ -7,10 +7,13 @@ const repoRoot = fileURLToPath(new URL('..', import.meta.url));
 const read = (path: string): string => readFileSync(repoRoot + path, 'utf8');
 const doc = read('docs/guide-format.md');
 
-/** Backticked codes in the first column of the table under `### <heading>`. */
+/** Backticked codes in the first column of the table under `## Validation` > `### <heading>`. */
 function codesUnder(heading: string): string[] {
-  const start = doc.indexOf(`\n### ${heading}\n`);
-  if (start < 0) throw new Error(`missing "### ${heading}" in docs/guide-format.md`);
+  const validation = doc.indexOf('\n## Validation\n');
+  if (validation < 0) throw new Error('missing "## Validation" in docs/guide-format.md');
+  const start = doc.indexOf(`\n### ${heading}\n`, validation);
+  if (start < 0)
+    throw new Error(`missing "### ${heading}" under "## Validation" in docs/guide-format.md`);
   const rest = doc.slice(start + heading.length + 6);
   const end = rest.search(/\n#{1,3} /);
   const section = end < 0 ? rest : rest.slice(0, end);
@@ -34,6 +37,12 @@ describe('docs/guide-format.md stays in sync with core (spec §9)', () => {
 
   it('lists exactly the warning codes core defines', () => {
     expect(codesUnder('Warnings').sort()).toEqual(Object.values(WarningCode).sort());
+  });
+
+  it('follows every embed marker directly with a fence', () => {
+    const markers = doc.match(/^<!-- (file|from): /gm) ?? [];
+    expect(markedBlocks().length).toBeGreaterThan(0);
+    expect(markedBlocks().length, 'markers not directly followed by a fence').toBe(markers.length);
   });
 
   it('embeds example guides byte-for-byte', () => {

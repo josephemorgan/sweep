@@ -120,7 +120,7 @@ Sections, tasks, categories and exclusive groups are named by IDs.
 - **Reserved:** `end` can't be a section or task ID (`id-reserved`). It's the special `until` value that means "never closes".
 - **Flat and bare.** IDs are unique within their namespace across the whole guide, and never paths. Write `west-tower`, never `act-2/west-tower` (that's `id-format`). Nesting doesn't namespace IDs.
 
-IDs start with a letter so YAML never reads them as numbers. The slugs `true`, `false` and `null` are still read by YAML as a boolean or null, and fail validation. Pick another ID, or quote it (`id: "true"`).
+IDs start with a letter so YAML never reads them as numbers. The slugs `true`, `false` and `null` are still read by YAML as a boolean or null, and fail validation. Pick another ID, or quote it (`id: "true"`). Any non-string in an ID or reference field (`id`, `category`, `exclusive`, `from`, `until`, `home`, `requires` entries, `renamed_from` entries) is a `type` error. The validator doesn't convert these to strings. The message reads roughly (provisional wording): "`from` must be a section ID (a string); YAML read `null` as null, so quote it: `from: "null"`".
 
 ## Field reference
 
@@ -165,7 +165,7 @@ IDs start with a letter so YAML never reads them as numbers. The slugs `true`, `
 | `category` | category ID | yes | none | Must be defined in `categories`. |
 | `windows` | list of window | yes | none | 1–8 windows, in route order, not overlapping. |
 | `how` | Markdown | no | none | Up to 10,000 characters. Revealed by tapping the title. |
-| `exclusive` | slug | no | none | Exclusive-group name. Every group needs at least 2 tasks. |
+| `exclusive` | slug | no | none | Exclusive-group name. Every exclusive group needs at least 2 tasks. |
 | `spoiler` | boolean | no | `false` | See [Spoilers](#spoilers). |
 | `renamed_from` | slug or list of slugs | no | `[]` | Previous IDs of this task. |
 
@@ -221,7 +221,7 @@ Two graph errors:
 
 A task has 1–8 **windows**. Each one is a range of the game in which the task can be done: `{from, until, home}`.
 
-- **A window opens when `from` is reached.** A leaf is reached when it's unlocked or cleared. A group is reached as soon as any leaf in it is reached.
+- **A window opens when `from` is reached.** A leaf is reached when it's unlocked or cleared. When `from` names a group, the window opens as soon as **any** leaf in that group is reached (unlocked or cleared), not only the group's first leaf in route order.
 - **A window closes when `until` is cleared.** For a group, that's when every leaf in it is cleared. If `until` is cleared before `from` is reached (possible in non-linear play), the window is closed.
 - **Closure is event-based.** A window closes when the user clears `until`, not when their position in route order passes it. That stays correct in non-linear games, where sections are visited in any order. Clearing a leaf is the moment Sweep warns about what it closes.
 
@@ -253,7 +253,7 @@ windows:
 
 `home` is the leaf whose card shows the task's checkbox for that window. It defaults to the first leaf of `from`.
 
-**Why `home` exists:** in Breath of the Wild, hundreds of tasks become doable the moment you leave the Great Plateau. With `from: hyrule` and no `home`, all of them would land on the first open-world card. Setting `home` per window puts each task on the card of the region where it's actually done, while `from` and `until` still say when it's available. Tasks that are open anywhere show up in the NOW sheet regardless of `home`.
+**Why `home` exists:** in Breath of the Wild, hundreds of tasks become doable the moment you leave the Great Plateau. With `from: hyrule` and no `home`, all of them would land on the first open-world card. Setting `home` per window puts each task on the card of the region where it's actually done, while `from` and `until` still say when it's available. Tasks that are open anywhere show up in the NOW sheet (the app's list of everything doable right now) regardless of `home`.
 
 - `home` must be a leaf (`home-not-leaf`).
 - `home` must be within the window, from `first(from)` to `last(until)` inclusive (`home-outside-window`).
@@ -266,7 +266,7 @@ windows:
 
 ### 2nd chances
 
-The first window is the **primary window**. Every later window is a **2nd chance**. The task always shows on the `home` card of its primary window. While it's unresolved, it also shows on the `home` card of each later window, with a 2nd-chance badge. If a window closes with the task not done and a later window is still upcoming, the task shows as "missed, 2nd chance at X", where X is the `home` of the next upcoming window. It's missed for good only when no window is open and none is upcoming.
+The first window is the **primary window**. Every later window is a **2nd chance**. The task always shows on the `home` card of its primary window. While it's unresolved (not done, not marked "don't care", and not ruled out by an [exclusive group](#exclusive-groups)), it also shows on the `home` card of each later window, with a 2nd-chance badge. If a window closes with the task not done and a later window is still upcoming, the task shows as "missed, 2nd chance at X", where X is the `home` of the next upcoming window. It's missed for good only when no window is open and none is upcoming.
 
 ```yaml
 - id: lost-cat
@@ -283,6 +283,7 @@ The first window is the **primary window**. Every later window is a **2nd chance
 Some tasks can't all be done: pick one reward, and the others vanish. Give each such task the same `exclusive` name. Marking one done makes the others **not-chosen**, and they stop counting as left to do. To switch, the user unchecks the chosen task first.
 
 - `exclusive` is set on tasks, not on sections. Its names have their own namespace.
+- Exclusivity is task-level, not window-level. If a member is done in any window, its siblings are not-chosen in every window, and they disappear from any 2nd-chance cards.
 - Every exclusive group needs at least 2 tasks (`exclusive-single`).
 - Exclusive groups are about tasks within one route. Mutually exclusive routes need separate guides.
 
@@ -323,7 +324,7 @@ The validator returns a list of **issues**, sorted by line and column:
 | `message` | A human-readable explanation. The wording may change. |
 | `file` | `guide.yaml`, `guide.yml` or `guide.md` (the CLI shows the path you passed), or `null` for `no-root-file`. |
 | `line`, `column` | 1-based position in the whole file, or `null` when the issue has no location. |
-| `path` | The YAML path, for example `sections[0].sections[1].requires[0]`, `tasks[3].windows[0].home` or `categories.loot.name`. `null` for issues in a `.md` body. |
+| `path` | The YAML path, for example `sections[0].sections[1].requires[0]`, `tasks[3].windows[0].home` or `categories.loot.name`. `null` for issues in a `.md` body or without a location. |
 
 - Any **error** rejects the upload. No guide is produced.
 - **Warnings** are shown in the report but don't block.
@@ -354,7 +355,7 @@ The validator works in phases. Some errors stop it before later phases run, beca
 | `format-version` | `sweep` is missing or isn't `1`. | The `sweep` value, or the start of the file's top-level mapping when `sweep` is absent. |
 | `required` | A required field is missing, a plain-text field is empty, or `categories` is missing while tasks exist. | The start of the mapping that lacks the field. |
 | `type` | A field has the wrong type, a group's `sections` or a task's `windows` is an empty list, or `requires` is in an unsupported shape. | The field's value. |
-| `id-format` | An ID, category ID, exclusive name, `renamed_from` entry, or reference to one isn't a valid slug of 64 characters or fewer. | The offending value. |
+| `id-format` | An ID, category ID, exclusive name, `renamed_from` entry, or reference to one isn't a valid slug of 64 characters or fewer. | The offending value (for a category ID, the key). |
 | `id-duplicate` | An ID is used twice in the section/task namespace, or a category key is duplicated. | The second (and later) `id` value, or the second category key. |
 | `id-reserved` | A section or task uses the ID `end`. | The `id` value. |
 | `no-leaves` | The guide has no leaf sections (top-level `sections: []`). | The `sections` value. |
@@ -374,7 +375,7 @@ The validator works in phases. Some errors stop it before later phases run, beca
 | `md-unknown-section` | A `.md` heading names a section that doesn't exist. | The heading line, column 1. |
 | `md-duplicate-section` | The same section heading appears twice. | The later heading line, column 1. |
 | `walkthrough-twice` | A section has both an inline `walkthrough` and a body heading. | The heading line, column 1. |
-| `limit` | A limit is exceeded: a length from the field reference, or an item in [Limits](#limits). | The value that is too long, or the item that goes over the count or depth. |
+| `limit` | A limit is exceeded: a length from the field reference, or an item in [Limits](#limits). | The value that is too long, the list that has too many entries, or the section, task or category that goes over the count or the depth. |
 
 ### Warnings
 
@@ -397,6 +398,7 @@ How common structural mistakes map to codes:
 | A plain-text field is `""` | `required` ("must not be empty") |
 | Wrong type, `sections: []` on a group, `windows: []`, an unsupported `requires` shape, a value that isn't one of its allowed literals | `type` |
 | Top-level `sections: []` | `no-leaves` |
+| A non-string in an ID or reference field, such as an unquoted `true`, `false` or `null` | `type` |
 | A string fails the slug rule or is over 64 characters: IDs, category keys, `category`, `exclusive`, `from`, `until`, `home`, `requires` entries, `renamed_from` entries | `id-format` |
 | A string over its maximum length; too many windows, `requires` IDs or `renamed_from` entries; too many sections, tasks or categories; nesting deeper than 5 levels | `limit` |
 | An unknown key | warning `unknown-key` ("did you mean `x`?" for a close match, otherwise the list of known keys) |
@@ -424,8 +426,8 @@ Text output has one line per issue, then a summary:
 The second form is for issues without a location. The summary uses the singular for 1 (`1 error, 1 warning`). For example (illustrative; message wording isn't final):
 
 ```text
-guides/my-guide.yaml:48:15 error unknown-section until names section "keep-gat", which doesn't exist
 guides/my-guide.yaml:12:5 warning unknown-key unknown key "overveiw"; did you mean "overview"?
+guides/my-guide.yaml:48:16 error unknown-section until names section "keep-gat", which doesn't exist
 1 error, 1 warning
 ```
 
@@ -438,12 +440,21 @@ guides/my-guide.yaml:12:5 warning unknown-key unknown key "overveiw"; did you me
   "warnings": 1,
   "issues": [
     {
+      "severity": "warning",
+      "code": "unknown-key",
+      "message": "…",
+      "file": "guides/my-guide.yaml",
+      "line": 12,
+      "column": 5,
+      "path": "sections[0].overveiw"
+    },
+    {
       "severity": "error",
       "code": "unknown-section",
       "message": "…",
       "file": "guides/my-guide.yaml",
       "line": 48,
-      "column": 15,
+      "column": 16,
       "path": "tasks[3].windows[0].until"
     }
   ]
@@ -476,12 +487,439 @@ Field lengths from the [Field reference](#field-reference) (`game`, `title`, `ov
 
 ## Lantern Keep, step by step
 
-Written in Task 3.
+*Lantern Keep* is a small fictional game, written to use every part of the format in one short guide. It's the reference example: `guides/examples/lantern-keep.yaml`. It shows:
+
+- default and explicit `requires`, with two towers that can be climbed in either order
+- groups without a gate of their own, and what a group gate would add
+- a group used as `from`, with a non-default `home`
+- a 2nd chance
+- `until: end`
+- an exclusive pair
+- a spoiler section and a spoiler task
+- an untracked category
+
+Here is the whole file:
+
+<!-- file: guides/examples/lantern-keep.yaml -->
+```yaml
+# yaml-language-server: $schema=../../schema/sweep-guide.v1.schema.json
+sweep: 1
+game: Lantern Keep
+title: Completionist checklist
+
+categories:
+  story:
+    name: Story
+    about: Main-path steps.
+  loot:
+    name: Loot
+    about: Chests, hidden items and rewards.
+  quests:
+    name: Side quests
+    about: Optional quests given by villagers.
+  lore:
+    name: Lore
+    about: Readable books. Off by default.
+    tracked: false
+
+sections:
+  - id: act-1
+    title: Act 1
+    overview: Leave the village and cross the marsh.
+    sections:
+      - id: village
+        title: Harrow Village
+        overview: Stock up and find passage across the river.
+        walkthrough: |
+          ## Arrival
+          Talk to the elder, then buy a **lantern** from the shop.
+
+          ## Leaving
+          You can row back from the marsh, but not once you reach the keep.
+      - id: marsh
+        title: Whisper Marsh
+        overview: Follow the lantern posts to the keep.
+        walkthrough: |
+          Keep to the lit path. The herb patch is north of the second post.
+  - id: act-2
+    title: Act 2
+    overview: Explore the keep's towers in either order.
+    sections:
+      - id: keep-gate
+        title: Keep Gate
+        overview: Open the gate and enter the courtyard.
+      - id: east-tower
+        title: East Tower
+        overview: Climb the library tower.
+      - id: west-tower
+        title: West Tower
+        overview: Climb the armory tower.
+        requires: [keep-gate]
+      - id: throne-room
+        title: Throne Room
+        overview: Confront the keeper of the lantern.
+        spoiler: true
+        requires: [east-tower, west-tower]
+  - id: epilogue
+    title: Epilogue
+    overview: Return to the village as a hero.
+
+tasks:
+  - id: ferry-passage
+    title: Pay the ferryman
+    category: story
+    windows:
+      - from: village
+  - id: village-chest
+    title: Chest behind the mill
+    category: loot
+    how: Push the crate at the back of the mill aside.
+    windows:
+      - from: village
+        until: marsh
+  - id: lost-cat
+    title: Find the elder's cat
+    category: quests
+    how: The cat hides in the village well. Lower the bucket.
+    windows:
+      - from: village
+      - from: epilogue
+        until: end
+  - id: marsh-herbs
+    title: Marsh herb patch
+    category: loot
+    windows:
+      - from: marsh
+        until: end
+  - id: keep-history
+    title: "Book: A History of the Keep"
+    category: lore
+    windows:
+      - from: act-2
+        until: end
+        home: east-tower
+  - id: sunblade
+    title: Sunblade
+    category: loot
+    exclusive: armory-reward
+    how: Take it from the armory rack. The other item vanishes.
+    windows:
+      - from: west-tower
+        until: throne-room
+  - id: moonshield
+    title: Moonshield
+    category: loot
+    exclusive: armory-reward
+    how: Take it from the armory rack. The other item vanishes.
+    windows:
+      - from: west-tower
+        until: throne-room
+  - id: keepers-lantern
+    title: The keeper's lantern
+    category: loot
+    spoiler: true
+    how: After the fight, examine the throne.
+    windows:
+      - from: throne-room
+```
+
+### Sections and route order
+
+There are three top-level sections. `act-1` and `act-2` are groups, shown as headings. `epilogue` has no children, so it's a leaf. The leaves in route order are:
+
+| Position | Leaf | In group |
+|---|---|---|
+| 0 | `village` | `act-1` |
+| 1 | `marsh` | `act-1` |
+| 2 | `keep-gate` | `act-2` |
+| 3 | `east-tower` | `act-2` |
+| 4 | `west-tower` | `act-2` |
+| 5 | `throne-room` | `act-2` |
+| 6 | `epilogue` | (top level) |
+
+The four categories set the order of tasks within each card: Story, Loot, Side quests, Lore. `lore` has `tracked: false`, so new runs start with Lore hidden (see [Lore is untracked](#lore-is-untracked) below).
+
+### Requires
+
+Only two sections write `requires`. The rest use the default, the previous leaf:
+
+- `village` is the first leaf, so it requires nothing.
+- `marsh` requires `village` (default).
+- `keep-gate` requires `marsh` (default). The default chains across the group boundary from `act-1` into `act-2`.
+- `east-tower` requires `keep-gate` (default).
+- `west-tower` has an explicit `requires: [keep-gate]`. Without it, it would default to `east-tower`, and the towers would have to be climbed east first. With it, both towers unlock as soon as `keep-gate` is cleared, and the player can climb them in either order.
+- `throne-room` has `requires: [east-tower, west-tower]`, so it waits for both towers, whichever order they were cleared in.
+- `epilogue` requires `throne-room` (default).
+
+Neither group writes `requires`. A group's omitted `requires` is `[]`, so `act-1` and `act-2` have no gate: their leaves are held back only by their own `requires`. `act-2` doesn't need a gate, because `keep-gate` already waits for `marsh`. A group gate is for holding back every leaf in the group at once: `requires: [act-1]` on `act-2` would keep all four of its leaves locked until every leaf of Act 1 is cleared, on top of each leaf's own `requires`. The Breath of the Wild pattern [below](#open-world-per-window-home) uses a group gate this way.
+
+`throne-room` also has `spoiler: true`. While it's locked, its title and overview are blurred, so the card doesn't reveal who the player confronts. Once both towers are cleared, it's unlocked and shows normally.
+
+### Tasks and windows
+
+Each task says when it can be done. Sweep works out the rest.
+
+| Task | Windows | Closes when | Card (`home`) |
+|---|---|---|---|
+| `ferry-passage` | `village` | `village` is cleared | `village` |
+| `village-chest` | `village` until `marsh` | `marsh` is cleared | `village` |
+| `lost-cat` | `village`; 2nd chance `epilogue` until `end` | `village` is cleared, then never | `village`, then `epilogue` |
+| `marsh-herbs` | `marsh` until `end` | never | `marsh` |
+| `keep-history` | `act-2` until `end` | never | `east-tower` |
+| `sunblade`, `moonshield` | `west-tower` until `throne-room` | `throne-room` is cleared | `west-tower` |
+| `keepers-lantern` | `throne-room` | `throne-room` is cleared | `throne-room` |
+
+**`ferry-passage`** has only `from: village`. `until` defaults to `from`, so the window closes when `village` is cleared. It's in the Story category: a main-path step tracked as a task.
+
+**`village-chest`** runs `from: village` `until: marsh`. The village walkthrough says why: "You can row back from the marsh, but not once you reach the keep." So `marsh` is the last leaf where the chest can still be done. Clearing `marsh` is the moment Sweep warns that it closes. `until: keep-gate` would be the classic mistake described in [Windows and home](#windows-and-home).
+
+**`lost-cat`** has two windows. The primary window is `village` only. The second window runs from `epilogue` until `end`. If the user clears `village` without finding the cat, the task becomes **missed, 2nd chance at Epilogue**, rather than missed for good. Because it has a later window, it also shows on the `epilogue` card with a 2nd-chance badge for as long as it's unresolved. When `epilogue` is reached, it's open again, and that window never closes.
+
+**`marsh-herbs`** runs `from: marsh` `until: end`. The task can be done any time after `marsh` is reached, so it's never missed. The marsh walkthrough says where they are.
+
+**`keep-history`** shows three things at once:
+
+- `from: act-2` names a group. The window opens as soon as any leaf in `act-2` is reached. In this guide that's `keep-gate`, because the other three `act-2` leaves all wait on it.
+- `home: east-tower` puts the checkbox on the East Tower card. Without `home`, it would sit on `keep-gate`, the first leaf of `act-2`. `east-tower` is within the window, which runs from position 2 to position 6.
+- `until: end` means it never closes.
+
+Its title is quoted (`"Book: A History of the Keep"`) because a colon followed by a space would otherwise start a YAML mapping.
+
+**`sunblade` and `moonshield`** share `exclusive: armory-reward`: their `how` says that taking one from the armory rack makes the other vanish. Both open when `west-tower` is reached and close when `throne-room` is cleared. Marking one done makes the other not-chosen, and it stops counting as left to do. If neither is done when `throne-room` is cleared, both are missed.
+
+**`keepers-lantern`** has `spoiler: true`. Its title and `how` are blurred until the user taps them or marks the task done. The card still shows that there's something in the Loot category here. With only `from: throne-room`, it closes when `throne-room` is cleared.
+
+### Lore is untracked
+
+`keep-history` is in the Lore category, which has `tracked: false`. New runs start with Lore untracked, so the book is hidden everywhere, including in counts. A user who enables Lore for their run sees it on the East Tower card.
+
+### The same guide as Markdown
+
+`guides/examples/lantern-keep.md` is the same guide in the Markdown container. The front matter is the YAML file without the schema comment and without the two `walkthrough` fields. The walkthroughs move into the body, each under a `# <section-id>` heading. This is the end of the file, from the closing `---` of the front matter:
+
+<!-- from: guides/examples/lantern-keep.md -->
+```markdown
+---
+
+# village
+
+## Arrival
+Talk to the elder, then buy a **lantern** from the shop.
+
+## Leaving
+You can row back from the marsh, but not once you reach the keep.
+
+# marsh
+
+Keep to the lit path. The herb patch is north of the second post.
+```
+
+Both files produce the same normalized model. Headings inside a walkthrough, like `## Arrival`, are level 2, because a level-1 heading starts the next section.
 
 ## Patterns
 
-Written in Task 3.
+These patterns cover the common shapes of real games. The first three come with example guides in `guides/examples/`. Those samples are **illustrative**: their windows are simplified to show the mechanics, and they aren't a factual guide to the games. Each one is a complete guide.
+
+The "how it plays out" notes use the app's terms:
+
+- A task is **open** while one of its windows is open, and **upcoming** before any window has opened. It's **missed** when a window has closed without it being done and no window is open now. If a later window is still upcoming, it shows as "missed, 2nd chance at X". Otherwise it's missed for good.
+- **Current** is the leaf the user is at: the leaf they pinned with **I'm here**, or else the earliest unlocked leaf they haven't cleared.
+- The bottom bar shows four counts. **HERE** is the open tasks whose `home` is the current leaf. **NOW** is all open tasks. **CLOSING** is the tasks that clearing the current leaf would make missed. **LAST CHANCE** is the part of CLOSING with no later window.
+
+### Open world, per-window `home`
+
+Breath of the Wild opens up once you leave the Great Plateau: every region is reachable, in any order, and hundreds of tasks become doable at once. Example: `guides/examples/botw-open-world.yaml`.
+
+The `hyrule` group gates the open world, and each region opts out of the default chain:
+
+<!-- from: guides/examples/botw-open-world.yaml -->
+```yaml
+  - id: hyrule
+    title: Hyrule
+    overview: The open world. Go anywhere, in any order.
+    requires: [great-plateau]
+    sections:
+      - id: kakariko
+        title: Kakariko Village
+        overview: Meet Impa.
+        requires: []
+      - id: hateno
+        title: Hateno Village
+        overview: Visit the Ancient Tech Lab.
+        requires: []
+      - id: zoras-domain
+        title: Zora's Domain
+        overview: Help the Zora with Vah Ruta.
+        requires: []
+      - id: hyrule-castle
+        title: Hyrule Castle
+        overview: Face Calamity Ganon whenever you're ready.
+        requires: []
+```
+
+Every task is available from `hyrule` to the end of the game, and `home` puts each one on its region's card:
+
+<!-- from: guides/examples/botw-open-world.yaml -->
+```yaml
+tasks:
+  - id: oman-au-shrine
+    title: Oman Au Shrine
+    category: shrines
+    windows:
+      - from: plateau-shrines
+        until: end
+  - id: korok-hateno-rock-circle
+    title: "Korok: rock circle above Hateno"
+    category: koroks
+    windows:
+      - from: hyrule
+        until: end
+        home: hateno
+  - id: korok-kakariko-pinwheel
+    title: "Korok: pinwheel balloons near Kakariko"
+    category: koroks
+    windows:
+      - from: hyrule
+        until: end
+        home: kakariko
+  - id: korok-zora-waterfall
+    title: "Korok: top of the waterfall"
+    category: koroks
+    windows:
+      - from: hyrule
+        until: end
+        home: zoras-domain
+```
+
+How it plays out:
+
+- The `hyrule` gate (`[great-plateau]`) keeps every region locked until both plateau leaves are cleared. Each region then has `requires: []`, so all four unlock at once and can be cleared in any order.
+- Every Korok window opens the moment the plateau is cleared, because `from: hyrule` is reached as soon as any `hyrule` leaf is. Each Korok appears only in its `home` card. Without `home`, all of them would default to `kakariko`, the first leaf of `hyrule`.
+- **NOW** counts every open Korok. That's the opt-in "everything doable now" view. **HERE** counts only the current card's.
+- Current defaults to `kakariko`, the earliest unlocked leaf. A player heading to Hateno taps **I'm here** on Hateno.
+- Nothing ever closes (`until: end`), so CLOSING and LAST CHANCE stay at 0.
+
+### A 2nd chance
+
+In Final Fantasy VIII, a card can be won early in the game, and again much later when the player returns to the same place. The second visit is its own leaf (`garden-return`), and the task spans both visits with two windows. Example: `guides/examples/ff8-second-chance.yaml`. The leaves in route order are `balamb-garden`, `fire-cavern`, `dollet`, `timber`, `deling-city` and `garden-return`.
+
+<!-- from: guides/examples/ff8-second-chance.yaml -->
+```yaml
+tasks:
+  - id: quistis-card
+    title: Quistis card
+    category: cards
+    how: Challenge the Trepies, Quistis's fan club, in the Garden.
+    windows:
+      - from: balamb-garden
+        until: dollet
+      - from: garden-return
+        until: end
+  - id: dollet-pub-card
+    title: Card from the Dollet pub owner
+    category: cards
+    windows:
+      - from: dollet
+```
+
+How it plays out, with `balamb-garden` and `fire-cavern` cleared and current = `dollet`:
+
+- `quistis-card` is **open**. Its primary window runs from `balamb-garden` until `dollet`, and its row lives in the collapsed, cleared Balamb Garden card. The Dollet card doesn't list it.
+- HERE = 1 (`dollet-pub-card`). NOW = 2. CLOSING = 2. LAST CHANCE = 1 (the pub card). The Quistis card is closing but has a later window.
+- Tapping **Clear section** (the card's button for clearing a leaf) on Dollet shows:
+  > Clearing **Dollet** closes 2 open tasks.
+  > **Gone for good:** Card from the Dollet pub owner
+  > **Closes until later:** Quistis card (2nd chance at Balamb Garden (Disc 3))
+- After clearing, `quistis-card` is **missed, 2nd chance at Balamb Garden (Disc 3)**. It shows in red in the Balamb Garden card. It also appears in the `garden-return` card with a "2nd chance" badge, because it's unresolved.
+- Once `garden-return` is reached, the task is **open** again (2nd chance). If the user checks it there, it becomes **done**. It then shows as done in Balamb Garden and leaves the `garden-return` card. If the user had checked it on Disc 1, it would never have appeared in `garden-return`.
+
+### An exclusive choice with `spoiler`
+
+In Final Fantasy VI, the player receives one of two relics, depending on a conversation. Both tasks share an exclusive group, and both are spoilers so the card doesn't give the choice away. Example: `guides/examples/ff6-exclusive-relic.yaml`.
+
+<!-- from: guides/examples/ff6-exclusive-relic.yaml -->
+```yaml
+tasks:
+  - id: gauntlet
+    title: Gauntlet
+    category: relics
+    exclusive: banon-relic
+    spoiler: true
+    how: A Returner hands you one relic; which one depends on how you answer Banon.
+    windows:
+      - from: returner-hideout
+  - id: genji-glove
+    title: Genji Glove
+    category: relics
+    exclusive: banon-relic
+    spoiler: true
+    how: A Returner hands you one relic; which one depends on how you answer Banon.
+    windows:
+      - from: returner-hideout
+```
+
+How it plays out:
+
+- The Returner Hideout card shows **Relics 0/2** with two blurred titles. The user can see *that* a relic choice happens here without seeing what it is. Tapping a title reveals it.
+- Checking **Gauntlet** makes Genji Glove **not-chosen**. Its row is dimmed and its checkbox is disabled. The count becomes **1/1**, because not-chosen tasks leave the total.
+- Clearing the hideout with neither checked lists both (blurred) under "Gone for good". Afterwards both are **missed**.
+- Exclusivity is task-level, not window-level. If a member is done in any window, its siblings are not-chosen in every window, and they disappear from any 2nd-chance cards.
+
+### Recipes
+
+Shorter patterns, without example files.
+
+**A linear chapter.** List the leaves in the order they're played and don't write `requires`: each leaf defaults to requiring the previous one. Give each task a window from the leaf where it becomes available until the last leaf where it can still be done.
+
+**A hub with any-order branches.** Put `requires: [hub]` on the first leaf of each branch, so they all unlock when the hub is cleared. Put `requires: [a, b, c]`, naming every branch, on the section where they converge. If a branch has several leaves, its later leaves keep their default `requires`, and the convergence can name the branch's group.
+
+```yaml
+- id: hub
+  title: Town square
+  overview: Three roads lead out of town.
+- id: forest
+  title: Forest
+  overview: The northern road.
+  requires: [hub]
+- id: mines
+  title: Mines
+  overview: The eastern road.
+  requires: [hub]
+- id: coast
+  title: Coast
+  overview: The southern road.
+  requires: [hub]
+- id: capital
+  title: Capital
+  overview: All three roads end at the capital gates.
+  requires: [forest, mines, coast]
+```
+
+**Any one of.** When one of several sections is enough, such as either of two routes into a fortress, use `requires: {any: [a, b]}`. The section unlocks when at least one of them is cleared.
+
+**A revisit.** Give a second visit to a place its own leaf with its own ID, such as `balamb-garden-d1` and `balamb-garden-d3`. A task that can be done on either visit gets one window per visit.
+
+**Doable until the end of the game.** Use `until: end` on the task's last window. It never closes and is never missed. Use it only when nothing in the game makes the task unavailable.
 
 ## Authoring tips
 
-Written in Task 3.
+### For humans
+
+- **Use `.yaml` with the schema comment** as the first line, so your editor gives you autocomplete and inline errors.
+- **Write the sections first, then the tasks.** Get the route and its `requires` right before adding windows: every window names sections.
+- **Validate often.** Run `pnpm sweep validate` after each batch of changes, not only at the end. Fixing one error can reveal others.
+- **Keep overviews to one sentence.** Detail belongs in the walkthrough, and task instructions belong in `how`.
+
+### For LLMs
+
+Converting an existing walkthrough into a guide? Follow these rules. The skill at [`.claude/skills/write-sweep-guide/SKILL.md`](../.claude/skills/write-sweep-guide/SKILL.md) walks through the whole conversion.
+
+1. **Read this document first. Never guess a field.** An unknown key is only a warning (`unknown-key`) and is ignored, so a guessed field silently does nothing.
+2. **Categories describe what a task is, never whether it's missable.** No "Missables" category. Missability comes from windows.
+3. **Write `requires` only where progression isn't "the previous leaf".** The default already chains leaves in route order.
+4. **`until` is the last leaf where the task can still be done.** Infer closures from facts the source states: a point of no return, an area that becomes unreachable, a disc or chapter ending, or a character leaving the party. Set `until` to the last leaf before that point, and cite the source sentence in your conversion report. Use `until: end` only when the source gives no sign that the task or area becomes unavailable. Never invent a closure the source doesn't support.
+5. **Set `home`** for any task that should show on a card other than the first leaf of `from`, especially when `from` is a group.
+6. **Plain-text fields have no Markdown.** `game`, `title`, `overview`, category `name` and `about` show asterisks and brackets literally. In a `.md` guide, headings inside a walkthrough are `##` or deeper, because `#` starts a new section.
+7. **Never invent facts.** Every section, task, reward and closure must come from the source. If the source doesn't say, leave it out.
+8. **Loop on `pnpm sweep validate` until it's clean.** Read the codes, not just the messages: the code says which rule failed, and the [Validation](#validation) tables say what each code means and where it points. Use `--json` to read issues by `code` and `path`.
+9. **Prefer `.md` for long walkthroughs.** The prose stays readable and out of YAML indentation.
