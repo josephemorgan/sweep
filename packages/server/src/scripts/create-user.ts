@@ -7,7 +7,8 @@ import { z } from 'zod';
 import { MIN_PASSWORD_LENGTH, createAuth, type Auth } from '../auth.js';
 import { createDb } from '../db/client.js';
 import { runMigrations } from '../db/migrate.js';
-import { readEnv } from '../env.js';
+import { readEnv, type Env } from '../env.js';
+import { describeError } from '../http/error-handler.js';
 import { loadRootEnvFile } from '../load-env.js';
 
 export interface NewUser {
@@ -51,6 +52,25 @@ export async function createUser(auth: Auth, input: NewUser): Promise<CreatedUse
     }
     throw err;
   }
+}
+
+function isParseArgsError(err: unknown): err is Error {
+  return (
+    err instanceof Error &&
+    'code' in err &&
+    typeof err.code === 'string' &&
+    err.code.startsWith('ERR_PARSE_ARGS_')
+  );
+}
+
+/**
+ * What the CLI prints for a failure. CreateUserError and parseArgs messages are safe (they never
+ * contain the password); anything else goes through describeError, because a failed query's
+ * message embeds its params (the email and the password hash).
+ */
+export function failureMessage(err: unknown): string {
+  if (err instanceof CreateUserError || isParseArgsError(err)) return err.message;
+  return describeError(err);
 }
 
 const USAGE =
@@ -123,7 +143,13 @@ async function main(argv: string[]): Promise<number> {
   const password = await readPassword();
 
   loadRootEnvFile();
-  const env = readEnv();
+  let env: Env;
+  try {
+    env = readEnv();
+  } catch (err) {
+    // readEnv's messages name the variable and never echo a secret.
+    throw new CreateUserError(err instanceof Error ? err.message : 'Invalid environment.');
+  }
   const { db, pool } = createDb(env.databaseUrl);
   try {
     await runMigrations(db);
@@ -152,8 +178,7 @@ if (isEntryPoint()) {
       process.exitCode = code;
     },
     (err: unknown) => {
-      // CreateUserError, parseArgs and readEnv messages never contain the password.
-      console.error(err instanceof Error ? err.message : 'create-user failed.');
+      console.error(failureMessage(err));
       process.exitCode = 1;
     },
   );

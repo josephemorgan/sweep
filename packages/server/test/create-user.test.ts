@@ -1,9 +1,11 @@
 import { spawnSync, type SpawnSyncReturns } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+import { parseArgs } from 'node:util';
+import { DrizzleQueryError } from 'drizzle-orm';
 import request from 'supertest';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { createAuth } from '../src/auth.js';
-import { CreateUserError, createUser } from '../src/scripts/create-user.js';
+import { CreateUserError, createUser, failureMessage } from '../src/scripts/create-user.js';
 import {
   TEST_ORIGIN,
   TEST_PASSWORD,
@@ -119,5 +121,33 @@ describe('create-user CLI', () => {
   it('exits 1 with usage when --email is missing or invalid', () => {
     expect(runCli([], 'cli-password-123\n').stderr).toMatch(/Usage/);
     expect(runCli(['--email', 'not-an-email'], 'cli-password-123\n').status).toBe(1);
+  });
+});
+
+describe('failureMessage', () => {
+  it('prints safe messages as they are', () => {
+    expect(failureMessage(new CreateUserError('Passwords do not match.'))).toBe(
+      'Passwords do not match.',
+    );
+    const parseError = (() => {
+      try {
+        parseArgs({ args: ['--nope'], options: {}, strict: true });
+      } catch (err) {
+        return err;
+      }
+      return undefined;
+    })();
+    expect(failureMessage(parseError)).toMatch(/^Unknown option '--nope'/);
+  });
+
+  it("never prints a failed query's SQL or params", () => {
+    const err = new DrizzleQueryError(
+      'insert into "user" ("email") values ($1)',
+      ['leak@example.com', '$scrypt$hash'],
+      new Error('connection terminated'),
+    );
+    const printed = failureMessage(err);
+    expect(printed).toContain('connection terminated');
+    expect(printed).not.toMatch(/leak@example\.com|\$scrypt\$hash|insert into/);
   });
 });
