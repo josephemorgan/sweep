@@ -173,6 +173,74 @@ describe('parseYamlSource', () => {
     ]);
   });
 
+  describe('strings Postgres can not store', () => {
+    const MESSAGE =
+      "this string contains a NUL character (U+0000) or an unpaired surrogate, which can't be stored";
+
+    it.each([
+      ['\\0', 'a\\0b'],
+      ['\\u0000', '\\u0000'],
+      ['\\x00', 'x\\x00'],
+      ['\\U00000000', '\\U00000000'],
+      ['a lone high surrogate', '\\ud800'],
+      ['a lone low surrogate', 'a\\udc00'],
+      ['a reversed pair', '\\udc00\\ud800'],
+      ['a \\U surrogate', '\\U0000D800'],
+    ])('reports %s from an escape at the scalar', (_name, escaped) => {
+      const { parsed, issues } = parse(`sweep: 1\ngame: G\nsections:\n  - title: "${escaped}"\n`);
+      expect(parsed).toBeUndefined();
+      expect(issues).toEqual([
+        expect.objectContaining({
+          severity: 'error',
+          code: 'encoding',
+          message: MESSAGE,
+          file: 'guide.yaml',
+          line: 4,
+          column: 12,
+          path: 'sections[0].title',
+        }),
+      ]);
+    });
+
+    it('reports a bad key at the key, with the path of its mapping', () => {
+      expect(parse('sweep: 1\ncategories:\n  "a\\0": {}\n').issues).toEqual([
+        expect.objectContaining({ code: 'encoding', line: 3, column: 3, path: 'categories' }),
+      ]);
+    });
+
+    it('reports a multi-line scalar at its start, and each bad scalar once', () => {
+      const text = 'sweep: 1\na: [x, "one\n  two \\0"]\nb: "\\ud800"\nc: *nope\n';
+      expect(parse(text).issues.map((i) => [i.code, i.line, i.column, i.path])).toEqual([
+        ['encoding', 2, 8, 'a[1]'],
+        ['encoding', 4, 4, 'b'],
+        ['yaml-syntax', 5, 4, 'c'],
+      ]);
+    });
+
+    it('reports an anchored bad scalar once, not at its aliases', () => {
+      const text = 'sweep: 1\na: &x "\\0"\nb: [*x, *x]\n';
+      expect(parse(text).issues.map((i) => [i.code, i.line, i.column])).toEqual([
+        ['encoding', 2, 7],
+      ]);
+    });
+
+    it('shifts lines by lineOffset', () => {
+      expect(parse('sweep: 1\na: "\\0"\n', 1).issues).toEqual([
+        expect.objectContaining({ code: 'encoding', line: 3, column: 4 }),
+      ]);
+    });
+
+    it.each([
+      ['an escaped surrogate pair', '"\\ud83d\\ude00"'],
+      ['an escaped astral code point', '"\\U0001F600"'],
+      ['a literal emoji', '"\u{1F600}"'],
+      ['backslash-zero in single quotes', "'\\0'"],
+      ['backslash-zero in a plain scalar', 'a\\0b'],
+    ])('accepts %s', (_name, value) => {
+      expect(parse(`sweep: 1\na: ${value}\n`).issues).toEqual([]);
+    });
+  });
+
   describe('format-version', () => {
     it.each([
       ['a list root', '- sweep: 1\n', 1, 1, null],

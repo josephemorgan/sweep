@@ -44,6 +44,21 @@ const CASES: InvalidCase[] = [
     column: 1,
   },
   {
+    name: 'NUL character in valid UTF-8',
+    files: { 'guide.yaml': new Uint8Array([0x73, 0x77, 0x0a, 0x61, 0x00]) },
+    code: 'encoding',
+    line: 2,
+    column: 2,
+  },
+  {
+    name: 'NUL character from a YAML escape',
+    files: { 'guide.yaml': 'sweep: 1\ngame: "G\\0"\n' },
+    code: 'encoding',
+    line: 2,
+    column: 7,
+    path: 'game',
+  },
+  {
     name: 'markdown without front matter',
     fixture: 'md-front-matter.md',
     code: 'md-front-matter',

@@ -15,7 +15,7 @@ import { ErrorCode } from './issue-codes.js';
 import { issue } from './issues.js';
 import { LIMITS } from './limits.js';
 import { createLocator, type Locator, type PathSegment, type SourcePosition } from './locate.js';
-import type { SourceText } from './text.js';
+import { firstUnstorable, type SourceText } from './text.js';
 
 export interface ParsedYaml {
   value: unknown;
@@ -26,6 +26,9 @@ export interface ParsedYaml {
 const CORE_TAGS: ReadonlySet<string> = new Set(
   ['str', 'int', 'float', 'bool', 'null', 'seq', 'map'].map((name) => `tag:yaml.org,2002:${name}`),
 );
+
+const UNSTORABLE =
+  "this string contains a NUL character (U+0000) or an unpaired surrogate, which can't be stored";
 
 /** The only guide format version this parser reads. */
 const FORMAT_VERSION = 1;
@@ -141,7 +144,8 @@ export function parseYamlSource(
 }
 
 /**
- * Walks every node in document order and reports each duplicate key, custom tag, alias to an
+ * Walks every node in document order and reports each string scalar (key or value) that contains
+ * U+0000 or an unpaired surrogate, duplicate key, custom tag, alias to an
  * undefined anchor, and alias to a node that contains it (it would expand forever). A duplicate key
  * directly under the top-level `categories` map is a duplicate category ID. Returns the aliases in
  * document order. The walk keeps an explicit stack, so deep nesting can't overflow the call stack.
@@ -173,6 +177,11 @@ function checkNodes(doc: Document.Parsed, report: Report): AliasRef[] {
       return;
     }
     if (!isNode(node)) return;
+    // The text phase rejects these in the source, but a double-quoted escape (`\0`, `\ud800`)
+    // can still produce them.
+    if (isScalar(node) && typeof node.value === 'string' && firstUnstorable(node.value) >= 0) {
+      report(ErrorCode.Encoding, UNSTORABLE, startOf(node), path);
+    }
     if (node.tag !== undefined && !CORE_TAGS.has(node.tag)) {
       const message = `custom YAML tag ${node.tag} is not allowed`;
       report(ErrorCode.YamlSyntax, message, startOf(node), path);

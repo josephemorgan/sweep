@@ -12,7 +12,8 @@ const ROOT_FILES: readonly SourceText['file'][] = ['guide.yaml', 'guide.yml', 'g
 
 /**
  * Text phase (spec §3.2, §3.5): picks the single root file, checks its size, decodes it
- * strictly as UTF-8, strips the BOM and normalizes newlines to `\n`.
+ * strictly as UTF-8, strips the BOM and normalizes newlines to `\n`. Rejects U+0000 and unpaired
+ * surrogates, which Postgres `text` and `jsonb` can't store.
  */
 export function readSource(files: Record<string, string | Uint8Array>): {
   source?: SourceText;
@@ -33,24 +34,32 @@ export function readSource(files: Record<string, string | Uint8Array>): {
     const message = `the file is ${bytes} bytes; the limit is ${LIMITS.fileBytes} bytes (2 MiB)`;
     return { issues: [issue('error', ErrorCode.TooLarge, message, file, null, null)] };
   }
+  let text: string;
   if (typeof raw === 'string') {
-    const text = normalizeText(raw);
-    const bad = firstLoneSurrogate(text);
-    if (bad >= 0) return { issues: [encodingIssue(file, positionAt(text.slice(0, bad)))] };
-    return { source: { file, text }, issues: [] };
+    text = normalizeText(raw);
+  } else {
+    try {
+      // The default decoder strips a leading BOM (ignoreBOM: false).
+      text = normalizeText(new TextDecoder('utf-8', { fatal: true }).decode(raw));
+    } catch {
+      const prefix = new TextDecoder('utf-8').decode(raw.subarray(0, firstInvalidByte(raw)));
+      return { issues: [encodingIssue(file, normalizeText(prefix), NOT_UTF8)] };
+    }
   }
-  try {
-    // The default decoder strips a leading BOM (ignoreBOM: false).
-    const text = new TextDecoder('utf-8', { fatal: true }).decode(raw);
-    return { source: { file, text: normalizeText(text) }, issues: [] };
-  } catch {
-    const prefix = new TextDecoder('utf-8').decode(raw.subarray(0, firstInvalidByte(raw)));
-    return { issues: [encodingIssue(file, positionAt(normalizeText(prefix)))] };
+  const bad = firstUnstorable(text);
+  if (bad >= 0) {
+    const message = text.charCodeAt(bad) === 0 ? HAS_NUL : NOT_UTF8;
+    return { issues: [encodingIssue(file, text.slice(0, bad), message)] };
   }
+  return { source: { file, text }, issues: [] };
 }
 
-function encodingIssue(file: string, at: { line: number; column: number }): Issue {
-  return issue('error', ErrorCode.Encoding, 'the file is not valid UTF-8', file, at, null);
+const NOT_UTF8 = 'the file is not valid UTF-8';
+const HAS_NUL = 'the file contains a NUL character (U+0000)';
+
+/** An `encoding` error just after `prefix`. */
+function encodingIssue(file: string, prefix: string, message: string): Issue {
+  return issue('error', ErrorCode.Encoding, message, file, positionAt(prefix), null);
 }
 
 /** Strips a leading BOM and converts `\r\n` and lone `\r` to `\n`. */
@@ -88,12 +97,15 @@ function utf8Length(text: string): number {
   return n;
 }
 
-/** Index of the first unpaired surrogate, or -1. */
-function firstLoneSurrogate(text: string): number {
+/**
+ * Index of the first U+0000 or unpaired surrogate, or -1. Postgres `text` and `jsonb` can store
+ * neither, so the YAML phase also uses this on strings that escapes produce.
+ */
+export function firstUnstorable(text: string): number {
   for (let i = 0; i < text.length; i++) {
     const c = text.charCodeAt(i);
     if (isHigh(c) && isLow(text.charCodeAt(i + 1))) i++;
-    else if (isHigh(c) || isLow(c)) return i;
+    else if (c === 0 || isHigh(c) || isLow(c)) return i;
   }
   return -1;
 }
