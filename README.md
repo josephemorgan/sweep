@@ -10,7 +10,7 @@ You upload a **guide** file describing a game's sections, tasks and walkthroughs
 
 Sweep is meant to be glanced at when you enter a new area and then put away, so you're not glued to a full guide. Spoiler control is built in.
 
-> **Status: early development.** The monorepo scaffold is in place: tooling, CI, Docker, and stubbed packages. The guide parser, engine, accounts and UI are being built next. See the [delivery plan](docs/superpowers/specs/2026-09-28-sweep-design.md#10-delivery-plan).
+> **Status: early development.** The guide parser, validator and engine (`@sweep/core`) and the API with accounts (`@sweep/server`) are in place. The UI (`@sweep/client`) is being built next. See the [delivery plan](docs/superpowers/specs/2026-09-28-sweep-design.md#10-delivery-plan).
 
 ## Highlights (v1 goals)
 
@@ -59,7 +59,7 @@ To run the full production image instead: `docker compose up -d --build`, then o
 | `pnpm test` | Unit and integration tests (the server tests need Postgres running) |
 | `pnpm e2e` | Playwright at phone (390×844) and 4:3 handheld (1024×768) sizes |
 | `pnpm build` | Builds all packages |
-| `pnpm sweep validate <file>` | Validates a guide file (coming soon) |
+| `pnpm sweep validate <file>` | Validates a guide file |
 
 [`CLAUDE.md`](CLAUDE.md) has the full list, plus each package's own commands.
 
@@ -67,7 +67,7 @@ To run the full production image instead: `docker compose up -d --build`, then o
 
 - [Design spec](docs/superpowers/specs/2026-09-28-sweep-design.md): the source of truth for behaviour, the guide format, the engine, the UI and the API.
 - [Architecture decision records](docs/adr/README.md): settled decisions and the reasons behind them.
-- [Guide format](docs/guide-format.md): the authoring reference. It's a stub until it's written from spec §3.
+- [Guide format](docs/guide-format.md): the authoring reference for writing guides.
 - [Example guides](guides/examples/) and [JSON Schema](schema/).
 
 ## Development notes
