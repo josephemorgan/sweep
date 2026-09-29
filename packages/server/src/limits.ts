@@ -10,6 +10,12 @@ export const JSON_BODY_LIMIT_BYTES = 100 * 1024;
  */
 export const PARSE_TIMEOUT_MS = 5_000;
 
+/**
+ * After a re-normalization parse times out or its worker fails, the guide version is served with
+ * its stored model and not re-parsed for this long (in-process), so load can't cause a retry storm.
+ */
+export const RENORMALIZE_RETRY_MS = 60_000;
+
 export interface RateLimitRule {
   limit: number;
   windowMs: number;

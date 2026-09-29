@@ -1,8 +1,8 @@
-import { emptyProgress } from '@sweep/core';
-import { eq } from 'drizzle-orm';
+import { emptyProgress, MODEL_VERSION } from '@sweep/core';
+import { eq, sql } from 'drizzle-orm';
 import request from 'supertest';
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { runs } from '../src/db/schema.js';
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
+import { guideVersions, runs } from '../src/db/schema.js';
 import { RUN_NAME_MAX_LENGTH } from '../src/http/validate.js';
 import { writeProgressChanges } from '../src/runs/progress-store.js';
 import { createTestContext, type SignedIn, type TestContext } from './helpers/context.js';
@@ -81,6 +81,36 @@ describe('runs read, rename and delete', () => {
       game: 'Test Game',
       title: 'Tiny guide',
     });
+  });
+
+  it('lists a run whose model the engine throws on with zero stats, not a 500', async () => {
+    const owner = await ctx.signedInAgent('broken@example.com');
+    const good = await seedRun(ctx.db, owner.userId);
+    const broken = await seedRun(ctx.db, owner.userId);
+    // Corrupted, yet current: no re-normalization replaces it.
+    await ctx.db
+      .update(guideVersions)
+      .set({ model: sql`'{"sections": 7}'::jsonb` })
+      .where(eq(guideVersions.runId, broken));
+    const [row] = await ctx.db.select().from(guideVersions).where(eq(guideVersions.runId, broken));
+    expect(row!.modelVersion).toBe(MODEL_VERSION);
+    const spy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    try {
+      const res = await owner.agent.get('/api/runs');
+      expect(res.status).toBe(200);
+      const byId = new Map(res.body.map((r: { id: string }) => [r.id, r]));
+      expect(byId.size).toBe(2);
+      expect(byId.get(broken)).toMatchObject({
+        leavesCleared: 0,
+        leavesTotal: 0,
+        tasksDone: 0,
+        tasksTotal: 0,
+      });
+      expect(byId.get(good)).toMatchObject({ leavesTotal: 3, tasksTotal: 2 });
+      expect(spy.mock.calls.flat().join('\n')).toContain(`stats for run ${broken} failed`);
+    } finally {
+      spy.mockRestore();
+    }
   });
 
   it("never lists another user's runs", async () => {

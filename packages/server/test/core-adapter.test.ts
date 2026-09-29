@@ -123,11 +123,12 @@ describe('core adapter', () => {
   });
 
   it('reparses a stored source with the same checks', async () => {
-    expect((await reparse(TINY_MD, 'guide.md')).guide).toEqual(
-      (await upload(TINY_MD, 'tiny.md')).result.guide,
-    );
+    const good = await reparse(TINY_MD, 'guide.md');
+    expect(good.timedOut).toBe(false);
+    expect(good.result.guide).toEqual((await upload(TINY_MD, 'tiny.md')).result.guide);
     const bad = await reparse(TINY_YAML.replace('Start here.', '"\\0"'), 'guide.yaml');
-    expect(bad.issues.map((i) => i.code)).toEqual(['encoding']);
+    expect(bad.timedOut).toBe(false);
+    expect(bad.result.issues.map((i) => i.code)).toEqual(['encoding']);
   });
 
   it.each([
@@ -184,9 +185,10 @@ describe('core adapter', () => {
     });
 
     it('stops a reparse that runs over its budget the same way', async () => {
-      const result = await reparse(deeplyNestedMd(), 'guide.md', { timeoutMs: 1_500 });
-      expect(result).toEqual({
-        issues: [limitIssue('the guide took too long to parse (over 1.5 s)')],
+      const outcome = await reparse(deeplyNestedMd(), 'guide.md', { timeoutMs: 1_500 });
+      expect(outcome).toEqual({
+        result: { issues: [limitIssue('the guide took too long to parse (over 1.5 s)')] },
+        timedOut: true,
       });
     });
 

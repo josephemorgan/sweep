@@ -6,6 +6,9 @@ import {
   setTracked,
   type CreateRunResponseDto,
   type DryRunCreateResponseDto,
+  type Guide,
+  type RunProgress,
+  type RunSummary,
   type RunSummaryDto,
 } from '@sweep/core';
 import { and, desc, eq } from 'drizzle-orm';
@@ -15,6 +18,7 @@ import { guideVersions, runs } from '../db/schema.js';
 import { requireValidGuide, validGuide } from '../guides/core-adapter.js';
 import type { Renormalizer } from '../guides/renormalize.js';
 import { loadCurrentGuide, loadVersionMeta } from '../guides/store.js';
+import { describeError } from '../http/error-handler.js';
 import { ApiErrorCode, HttpError } from '../http/errors.js';
 import { loadRun } from '../http/load-run.js';
 import { getRun, getUser } from '../http/locals.js';
@@ -52,6 +56,21 @@ export interface RunsRouterOptions {
   models: Renormalizer;
 }
 
+/**
+ * A run's list stats, or zeros if the engine throws on its model (say a stored model a
+ * re-normalization couldn't replace): one broken run must not fail the whole list.
+ */
+function listStats(runId: string, guide: Guide, progress: RunProgress): RunSummary {
+  try {
+    return runSummaryStats(guide, progress);
+  } catch (err) {
+    console.error(
+      `runs list: computing stats for run ${runId} failed; listing it with zero stats. ${describeError(err)}`,
+    );
+    return { leavesCleared: 0, leavesTotal: 0, tasksDone: 0, tasksTotal: 0 };
+  }
+}
+
 /** One consistent snapshot across several reads: no torn view if a write lands between them. */
 const SNAPSHOT = { isolationLevel: 'repeatable read', accessMode: 'read only' } as const;
 
@@ -83,7 +102,7 @@ export function runsRouter({
       for (const row of rows) {
         const { guide } = await loadCurrentGuide(tx, row.run);
         const progress = await readProgress(tx, row.run.id);
-        out.push({ ...toRunDto(row.run, row), ...runSummaryStats(guide, progress) });
+        out.push({ ...toRunDto(row.run, row), ...listStats(row.run.id, guide, progress) });
       }
       return out;
     }, SNAPSHOT);

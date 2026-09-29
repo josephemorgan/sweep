@@ -3,7 +3,7 @@ import { toNodeHandler } from 'better-auth/node';
 import express, { type Express } from 'express';
 import type { Auth } from './auth.js';
 import type { Database } from './db/client.js';
-import { renormalizer, type Reparse } from './guides/renormalize.js';
+import { renormalizer, type RenormalizerHooks } from './guides/renormalize.js';
 import { describeError, errorHandler } from './http/error-handler.js';
 import { ApiErrorCode, HttpError } from './http/errors.js';
 import { authRateLimit, userRateLimit } from './http/rate-limits.js';
@@ -40,8 +40,8 @@ export interface AppOptions {
   parseTimeoutMs?: number | undefined;
   /** Test hook: the parse worker entry to run instead of src/guides/parse-worker. */
   parseWorkerUrl?: URL | undefined;
-  /** Test hook: wraps the adapter's reparse for re-normalization (tests count parses). */
-  reparse?: Reparse | undefined;
+  /** Test hooks for re-normalization: a wrapped reparse, the backoff clock, joins. */
+  renormalize?: RenormalizerHooks | undefined;
 }
 
 /**
@@ -99,9 +99,9 @@ export function createApp(options: AppOptions): Express {
       uploadLimiter: userRateLimit('uploads', limits.uploads),
       parseUpload: uploadParser({ timeoutMs: parseTimeoutMs, workerUrl: options.parseWorkerUrl }),
       models: renormalizer({
+        ...options.renormalize,
         timeoutMs: parseTimeoutMs,
         workerUrl: options.parseWorkerUrl,
-        reparse: options.reparse,
       }),
     }),
   );

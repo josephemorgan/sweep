@@ -72,8 +72,9 @@ function hasErrors(result: ParseResult): boolean {
   return result.issues.some((issue) => issue.severity === 'error');
 }
 
-interface WorkerOutcome {
+export interface ParseOutcome {
   result: ParseResult;
+  /** The parse ran over its time budget: `result` is the single `limit` issue. */
   timedOut: boolean;
 }
 
@@ -107,10 +108,10 @@ function parseInWorker(
   job: ParseJob,
   transfer: ArrayBuffer[],
   options: ParseOptions,
-): Promise<WorkerOutcome> {
+): Promise<ParseOutcome> {
   const timeoutMs = options.timeoutMs ?? PARSE_TIMEOUT_MS;
   const { signal } = options;
-  return new Promise<WorkerOutcome>((resolve, reject) => {
+  return new Promise<ParseOutcome>((resolve, reject) => {
     signal?.throwIfAborted();
     const worker = new Worker(options.workerUrl ?? PARSE_WORKER_URL, {
       workerData: job,
@@ -173,14 +174,15 @@ export async function parseUpload(
 
 /**
  * Re-parses a stored source in a worker (re-normalization when MODEL_VERSION changes). Over
- * budget, the result is the single `limit` issue. Rejects like parseUpload otherwise.
+ * budget, `timedOut` is set and the result is the single `limit` issue: a transient outcome,
+ * unlike a `limit` issue the parser itself reports. Rejects like parseUpload otherwise.
  */
-export async function reparse(
+export function reparse(
   source: string,
   fileName: GuideFileName,
   options: ParseOptions = {},
-): Promise<ParseResult> {
-  return (await parseInWorker({ fileName, input: source }, [], options)).result;
+): Promise<ParseOutcome> {
+  return parseInWorker({ fileName, input: source }, [], options);
 }
 
 export function validGuide(result: ParseResult): Guide | null {

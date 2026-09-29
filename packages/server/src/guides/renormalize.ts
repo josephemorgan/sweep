@@ -2,18 +2,28 @@ import { MODEL_VERSION } from '@sweep/core';
 import { and, eq, ne } from 'drizzle-orm';
 import type { Database } from '../db/client.js';
 import { guideVersions, runs } from '../db/schema.js';
-import { containerFileName, reparse, validGuide, type ParseResult } from './core-adapter.js';
+import { describeError } from '../http/error-handler.js';
+import { RENORMALIZE_RETRY_MS } from '../limits.js';
+import { containerFileName, reparse, validGuide, type ParseOutcome } from './core-adapter.js';
 import { currentVersionOf, type RunRef } from './store.js';
 
 export type Reparse = typeof reparse;
 
-export interface RenormalizerOptions {
+/** Test hooks (createApp's `renormalize` option). */
+export interface RenormalizerHooks {
+  /** The adapter's reparse, wrapped (tests count, fail or hold parses with it). */
+  reparse?: Reparse | undefined;
+  /** The clock for the retry backoff. Default Date.now. */
+  now?: (() => number) | undefined;
+  /** Called when a caller joins a re-normalization already in flight. */
+  onJoin?: ((versionId: string) => void) | undefined;
+}
+
+export interface RenormalizerOptions extends RenormalizerHooks {
   /** Time budget per re-parse (PARSE_TIMEOUT_MS). */
   timeoutMs: number;
   /** Test hook: the parse worker entry to run instead of parse-worker. */
   workerUrl?: URL | undefined;
-  /** Test hook: the adapter's reparse, wrapped (tests count parses with it). */
-  reparse?: Reparse | undefined;
 }
 
 /**
@@ -31,18 +41,28 @@ export interface Renormalizer {
 
 export function renormalizer(options: RenormalizerOptions): Renormalizer {
   const parse = options.reparse ?? reparse;
+  const now = options.now ?? Date.now;
   const parseOptions = { timeoutMs: options.timeoutMs, workerUrl: options.workerUrl };
   /** version id → the re-normalization in progress. Concurrent callers share one parse. */
   const inFlight = new Map<string, Promise<void>>();
-  /** Versions whose source no longer parses cleanly: served as stored, never re-parsed again. */
+  /** The parse finished with errors: deterministic, so never re-parsed in this process. */
   const failed = new Set<string>();
+  /** version id → when to try again, after a timeout or a worker failure (transient). */
+  const retryAt = new Map<string, number>();
 
-  const giveUp = (versionId: string, why: string): void => {
-    failed.add(versionId);
-    // Codes or a content-free error only: never guide content.
+  // Codes or a content-free error only: never guide content. Either way the stored model is served.
+  const log = (versionId: string, why: string, next: string): void => {
     console.error(
-      `guide store: re-normalizing guide version ${versionId} failed (${why}); serving the stored model.`,
+      `guide store: re-normalizing guide version ${versionId} failed (${why}); serving the stored model, ${next}.`,
     );
+  };
+  const giveUp = (versionId: string, codes: string): void => {
+    failed.add(versionId);
+    log(versionId, codes, 'not retrying');
+  };
+  const backOff = (versionId: string, why: string): void => {
+    retryAt.set(versionId, now() + RENORMALIZE_RETRY_MS);
+    log(versionId, why, `retrying in ${RENORMALIZE_RETRY_MS / 1000} s`);
   };
 
   async function refresh(db: Database, versionId: string): Promise<void> {
@@ -56,17 +76,21 @@ export function renormalizer(options: RenormalizerOptions): Renormalizer {
       .from(guideVersions)
       .where(eq(guideVersions.id, versionId));
     if (!row || row.modelVersion === MODEL_VERSION) return;
-    let result: ParseResult;
+    let outcome: ParseOutcome;
     try {
-      result = await parse(row.source, containerFileName(row.container), parseOptions);
+      outcome = await parse(row.source, containerFileName(row.container), parseOptions);
     } catch (err) {
       // reparse's rejections carry no guide content (core-adapter workerFailed).
-      giveUp(versionId, err instanceof Error ? err.message : 'unknown error');
+      backOff(versionId, describeError(err));
       return;
     }
-    const fresh = validGuide(result);
+    if (outcome.timedOut) {
+      backOff(versionId, 'the parse ran over its time budget');
+      return;
+    }
+    const fresh = validGuide(outcome.result);
     if (!fresh) {
-      giveUp(versionId, [...new Set(result.issues.map((i) => i.code))].join(', '));
+      giveUp(versionId, [...new Set(outcome.result.issues.map((i) => i.code))].join(', '));
       return;
     }
     // One statement, so its own short transaction. Conditional on the old model_version, so a
@@ -79,8 +103,15 @@ export function renormalizer(options: RenormalizerOptions): Renormalizer {
 
   function ensureVersion(db: Database, versionId: string): Promise<void> {
     if (failed.has(versionId)) return Promise.resolve();
+    const retry = retryAt.get(versionId);
+    if (retry !== undefined) {
+      if (now() < retry) return Promise.resolve();
+      retryAt.delete(versionId);
+    }
     let pending = inFlight.get(versionId);
-    if (!pending) {
+    if (pending) {
+      options.onJoin?.(versionId);
+    } else {
       pending = refresh(db, versionId).finally(() => inFlight.delete(versionId));
       inFlight.set(versionId, pending);
     }
