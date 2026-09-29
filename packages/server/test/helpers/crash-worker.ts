@@ -1,6 +1,7 @@
 // A parse worker for tests (the `workerUrl` / `parseWorkerUrl` hook). It fails for real when the
 // guide contains a marker from helpers/guides.ts (CRASH_THROW, CRASH_EXIT, CRASH_OOM), and
-// otherwise runs the real parse worker. Loaded by Node's own type stripping, so it imports no relative .js paths.
+// otherwise runs the real parse worker. Loaded by Node's own type stripping, so it imports no
+// relative .js paths.
 import { workerData } from 'node:worker_threads';
 
 const { input } = workerData as { input: string | Uint8Array };
