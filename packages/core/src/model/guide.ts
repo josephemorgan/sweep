@@ -33,9 +33,14 @@ export interface Section {
   children: Section[];
 }
 
-export interface Window {
+/** The `until` value of a window that never closes. Reserved: no section or task may use it as an ID. */
+export const END = 'end' as const;
+
+/** One availability range of a task (spec §4.1). */
+export interface TaskWindow {
   from: string;
-  until: string | 'end';
+  /** A section ID, or `END` (`'end'`): the window never closes. */
+  until: string;
   home: string;
 }
 
@@ -45,7 +50,7 @@ export interface Task {
   category: string;
   how: string | null;
   /** Defaults resolved. */
-  windows: Window[];
+  windows: TaskWindow[];
   exclusive: string | null;
   spoiler: boolean;
   renamedFrom: string[];
