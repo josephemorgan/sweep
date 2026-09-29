@@ -308,6 +308,7 @@ Spoilers are part of a layered reveal (spec §5.6). Section titles and overviews
 ## YAML rules
 
 - YAML 1.2 core schema, one document only. `yes`, `no`, `on` and `off` are plain strings, not booleans, so `tracked: yes` is a `type` error. Write `true` or `false`.
+- **Quoting.** An unquoted value can't contain `: ` (colon, space) or ` #` (space, hash), and can't start with an indicator character (`[`, `]`, `{`, `}`, `#`, `&`, `*`, `!`, `|`, `>`, `'`, `"`, `%`, `@`, a backtick, or `- `, `? ` or `: `). Quote such a value (`title: "Book: A History of the Keep"`), or write it as a `|` block scalar, the usual choice for `how` and `walkthrough`. On the same line as its key, such a value is usually `yaml-syntax`. A ` #` gives no error: it starts a comment, and the rest of the line is silently dropped. A value on the line below its key that contains `: ` silently becomes a mapping, and a value that is all `[…]` becomes a list; both are `type` errors.
 - Duplicate keys are an error (`yaml-syntax`). A duplicated key directly under `categories` is reported as `id-duplicate`.
 - Custom tags (`!something`) are an error (`yaml-syntax`).
 - Anchors and aliases are allowed, with at most 100 alias expansions. More is `yaml-syntax`.
@@ -696,7 +697,7 @@ Each task says when it can be done. Sweep works out the rest.
 - `home: east-tower` puts the checkbox on the East Tower card. Without `home`, it would sit on `keep-gate`, the first leaf of `act-2`. `east-tower` is within the window, which runs from position 2 to position 6.
 - `until: end` means it never closes.
 
-Its title is quoted (`"Book: A History of the Keep"`) because a colon followed by a space would otherwise start a YAML mapping.
+Its title is quoted (`"Book: A History of the Keep"`) because a colon followed by a space would otherwise start a YAML mapping (see [YAML rules](#yaml-rules)).
 
 **`sunblade` and `moonshield`** share `exclusive: armory-reward`: their `how` says that taking one from the armory rack makes the other vanish. Both open when `west-tower` is reached and close when `throne-room` is cleared. Marking one done makes the other not-chosen, and it stops counting as left to do. If neither is done when `throne-room` is cleared, both are missed.
 
