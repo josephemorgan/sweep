@@ -74,13 +74,12 @@ Also used in code:
 | `pnpm validate:examples` | Validate every guide under `guides/examples/` (CI runs it) |
 | `pnpm sweep validate <file> [--json]` | Guide validator CLI. Relative paths resolve from the directory you run it in. |
 | `pnpm db:generate` / `pnpm db:migrate` / `pnpm db:studio` | drizzle-kit, run in `packages/server` (review generated SQL before committing) |
+| `pnpm --filter @sweep/server create-user --email <e>` | Create an account (password prompted, or first stdin line). In the image: `node server/dist/scripts/create-user.js` |
 | `pnpm build:core` | Rebuild core's `dist/` (consumers import built output) |
 | `docker compose up -d postgres` | Dev database (sweep/sweep@localhost:5432/sweep) |
 | `docker compose up -d --build` | Full single-image app on :3000 |
 
 Per package: `pnpm --filter @sweep/<core|server|client> <script>`.
-
-**Planned (session C), not runnable yet:** `pnpm --filter @sweep/server create-user`.
 
 ## Packages and boundaries (spec §7)
 

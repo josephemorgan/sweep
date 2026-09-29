@@ -1,41 +1,51 @@
-import { mkdtempSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import request from 'supertest';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
-import { createApp } from '../src/app.js';
+import { JSON_BODY_LIMIT_BYTES } from '../src/limits.js';
 import { createDb, type DbHandle } from '../src/db/client.js';
+import { offlineApp } from './helpers/context.js';
+import { createTestDb, type TestDb } from './helpers/test-db.js';
 
 describe('GET /api/health', () => {
-  let live: DbHandle;
+  let live: TestDb;
   let dead: DbHandle;
 
-  beforeAll(() => {
-    const url = process.env['DATABASE_URL'];
-    if (!url) {
-      throw new Error(
-        'Server tests need DATABASE_URL: copy .env.example to .env and run `docker compose up -d postgres`.',
-      );
-    }
-    live = createDb(url);
+  beforeAll(async () => {
+    live = await createTestDb();
     dead = createDb('postgres://sweep:sweep@127.0.0.1:1/sweep');
   });
 
   afterAll(async () => {
-    await live.pool.end();
+    await live.drop();
     await dead.pool.end();
   });
 
   it('returns 200 {ok: true, db: true} when Postgres answers', async () => {
-    const res = await request(createApp({ db: live.db })).get('/api/health');
+    const res = await request(offlineApp(live.db)).get('/api/health');
     expect(res.status).toBe(200);
     expect(res.body).toEqual({ ok: true, db: true });
   });
 
   it('returns 503 {ok: false, db: false} when Postgres is unreachable', async () => {
-    const res = await request(createApp({ db: dead.db })).get('/api/health');
+    const res = await request(offlineApp(dead.db)).get('/api/health');
     expect(res.status).toBe(503);
     expect(res.body).toEqual({ ok: false, db: false });
+  });
+
+  it('logs a described error, never the SQL, when the check fails', async () => {
+    const spy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    try {
+      await request(offlineApp(dead.db)).get('/api/health');
+      expect(spy).toHaveBeenCalledTimes(1);
+      const logged = spy.mock.calls[0]!.map(String).join(' ');
+      expect(logged).toContain('health: database check failed');
+      expect(logged).not.toContain('Failed query');
+      expect(logged.toLowerCase()).not.toContain('select');
+    } finally {
+      spy.mockRestore();
+    }
   });
 });
 
@@ -45,16 +55,24 @@ describe('API 404 and client serving', () => {
   writeFileSync(join(clientDir, 'index.html'), '<!doctype html><app-root></app-root>');
   writeFileSync(join(clientDir, 'ngsw-worker.js'), '// worker');
   writeFileSync(join(clientDir, 'main.js'), '// main');
-  const app = createApp({ db: handle.db, clientDistDir: clientDir });
+  writeFileSync(join(clientDir, 'ngsw.json'), '{}');
+  writeFileSync(join(clientDir, 'main-ABCD2345.js'), '// main');
+  writeFileSync(join(clientDir, 'chunk-ZXCV7654.js'), '// chunk');
+  writeFileSync(join(clientDir, 'styles-QWER5678.css'), '/* css */');
+  writeFileSync(join(clientDir, 'favicon.ico'), '');
+  mkdirSync(join(clientDir, 'media'));
+  writeFileSync(join(clientDir, 'media', 'font-ASDF2345.woff2'), '');
+  const app = offlineApp(handle.db, { clientDistDir: clientDir });
 
   afterAll(async () => {
     await handle.pool.end();
+    rmSync(clientDir, { recursive: true, force: true });
   });
 
-  it('answers unknown /api routes with a JSON 404, never index.html', async () => {
+  it('never answers /api routes with index.html', async () => {
     const res = await request(app).get('/api/does-not-exist');
-    expect(res.status).toBe(404);
-    expect(res.body).toEqual({ error: { code: 'not-found', message: 'No such API route.' } });
+    expect(res.headers['content-type']).toMatch(/json/);
+    expect(res.text).not.toContain('<app-root>');
   });
 
   it('falls back to index.html for client routes, uncached', async () => {
@@ -70,6 +88,31 @@ describe('API 404 and client serving', () => {
     expect(res.text).toContain('<app-root>');
   });
 
+  it.each([
+    '/main-ABCD2345.js',
+    '/chunk-ZXCV7654.js',
+    '/styles-QWER5678.css',
+    '/media/font-ASDF2345.woff2',
+  ])('serves fingerprinted %s as immutable for a year', async (path) => {
+    const res = await request(app).get(path);
+    expect(res.status).toBe(200);
+    expect(res.headers['cache-control']).toBe('public, max-age=31536000, immutable');
+  });
+
+  it.each(['/ngsw.json', '/ngsw-worker.js'])('serves %s with no-cache', async (path) => {
+    const res = await request(app).get(path);
+    expect(res.status).toBe(200);
+    expect(res.headers['cache-control']).toBe('no-cache');
+  });
+
+  it('does not mark un-fingerprinted files immutable', async () => {
+    for (const path of ['/main.js', '/favicon.ico']) {
+      const res = await request(app).get(path);
+      expect(res.status).toBe(200);
+      expect(res.headers['cache-control']).not.toMatch(/immutable/);
+    }
+  });
+
   it('serves ngsw-worker.js with no-cache and other assets normally', async () => {
     const worker = await request(app).get('/ngsw-worker.js');
     expect(worker.status).toBe(200);
@@ -80,7 +123,7 @@ describe('API 404 and client serving', () => {
   });
 
   it('does not serve the client when clientDistDir is unset', async () => {
-    const res = await request(createApp({ db: handle.db })).get('/');
+    const res = await request(offlineApp(handle.db)).get('/');
     expect(res.status).toBe(404);
   });
 });
@@ -96,7 +139,7 @@ describe('error handling', () => {
     const spy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
     try {
       const secret = 'SECRET-GUIDE-CONTENT';
-      const res = await request(createApp({ db: handle.db }))
+      const res = await request(offlineApp(handle.db))
         .post('/api/anything')
         .set('Content-Type', 'application/json')
         .send(`{"guide": ${secret}}`);
@@ -112,10 +155,10 @@ describe('error handling', () => {
   it('answers an oversized body with a 413 too-large', async () => {
     const spy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
     try {
-      const res = await request(createApp({ db: handle.db }))
+      const res = await request(offlineApp(handle.db))
         .post('/api/anything')
         .set('Content-Type', 'application/json')
-        .send(JSON.stringify({ blob: 'x'.repeat(200 * 1024) }));
+        .send(JSON.stringify({ blob: 'x'.repeat(JSON_BODY_LIMIT_BYTES + 1) }));
       expect(res.status).toBe(413);
       expect(res.body.error.code).toBe('too-large');
       expect(spy).not.toHaveBeenCalled();

@@ -1,0 +1,157 @@
+import { eq } from 'drizzle-orm';
+import request from 'supertest';
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
+import { session } from '../src/db/auth-schema.js';
+import { createDb } from '../src/db/client.js';
+import {
+  TEST_ORIGIN,
+  TEST_PASSWORD,
+  createTestContext,
+  offlineApp,
+  type TestContext,
+} from './helpers/context.js';
+
+function sessionCookie(res: { headers: Record<string, unknown> }): string {
+  const cookies = (res.headers['set-cookie'] ?? []) as unknown as string[];
+  return cookies.find((c) => c.includes('session_token')) ?? '';
+}
+
+describe('Better Auth over http', () => {
+  let ctx: TestContext;
+  beforeAll(async () => {
+    ctx = await createTestContext();
+    await ctx.createUser('ann@example.com');
+  });
+  afterAll(async () => {
+    await ctx.close();
+  });
+
+  it('signs in and sets an httpOnly, SameSite=Lax session cookie (not Secure on http)', async () => {
+    const res = await request(ctx.app)
+      .post('/api/auth/sign-in/email')
+      .set('Origin', ctx.origin)
+      .send({ email: 'ann@example.com', password: TEST_PASSWORD });
+    expect(res.status).toBe(200);
+    const cookie = sessionCookie(res);
+    expect(cookie).toMatch(/HttpOnly/i);
+    expect(cookie).toMatch(/SameSite=Lax/i);
+    expect(cookie).not.toMatch(/;\s*Secure/i);
+  });
+
+  it('rejects a wrong password', async () => {
+    const res = await request(ctx.app)
+      .post('/api/auth/sign-in/email')
+      .set('Origin', ctx.origin)
+      .send({ email: 'ann@example.com', password: 'wrong-password-000' });
+    expect(res.status).toBe(401);
+  });
+
+  it('rejects sign-in from an untrusted origin', async () => {
+    const res = await request(ctx.app)
+      .post('/api/auth/sign-in/email')
+      .set('Origin', 'http://evil.example')
+      .send({ email: 'ann@example.com', password: TEST_PASSWORD });
+    expect(res.status).toBe(403);
+  });
+
+  it('refuses sign-up while sign-up is disabled', async () => {
+    const res = await request(ctx.app)
+      .post('/api/auth/sign-up/email')
+      .set('Origin', ctx.origin)
+      .send({ email: 'new@example.com', password: TEST_PASSWORD, name: 'New' });
+    expect(res.status).toBeGreaterThanOrEqual(400);
+    const { rows } = await ctx.testDb.pool.query<{ n: number }>(
+      `select count(*)::int as n from "user" where email = 'new@example.com'`,
+    );
+    expect(rows[0]?.n).toBe(0);
+  });
+
+  it('answers /api routes without a session with 401 unauthorized', async () => {
+    const res = await request(ctx.app).get('/api/does-not-exist');
+    expect(res.status).toBe(401);
+    expect(res.body).toEqual({ error: { code: 'unauthorized', message: expect.any(String) } });
+  });
+
+  it('lets a signed-in user through the guard (unknown routes are then a JSON 404)', async () => {
+    const { agent } = await ctx.signedInAgent('bob@example.com');
+    const res = await agent.get('/api/does-not-exist');
+    expect(res.status).toBe(404);
+    expect(res.body).toEqual({ error: { code: 'not-found', message: 'No such API route.' } });
+  });
+
+  it('forwards the sliding-session refresh cookie from any authenticated API call', async () => {
+    const { agent, userId } = await ctx.signedInAgent('eve@example.com');
+    const day = 24 * 60 * 60 * 1000;
+    // Better Auth refreshes once expiresAt - expiresIn (7 days) + updateAge (1 day) has passed.
+    const stale = new Date(Date.now() + 6 * day - 60 * 60 * 1000);
+    await ctx.db.update(session).set({ expiresAt: stale }).where(eq(session.userId, userId));
+    const res = await agent.get('/api/runs');
+    expect(res.status).toBe(200);
+    expect(sessionCookie(res)).toMatch(/Max-Age=604800/);
+    // create-user's sign-up left a second session for this user; only the agent's one slid.
+    const rows = await ctx.db
+      .select({ expiresAt: session.expiresAt })
+      .from(session)
+      .where(eq(session.userId, userId));
+    const latest = Math.max(...rows.map((r) => r.expiresAt.getTime()));
+    expect(latest).toBeGreaterThan(Date.now() + 7 * day - 60 * 1000);
+    expect((await agent.get('/api/runs')).status).toBe(200);
+  });
+
+  it('signs out', async () => {
+    const { agent } = await ctx.signedInAgent('cat@example.com');
+    expect((await agent.post('/api/auth/sign-out').send({})).status).toBe(200);
+    expect((await agent.get('/api/does-not-exist')).status).toBe(401);
+  });
+});
+
+describe('Better Auth over https', () => {
+  let ctx: TestContext;
+  beforeAll(async () => {
+    ctx = await createTestContext({ origin: 'https://sweep.example' });
+    await ctx.createUser('dee@example.com');
+  });
+  afterAll(async () => {
+    await ctx.close();
+  });
+
+  it('marks the session cookie Secure when BETTER_AUTH_URL is https', async () => {
+    const res = await request(ctx.app)
+      .post('/api/auth/sign-in/email')
+      .set('Origin', 'https://sweep.example')
+      .send({ email: 'dee@example.com', password: TEST_PASSWORD });
+    expect(res.status).toBe(200);
+    const cookie = sessionCookie(res);
+    expect(cookie).toMatch(/;\s*Secure/i);
+    expect(cookie).toMatch(/HttpOnly/i);
+    expect(cookie).toMatch(/SameSite=Lax/i);
+  });
+});
+
+describe('Better Auth logging', () => {
+  it('never logs SQL, params, emails or passwords when the database is down', async () => {
+    const dead = createDb('postgres://sweep:sweep@127.0.0.1:1/sweep');
+    const spies = (['error', 'warn', 'log', 'info'] as const).map((m) =>
+      vi.spyOn(console, m).mockImplementation(() => undefined),
+    );
+    try {
+      const email = 'leak-check@example.com';
+      const password = 'leak-check-password-999';
+      const res = await request(offlineApp(dead.db))
+        .post('/api/auth/sign-in/email')
+        .set('Origin', TEST_ORIGIN)
+        .send({ email, password });
+      expect(res.status).toBeGreaterThanOrEqual(500);
+      const logged = spies
+        .flatMap((s) => s.mock.calls)
+        .map((c) => c.map(String).join(' '))
+        .join('\n');
+      for (const secret of ['Failed query', 'params:', email, password]) {
+        expect(logged).not.toContain(secret);
+      }
+    } finally {
+      spies.forEach((s) => s.mockRestore());
+      await dead.pool.end();
+    }
+  });
+});

@@ -82,3 +82,60 @@ jobs:
           name: playwright-report
           path: packages/client/playwright-report/
           retention-days: 7
+
+  docker:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      BETTER_AUTH_SECRET: ci-only-secret-not-used-anywhere-else-000
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Build and start the image with Postgres
+        run: docker compose up -d --build
+
+      - name: Wait for /api/health
+        run: |
+          for i in $(seq 1 60); do
+            body=$(curl -fsS http://127.0.0.1:3000/api/health || true)
+            if [ "$body" = '{"ok":true,"db":true}' ]; then
+              echo "healthy: $body"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "app never became healthy"
+          exit 1
+
+      - name: Create a user with the bundled script
+        run: printf 'ci-password-123456\n' | docker compose exec -T app node server/dist/scripts/create-user.js --email ci@example.com
+
+      - name: Sign in and dry-run a guide upload
+        run: |
+          # Origin must be the app's BETTER_AUTH_URL (compose default SWEEP_APP_URL).
+          origin=http://localhost:3000
+          jar=$(mktemp)
+          curl -fsS -o /dev/null -c "$jar" -H "Origin: $origin" -H 'Content-Type: application/json' \
+            -d '{"email":"ci@example.com","password":"ci-password-123456"}' \
+            http://127.0.0.1:3000/api/auth/sign-in/email
+          status=$(curl -sS -o dry-run.json -w '%{http_code}' -b "$jar" -H "Origin: $origin" \
+            -F 'file=@guides/examples/lantern-keep.yaml' \
+            'http://127.0.0.1:3000/api/runs?dryRun=true')
+          if [ "$status" != 200 ]; then
+            echo "dry run returned $status"
+            cat dry-run.json
+            exit 1
+          fi
+          jq -e '.summary != null' dry-run.json
+
+      - name: Serve the client with no-cache index.html
+        run: |
+          curl -fsSI http://127.0.0.1:3000/ | grep -i '^cache-control: no-cache'
+
+      - name: Logs on failure
+        if: failure()
+        run: docker compose logs
+
+      - name: Stop
+        if: always()
+        run: docker compose down -v

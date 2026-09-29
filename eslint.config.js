@@ -97,6 +97,33 @@ export default defineConfig([
     },
   },
 
+  // Only the core adapter and its parse worker import the parser entry point (keeps contract
+  // drift in one place).
+  {
+    files: ['packages/server/src/**/*.ts'],
+    ignores: [
+      'packages/server/src/guides/core-adapter.ts',
+      'packages/server/src/guides/parse-worker.ts',
+    ],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['@sweep/client', '@sweep/client/*', '@angular/*'],
+              message: 'Server and client never import each other (spec §7).',
+            },
+            {
+              group: ['@sweep/core/parse', '@sweep/core/parse/*'],
+              message: 'Import parser APIs through src/guides/core-adapter.ts.',
+            },
+          ],
+        },
+      ],
+    },
+  },
+
   // @sweep/client: Angular rules; main core entry only.
   {
     files: ['packages/client/**/*.ts'],
