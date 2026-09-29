@@ -941,3 +941,6 @@ Converting an existing walkthrough into a guide? Follow these rules. The skill a
 7. **Never invent facts.** Every section, task, reward and closure must come from the source. If the source doesn't say, leave it out.
 8. **Loop on `pnpm sweep validate` until it's clean.** Read the codes, not just the messages: the code says which rule failed, and the [Validation](#validation) tables say what each code means and where it points. Use `--json` to read issues by `code` and `path`.
 9. **Prefer `.md` for long walkthroughs.** The prose stays readable and out of YAML indentation.
+10. **Omitting `until` is a closure claim.** It means the task can be done only in `from`. Decide every window's `until`: the last leaf before a closure the source states, the leaf of a one-time event, or `end`.
+11. **End a leaf at every point of no return.** Sweep warns when a leaf is cleared. If the irreversible step falls mid-section, split the section so the last-chance leaf is cleared before it.
+12. **Keep visible text spoiler-light.** Section titles and overviews, task titles and category text show before the player gets there. Never name a future plot event in them: put it in a walkthrough or `how`, or mark it `spoiler: true`.
