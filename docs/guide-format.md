@@ -324,7 +324,7 @@ Spoilers are part of a layered reveal (spec §5.6). Section titles and overviews
 - Duplicate keys are an error (`yaml-syntax`). A duplicated key directly under `categories` is reported as `id-duplicate`.
 - Custom tags (`!something`) are an error (`yaml-syntax`).
 - Anchors and aliases are allowed, with at most 100 alias expansions. More is `yaml-syntax`.
-- UTF-8 only (`encoding`). A byte-order mark is accepted and stripped. Windows (`\r\n`) and old Mac (`\r`) line endings are accepted.
+- UTF-8 only, with no NUL (U+0000), and no NUL or unpaired surrogate produced by an escape such as `"\0"` or `"\ud800"` (`encoding`). A byte-order mark is accepted and stripped. Windows (`\r\n`) and old Mac (`\r`) line endings are accepted.
 
 ## Validation
 
@@ -360,7 +360,7 @@ The validator works in phases. Some errors stop it before later phases run, beca
 
 | Code | Rule | Points at |
 |---|---|---|
-| `encoding` | The file isn't valid UTF-8. | The first invalid byte. |
+| `encoding` | The file isn't valid UTF-8, or it (or a YAML escape) contains U+0000 or an unpaired surrogate. | The first invalid byte or character, or the string with the escape. |
 | `too-large` | The file is over 2 MiB. | No location. |
 | `no-root-file` | There isn't exactly one `guide.yaml`, `guide.yml` or `guide.md`. | No location. |
 | `yaml-syntax` | YAML parse error, multiple documents, duplicate key, custom tag, or alias limit exceeded. | The parse error; the second of two duplicate keys; the value after the custom tag; the start of the second document; the first alias. |

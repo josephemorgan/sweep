@@ -9,5 +9,5 @@ for f in guides/examples/**/*.{yaml,yml,md}; do
 done
 if (( ${#files[@]} == 0 )); then echo "No example guides yet."; exit 0; fi
 status=0
-for f in "${files[@]}"; do pnpm -s sweep validate "$f" || status=1; done
+for f in "${files[@]}"; do node packages/core/bin/sweep.js validate "$f" || status=1; done
 exit $status

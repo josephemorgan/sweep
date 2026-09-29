@@ -152,6 +152,29 @@ describe.each([
   });
 });
 
+describe('markdown strings Postgres can not store', () => {
+  it('reports a NUL or unpaired surrogate from a front-matter escape, and gives no guide', () => {
+    const text = MINI.replace('overview: Two.', 'overview: "T\\x00wo"').replace(
+      'title: A',
+      'title: "\\udc00"',
+    );
+    const result = parseGuide({ 'guide.md': text });
+    expect(result.guide).toBeUndefined();
+    expect(result.issues.map((i) => [i.code, i.file, i.line, i.column, i.path])).toEqual([
+      ['encoding', 'guide.md', 6, 12, 'sections[0].title'],
+      ['encoding', 'guide.md', 10, 15, 'sections[1].overview'],
+    ]);
+  });
+
+  it('reports a NUL in the body in the text phase', () => {
+    const result = parseGuide({ 'guide.md': `${MINI}\n# a\n\nTe\u0000xt.\n` });
+    expect(result.guide).toBeUndefined();
+    expect(result.issues).toEqual([
+      expect.objectContaining({ code: 'encoding', file: 'guide.md', line: 15, column: 3 }),
+    ]);
+  });
+});
+
 describe('walkthrough-twice with an empty inline walkthrough', () => {
   it('still counts the key', () => {
     const text = `${HEADER.replace('overview: One.\n', 'overview: One.\n    walkthrough: ""\n')}---\n\n# a\n\nText.\n`;

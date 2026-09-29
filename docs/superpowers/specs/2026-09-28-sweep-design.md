@@ -222,7 +222,7 @@ A group's `requires` is a gate on every section inside it. The children's own `r
 - YAML 1.2 core schema, one document only.
 - Duplicate keys are an error. Custom tags are an error.
 - Anchors and aliases are allowed, with at most 100 alias expansions.
-- UTF-8 only. A BOM is accepted and stripped.
+- UTF-8 only, with no U+0000 or unpaired surrogates, including from escapes (`encoding`). A BOM is accepted and stripped.
 
 ### 3.6 Validation
 
@@ -236,7 +236,7 @@ The validator returns a list of **issues**: `{severity, code, message, file, lin
 
 | Code | Rule |
 |---|---|
-| `encoding` | The file isn't valid UTF-8. |
+| `encoding` | The file isn't valid UTF-8, or it (or a YAML escape) contains U+0000 or an unpaired surrogate. |
 | `too-large` | The file is over 2 MiB. |
 | `no-root-file` | The virtual file map lacks exactly one `guide.yaml`, `guide.yml` or `guide.md`. |
 | `yaml-syntax` | YAML parse error, multiple documents, duplicate key, custom tag, or alias limit exceeded. |

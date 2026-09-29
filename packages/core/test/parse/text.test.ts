@@ -114,6 +114,49 @@ describe('readSource: encoding', () => {
   it('accepts a paired surrogate', () => {
     expect(readSource({ 'guide.yaml': 'a\u{1F600}' }).issues).toEqual([]);
   });
+
+  const NUL_MESSAGE = 'the file contains a NUL character (U+0000)';
+
+  it('rejects a NUL in a string at its position', () => {
+    const { source, issues } = readSource({ 'guide.yaml': 'ab\r\ncd\u0000e' });
+    expect(source).toBeUndefined();
+    expect(issues).toEqual([
+      expect.objectContaining({
+        severity: 'error',
+        code: 'encoding',
+        message: NUL_MESSAGE,
+        file: 'guide.yaml',
+        line: 2,
+        column: 3,
+        path: null,
+      }),
+    ]);
+  });
+
+  it('rejects a NUL in valid UTF-8 bytes at its position', () => {
+    const { source, issues } = readSource({
+      'guide.md': new Uint8Array([0xc3, 0xa9, 0x0a, 0x62, 0x00, 0x63]),
+    });
+    expect(source).toBeUndefined();
+    expect(issues).toEqual([
+      expect.objectContaining({
+        code: 'encoding',
+        message: NUL_MESSAGE,
+        file: 'guide.md',
+        line: 2,
+        column: 2,
+      }),
+    ]);
+  });
+
+  it('reports whichever of a NUL and a lone surrogate comes first', () => {
+    expect(readSource({ 'guide.yaml': 'a\uDC00\u0000' }).issues).toEqual([
+      expect.objectContaining({ message: 'the file is not valid UTF-8', column: 2 }),
+    ]);
+    expect(readSource({ 'guide.yaml': 'a\u0000\uDC00' }).issues).toEqual([
+      expect.objectContaining({ message: NUL_MESSAGE, column: 2 }),
+    ]);
+  });
 });
 
 describe('readSource: BOM, newlines, Buffer', () => {
