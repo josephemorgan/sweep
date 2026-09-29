@@ -99,7 +99,7 @@ Per package: `pnpm --filter @sweep/<core|server|client> <script>`.
 
 ## Known constraints
 
-- **pnpm is pinned to 10.34.6** (`packageManager`). Corepack 0.32–0.36 can't run pnpm 12 (no `bin/pnpm.cjs`). See ADR 0013. pnpm 10 blocks dependency build scripts unless they're listed in `pnpm-workspace.yaml` `onlyBuiltDependencies`.
+- **pnpm is pinned to 10.34.6** (`packageManager`). Corepack < 0.34.5 (Node < 24.12) can't run pnpm 12; moving to pnpm 12 is a separate session. See ADR 0013. pnpm 10 blocks dependency build scripts unless they're listed in `pnpm-workspace.yaml` `onlyBuiltDependencies`.
 - **Node ≥ 24.15** (Angular CLI 22.2's floor). `.nvmrc` pins 24.21.0 and `.npmrc` has `engine-strict=true`.
 - **TypeScript stays on ~6.0** (Angular 22.2 peer range). Don't upgrade to TS 7.
 - **Stale core build:** server and client import `packages/core/dist`. After editing core, run `pnpm build:core` (or keep `pnpm dev` running). See ADR 0014.
