@@ -52,6 +52,18 @@ describe('package boundaries (spec §7)', () => {
     }
   });
 
+  it.each([
+    '@angular/core',
+    '@angular/common/http',
+    '@sweep/server',
+    '@sweep/server/x',
+    '@sweep/client',
+    '@sweep/client/x',
+  ])('rejects %s in core library code', async (spec) => {
+    const ids = await ruleIds('packages/core/src/probe.ts', `import '${spec}';\n`);
+    expect(ids).toContain('no-restricted-imports');
+  });
+
   it('rejects process, window and console in core library code', async () => {
     expect(
       await ruleIds('packages/core/src/probe.ts', "export const a = process.env['X'];\n"),

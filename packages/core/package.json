@@ -22,7 +22,8 @@
     "bin"
   ],
   "scripts": {
-    "build": "rm -rf dist && tsc -p tsconfig.build.json",
+    "build": "tsc -p tsconfig.build.json",
+    "clean": "rm -rf dist",
     "dev": "tsc -p tsconfig.build.json --watch --preserveWatchOutput",
     "typecheck": "tsc -p tsconfig.lib.json && tsc -p tsconfig.json",
     "test": "vitest run"
