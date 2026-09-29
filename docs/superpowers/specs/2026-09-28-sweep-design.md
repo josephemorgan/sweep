@@ -10,7 +10,7 @@ Decisions in this spec come with their reasons ("**Why:**"). Future sessions sho
 
 ## 1. Overview and goals
 
-Sweep is a game-agnostic, spoiler-light companion for replaying games. A user uploads a **guide** file that describes a game's sections, tasks and walkthroughs. Sweep turns it into a private, interactive checklist that answers questions at a glance:
+Sweep is a game-agnostic, spoiler-light companion for playing games, whether it's a replay or a first playthrough. A user uploads a **guide** file that describes a game's sections, tasks and walkthroughs. Sweep turns it into a private, interactive checklist that answers questions at a glance:
 
 - What's worth doing here?
 - What closes for good if I move on?
@@ -18,7 +18,7 @@ Sweep is a game-agnostic, spoiler-light companion for replaying games. A user up
 
 The user doesn't have to read a full guide to get these answers.
 
-**Motivation.** When replaying a game like Final Fantasy VIII, it's easy to end up glued to a guide, and that hurts immersion. Sweep is meant to be glanced at when entering a new area and then put away. Immersion is the whole point, so spoiler control matters (§5.6).
+**Motivation.** When playing a game like Final Fantasy VIII, whether it's a replay or a first playthrough, it's easy to end up glued to a guide, and that hurts immersion. Sweep is meant to be glanced at when entering a new area and then put away. Immersion is the whole point, so spoiler control matters (§5.6).
 
 ### Goals (v1)
 
@@ -87,6 +87,13 @@ Use these terms consistently in code, UI copy, docs and commits.
 - Most guides will be written by an LLM converting an existing walkthrough. Flat lists are easy to generate, diff and cross-check.
 - A generated JSON Schema gives human authors autocomplete and inline errors.
 - The format must stay pleasant to write by hand, because some users object to LLM authoring.
+
+**Two structures: a containment tree plus a progression graph.** Sections carry two separate relations, and each one uses the shape that fits it:
+
+- **Containment is a tree** (`sections` nesting: Disc 1 > Balamb Garden). It's for organizing and displaying sections. It also defines **route order** (depth-first file order). Route order is what gives the default `requires`, the card order and the meaning of "next". A leaf has exactly one parent.
+- **Progression is a directed acyclic graph** (`requires`, with all-of or `any` edges between any sections, across branches of the tree). It decides what unlocks when. Open worlds, hubs and converging branches are all expressed here, not in the nesting.
+
+A general graph for containment was rejected. Coming back to a place is a new visit (Balamb Garden on Disc 1 vs. Disc 3), so it's modeled as a separate leaf with its own ID and clear state. Tasks span visits through their windows. If a leaf had several parents, clearing it would count toward several groups at once. Its position in route order would also be ambiguous, and "next" and card placement would stop being deterministic.
 
 **Missable is computed, never authored.** Authors describe *when* a task is available (windows). The engine works out whether it's open, closing or missed. Categories describe what *kind* of thing a task is.
 
