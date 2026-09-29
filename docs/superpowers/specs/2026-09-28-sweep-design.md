@@ -236,7 +236,7 @@ The validator returns a list of **issues**: `{severity, code, message, file, lin
 
 | Code | Rule |
 |---|---|
-| `encoding` | The file isn't valid UTF-8. |
+| `encoding` | The file isn't valid UTF-8, or it (or a YAML escape) contains U+0000 or an unpaired surrogate. |
 | `too-large` | The file is over 2 MiB. |
 | `no-root-file` | The virtual file map lacks exactly one `guide.yaml`, `guide.yml` or `guide.md`. |
 | `yaml-syntax` | YAML parse error, multiple documents, duplicate key, custom tag, or alias limit exceeded. |
