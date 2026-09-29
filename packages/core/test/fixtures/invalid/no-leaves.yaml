@@ -1,0 +1,8 @@
+# no-leaves: sections is an empty list
+sweep: 1
+game: Tiny Linear
+categories:
+  loot:
+    name: Loot
+    about: Things to pick up.
+sections: []

@@ -1,11 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { ErrorCode, LIMITS, NOT_IMPLEMENTED, WarningCode, parseGuide } from '../src/parse/index.js';
+import { readFixture } from './helpers.js';
 
 const SLUG = /^[a-z][a-z0-9]*(-[a-z0-9]+)*$/;
 
 describe('@sweep/core/parse (scaffold stub)', () => {
   it('returns no guide and a single not-implemented error', () => {
-    const result = parseGuide({ 'guide.yaml': 'sweep: 1\n' });
+    const result = parseGuide({ 'guide.yaml': readFixture('valid/tiny-linear.yaml') });
     expect(result.guide).toBeUndefined();
     expect(result.issues).toEqual([
       {

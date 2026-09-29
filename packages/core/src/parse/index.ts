@@ -4,6 +4,7 @@ import type { Issue } from '../model/issue.js';
 import { splitFrontMatter } from './container.js';
 import { ErrorCode, NOT_IMPLEMENTED } from './issue-codes.js';
 import { issue, sortIssues } from './issues.js';
+import { checkStructure } from './structure.js';
 import { readSource } from './text.js';
 import { parseYamlSource } from './yaml.js';
 
@@ -46,8 +47,16 @@ export function parseGuide(files: GuideFiles): ParseResult {
   // Phase 3: YAML and format version.
   const { parsed, issues: yamlIssues } = parseYamlSource(yamlText, source.file, lineOffset);
   if (parsed === undefined) return { issues: sortIssues(yamlIssues) };
-  // Later phases (structure onwards) arrive in the following tasks.
-  return { issues: [issue('error', NOT_IMPLEMENTED, NOT_IMPLEMENTED_MESSAGE, null, null, null)] };
+  // Phase 4: structure.
+  const { raw, issues: structureIssues } = checkStructure(
+    parsed.value,
+    source.file,
+    parsed.locator,
+  );
+  if (raw === undefined) return { issues: sortIssues(structureIssues) };
+  // Later phases (identity and references onwards) arrive in the following tasks.
+  const notImplemented = issue('error', NOT_IMPLEMENTED, NOT_IMPLEMENTED_MESSAGE, null, null, null);
+  return { issues: sortIssues([...structureIssues, notImplemented]) };
 }
 
 const NOT_IMPLEMENTED_MESSAGE = 'parseGuide is not implemented yet (arrives in session A).';

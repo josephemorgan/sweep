@@ -1,4 +1,13 @@
-import { isMap, isNode, isScalar, isSeq, type Document, type LineCounter, type Pair } from 'yaml';
+import {
+  isAlias,
+  isMap,
+  isNode,
+  isScalar,
+  isSeq,
+  type Document,
+  type LineCounter,
+  type Pair,
+} from 'yaml';
 
 /** One step of a YAML path: a mapping key or a sequence index. */
 export type PathSegment = string | number;
@@ -25,6 +34,11 @@ export interface Locator {
   value(path: readonly PathSegment[]): SourcePosition;
   /** Key node of the last segment (for unknown-key, category keys). */
   key(path: readonly PathSegment[]): SourcePosition;
+  /**
+   * Source text of the scalar at `path`, following aliases (`1942` for `game: 1942`), or undefined
+   * when there's no scalar there. Used to keep numbers and booleans in plain-text fields as written.
+   */
+  sourceOf(path: readonly PathSegment[]): string | undefined;
 }
 
 /**
@@ -68,8 +82,28 @@ export function createLocator(
     return position;
   }
 
+  function nodeAt(path: readonly PathSegment[]): unknown {
+    const resolve = (node: unknown): unknown => (isAlias(node) ? node.resolve(doc) : node);
+    let node = resolve(doc.contents);
+    for (const segment of path) {
+      if (isMap(node) && typeof segment === 'string') {
+        node = node.items.find((p) => isScalar(p.key) && String(p.key.value) === segment)?.value;
+      } else if (isSeq(node) && typeof segment === 'number') {
+        node = node.items[segment];
+      } else {
+        return undefined;
+      }
+      node = resolve(node);
+    }
+    return node;
+  }
+
   return {
     value: (path) => locate(path, false),
     key: (path) => locate(path, true),
+    sourceOf: (path) => {
+      const node = nodeAt(path);
+      return isScalar(node) && typeof node.source === 'string' ? node.source : undefined;
+    },
   };
 }

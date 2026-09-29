@@ -80,4 +80,19 @@ describe('createLocator', () => {
   it('gives 1:1 plus the offset for an empty document', () => {
     expect(locator('', 1).value(['sweep'])).toEqual({ line: 2, column: 1 });
   });
+
+  it('gives the source text of a scalar, following aliases', () => {
+    expect(loc.sourceOf(['sections', 1, 'title'])).toBe('Forest');
+    expect(loc.sourceOf(['sections', 1, 'also'])).toBe('shared');
+    const numbers = locator('n: 3.10\nb: true\nh: 0x1F\n');
+    expect(numbers.sourceOf(['n'])).toBe('3.10');
+    expect(numbers.sourceOf(['b'])).toBe('true');
+    expect(numbers.sourceOf(['h'])).toBe('0x1F');
+  });
+
+  it('gives no source text for a collection or a missing path', () => {
+    expect(loc.sourceOf(['sections', 1])).toBeUndefined();
+    expect(loc.sourceOf(['sections', 9, 'title'])).toBeUndefined();
+    expect(loc.sourceOf(['nope'])).toBeUndefined();
+  });
 });
