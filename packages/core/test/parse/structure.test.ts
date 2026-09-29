@@ -283,6 +283,130 @@ describe('checkStructure', () => {
     });
   });
 
+  describe('unknown-key hints', () => {
+    it.each(['requires', 'any'])('uses the category keys for a category named %s', (id) => {
+      const text = BASE.replace(
+        '  loot:\n',
+        `  ${id}:\n    name: R\n    about: A\n    nmae: x\n  loot:\n`,
+      );
+      const warning = only(check(text).issues, 'unknown-key');
+      expect(warning.path).toBe(`categories.${id}.nmae`);
+      expect(warning.message).toBe('unknown key `nmae` is ignored; did you mean `name`?');
+    });
+
+    it.each(['foo', '3', '<<'])(
+      'does not suggest a key for %s, which is no closer than its length',
+      (key) => {
+        const warning = only(check(withSection(`${key}: 1`)).issues, 'unknown-key');
+        expect(warning.message).toBe(
+          `unknown key \`${key}\` is ignored; known keys: id, title, overview, walkthrough, ` +
+            'requires, spoiler, renamed_from, sections',
+        );
+      },
+    );
+  });
+
+  describe('booleans and nulls in ID and reference fields', () => {
+    it.each([
+      [
+        'from: null',
+        BASE.replace('from: start', 'from: null'),
+        'tasks[0].windows[0].from',
+        16,
+        15,
+        '`from` must be a string; YAML read `null` as null, so quote it: from: "null"',
+      ],
+      [
+        'id: true',
+        BASE.replace('id: start', 'id: true'),
+        'sections[0].id',
+        8,
+        9,
+        '`id` must be a string; YAML read `true` as boolean, so quote it: id: "true"',
+      ],
+      [
+        'category: ~',
+        BASE.replace('category: loot', 'category: ~'),
+        'tasks[0].category',
+        14,
+        15,
+        '`category` must be a string; YAML read `~` as null, so quote it: category: "~"',
+      ],
+      [
+        'exclusive: False',
+        BASE.replace('category: loot', 'category: loot\n    exclusive: False'),
+        'tasks[0].exclusive',
+        15,
+        16,
+        '`exclusive` must be a string; YAML read `False` as boolean, so quote it: exclusive: "False"',
+      ],
+      [
+        'requires: [false]',
+        withSection('requires: [false]'),
+        'sections[0].requires[0]',
+        11,
+        16,
+        '`requires[0]` must be a string; YAML read `false` as boolean, so quote it: "false"',
+      ],
+      [
+        'requires: {any: [start, null]}',
+        withSection('requires: {any: [start, null]}'),
+        'sections[0].requires.any[1]',
+        11,
+        29,
+        '`any[1]` must be a string; YAML read `null` as null, so quote it: "null"',
+      ],
+      [
+        'renamed_from: true',
+        withSection('renamed_from: true'),
+        'sections[0].renamed_from',
+        11,
+        19,
+        '`renamed_from` must be a string; YAML read `true` as boolean, so quote it: renamed_from: "true"',
+      ],
+      [
+        'from: (empty)',
+        BASE.replace('from: start', 'from:'),
+        'tasks[0].windows[0].from',
+        16,
+        14,
+        '`from` is empty; give it a section ID',
+      ],
+      [
+        'a requires entry left empty',
+        withSection('requires:', '  -'),
+        'sections[0].requires[0]',
+        12,
+        8,
+        '`requires[0]` is empty; give it a section ID',
+      ],
+    ])('%s is a type error that says to quote it', (_name, text, path, line, column, message) => {
+      const { raw, issues } = check(text);
+      expect(raw).toBeUndefined();
+      expect(issues.filter((i) => i.severity === 'error')).toEqual([
+        expect.objectContaining({ code: 'type', path, line, column, message }),
+      ]);
+    });
+  });
+
+  describe('category keys', () => {
+    it('rejects a __proto__ key at the key, and a non-mapping value, independent of Zod', () => {
+      const { raw, issues } = check(BASE.replace('  loot:\n', '  __proto__: 5\n  loot:\n'));
+      expect(raw).toBeUndefined();
+      expect(only(issues, 'id-format')).toMatchObject({
+        line: 4,
+        column: 3,
+        path: 'categories.__proto__',
+        message: `category ID \`__proto__\` must be a slug (lowercase letters and digits in words joined by single hyphens, starting with a letter, at most 64 characters, like forest-chest)`,
+      });
+      expect(only(issues, 'type')).toMatchObject({
+        line: 4,
+        column: 14,
+        path: 'categories.__proto__',
+      });
+    });
+  });
+
   it('drops schema issues on sweep', () => {
     const { parsed } = parseYamlSource(BASE, 'guide.yaml', 0);
     const value = { ...(parsed!.value as object), sweep: 2 };

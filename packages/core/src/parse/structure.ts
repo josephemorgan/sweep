@@ -145,8 +145,9 @@ function expected(path: readonly PathSegment[]): string {
 function knownKeys(path: readonly PathSegment[]): readonly string[] {
   const parent = path.at(-2);
   if (path.length === 0) return KNOWN_KEYS.guide;
-  if (path.at(-1) === 'requires') return KNOWN_KEYS.any;
+  // Before `requires`: a category may be keyed `requires`.
   if (path.length === 2 && parent === 'categories') return KNOWN_KEYS.category;
+  if (path.at(-1) === 'requires') return KNOWN_KEYS.any;
   if (parent === 'windows') return KNOWN_KEYS.window;
   if (parent === 'tasks') return KNOWN_KEYS.task;
   return KNOWN_KEYS.section;
@@ -165,9 +166,13 @@ function levenshtein(a: string, b: string): number {
   return previous[b.length]!;
 }
 
+/**
+ * Suggests the closest known key within `SUGGEST_DISTANCE` edits, but only when that is fewer edits
+ * than the key has characters (otherwise `foo` or `3` would "suggest" `id`).
+ */
 function unknownKeyMessage(key: string, known: readonly string[]): string {
   let best: string | undefined;
-  let bestDistance = SUGGEST_DISTANCE + 1;
+  let bestDistance = Math.min(SUGGEST_DISTANCE + 1, key.length);
   for (const candidate of known) {
     const distance = levenshtein(key, candidate);
     if (distance < bestDistance) [best, bestDistance] = [candidate, distance];
@@ -245,8 +250,61 @@ function idFormat(ctx: Context, path: readonly PathSegment[]): void {
   error(ctx, ErrorCode.IdFormat, `${field(path)} must be ${SLUG_SHAPE}; found ${found}`, path);
 }
 
+/** Fields whose value is a list of IDs, for `quoteHint`. */
+const ID_LISTS: ReadonlySet<PathSegment | undefined> = new Set(['requires', 'any', 'renamed_from']);
+
+/**
+ * What an ID or reference field at `path` names, or undefined when `path` isn't one: a section or
+ * task `id`, a slug field, or an entry of an ID list.
+ */
+function idRole(path: readonly PathSegment[]): string | undefined {
+  const last = path.at(-1);
+  const parent = path.at(-2);
+  if (typeof last === 'number')
+    return ID_LISTS.has(parent) ? SLUG_ROLES[String(parent)] : undefined;
+  if (last === 'id') return path.at(-3) === 'tasks' ? 'a task ID' : 'a section ID';
+  if (last === 'requires' || last === 'any') return undefined;
+  return Object.hasOwn(SLUG_ROLES, String(last)) ? SLUG_ROLES[String(last)] : undefined;
+}
+
+/**
+ * Ruling R6: YAML reads unquoted `true`, `null` or `~` as a boolean or null, which an ID field
+ * can't hold. Reports a `type` error that tells the author to quote it, at each such value at
+ * `path` or in the ID list there. Returns whether it reported anything.
+ */
+function quoteHint(ctx: Context, path: readonly PathSegment[]): boolean {
+  const value = valueAt(ctx.value, path);
+  let candidates: PathSegment[][] = [[...path]];
+  if (Array.isArray(value) && ID_LISTS.has(path.at(-1))) {
+    candidates = value.map((_, i) => [...path, i]);
+  } else if (path.at(-1) === 'requires' && isMapping(value) && Array.isArray(value.any)) {
+    candidates = value.any.map((_, i) => [...path, 'any', i]);
+  }
+  let reported = false;
+  for (const candidate of candidates) {
+    const found = valueAt(ctx.value, candidate);
+    const role = idRole(candidate);
+    if ((found !== null && typeof found !== 'boolean') || role === undefined) continue;
+    const last = candidate.at(-1)!;
+    const name = typeof last === 'number' ? `${String(candidate.at(-2))}[${last}]` : last;
+    const raw = ctx.locator.sourceOf(candidate) ?? String(found);
+    let message: string;
+    if (raw === '') {
+      message = `\`${name}\` is empty; give it ${role}`;
+    } else {
+      const kind = found === null ? 'null' : 'boolean';
+      const quoted = typeof last === 'number' ? `"${raw}"` : `${name}: "${raw}"`;
+      message = `\`${name}\` must be a string; YAML read \`${raw}\` as ${kind}, so quote it: ${quoted}`;
+    }
+    error(ctx, ErrorCode.Type, message, candidate);
+    reported = true;
+  }
+  return reported;
+}
+
 /** `type` for a present value; `required` at the mapping that lacks the key for an absent one. */
 function typeOrRequired(ctx: Context, path: readonly PathSegment[]): void {
+  if (quoteHint(ctx, path)) return;
   const found = valueAt(ctx.value, path);
   if (found !== undefined) {
     const message = `${field(path)} must be ${expected(path)}; found ${describe(found)}`;
@@ -331,12 +389,10 @@ function mapZodIssue(ctx: Context, zodIssue: ZodIssue): void {
         ctx.report('warning', WarningCode.UnknownKey, message, ctx.locator.key(keyPath), keyPath);
       }
       return;
-    case 'invalid_key': {
-      // A category key that isn't a slug.
-      const message = `category ID \`${String(path.at(-1))}\` must be ${SLUG_SHAPE}`;
-      ctx.report('error', ErrorCode.IdFormat, message, ctx.locator.key(path), path);
+    case 'invalid_key':
+      // A category key that isn't a slug. `checkCategories` reports it too; `report` dedupes.
+      categoryKeyFormat(ctx, String(path.at(-1)));
       return;
-    }
     case 'invalid_union':
       unionFailure(ctx, path);
       return;
@@ -387,6 +443,25 @@ function checkSections(ctx: Context): void {
   });
 }
 
+function categoryKeyFormat(ctx: Context, key: string): void {
+  const path = ['categories', key];
+  const message = `category ID \`${key}\` must be ${SLUG_SHAPE}`;
+  ctx.report('error', ErrorCode.IdFormat, message, ctx.locator.key(path), path);
+}
+
+/**
+ * Checks every category key is a slug and every category a mapping, independent of Zod: Zod's
+ * record skips a `__proto__` key, which would otherwise reach normalization unchecked.
+ */
+function checkCategories(ctx: Context): void {
+  const categories = valueAt(ctx.value, ['categories']);
+  if (!isMapping(categories)) return;
+  for (const key of Object.keys(categories)) {
+    if (key.length > SLUG_MAX_CHARS || !SLUG_PATTERN.test(key)) categoryKeyFormat(ctx, key);
+    if (!isMapping(categories[key])) typeOrRequired(ctx, ['categories', key]);
+  }
+}
+
 /** Task and category counts (spec §3.7). */
 function checkCounts(ctx: Context): void {
   const tasks = valueAt(ctx.value, ['tasks']);
@@ -435,6 +510,7 @@ export function checkStructure(
   keepScalarText(value, locator);
   const result = guideSchema.safeParse(value);
   if (!result.success) for (const zodIssue of result.error.issues) mapZodIssue(ctx, zodIssue);
+  checkCategories(ctx);
   checkSections(ctx);
   checkCounts(ctx);
 

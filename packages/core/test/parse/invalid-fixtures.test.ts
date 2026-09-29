@@ -199,6 +199,14 @@ const CASES: InvalidCase[] = [
     path: 'categories.Loot',
   },
   {
+    name: 'category keyed __proto__',
+    fixture: 'id-format-category-proto.yaml',
+    code: 'id-format',
+    line: 5,
+    column: 3,
+    path: 'categories.__proto__',
+  },
+  {
     name: 'empty top-level sections',
     fixture: 'no-leaves.yaml',
     code: 'no-leaves',
@@ -554,6 +562,17 @@ describe.each(CASES)('$name', (c) => {
         ...(c.path !== undefined ? { path: c.path } : {}),
       }),
     );
+  });
+});
+
+describe.each([
+  ['yaml-syntax-recursive-alias.yaml', 'yaml-syntax'],
+  ['yaml-syntax-recursive-alias-section.yaml', 'yaml-syntax'],
+  ['id-format-category-proto.yaml', 'id-format'],
+])('fixture %s', (fixture, code) => {
+  it(`produces exactly one issue, ${code}`, () => {
+    const result = parseGuide({ 'guide.yaml': readFixture(`invalid/${fixture}`) });
+    expect(result.issues.map((i) => [i.severity, i.code])).toEqual([['error', code]]);
   });
 });
 
