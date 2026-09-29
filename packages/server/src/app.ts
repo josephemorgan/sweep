@@ -11,6 +11,13 @@ export interface AppOptions {
 
 const NO_CACHE_FILES = new Set(['index.html', 'ngsw-worker.js', 'ngsw.json']);
 
+function clientErrorStatus(err: unknown): number | undefined {
+  if (typeof err !== 'object' || err === null) return undefined;
+  const { status, statusCode } = err as { status?: unknown; statusCode?: unknown };
+  const value = typeof status === 'number' ? status : statusCode;
+  return typeof value === 'number' && value >= 400 && value <= 499 ? value : undefined;
+}
+
 export function createApp({ db, clientDistDir }: AppOptions): Express {
   const app = express();
   app.disable('x-powered-by');
@@ -38,8 +45,19 @@ export function createApp({ db, clientDistDir }: AppOptions): Express {
     });
   }
 
-  app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
-    console.error(err);
+  // Never log the error object: body-parser errors carry the raw request body in `err.body`.
+  app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {
+    const status = clientErrorStatus(err);
+    if (status !== undefined) {
+      // Fixed messages: a JSON.parse error message can quote part of the request body.
+      const error =
+        status === 413
+          ? { code: 'too-large', message: 'Request body too large.' }
+          : { code: 'bad-request', message: 'Malformed request.' };
+      res.status(status).json({ error });
+      return;
+    }
+    console.error(err instanceof Error ? (err.stack ?? err.message) : 'Unknown error');
     res.status(500).json({ error: { code: 'internal', message: 'Internal server error.' } });
   });
 

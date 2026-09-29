@@ -2,7 +2,7 @@ import { mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import request from 'supertest';
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { createApp } from '../src/app.js';
 import { createDb, type DbHandle } from '../src/db/client.js';
 
@@ -82,5 +82,45 @@ describe('API 404 and client serving', () => {
   it('does not serve the client when clientDistDir is unset', async () => {
     const res = await request(createApp({ db: handle.db })).get('/');
     expect(res.status).toBe(404);
+  });
+});
+
+describe('error handling', () => {
+  const handle = createDb('postgres://sweep:sweep@127.0.0.1:1/sweep');
+
+  afterAll(async () => {
+    await handle.pool.end();
+  });
+
+  it('answers a malformed JSON body with a 400 and never logs the body', async () => {
+    const spy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    try {
+      const secret = 'SECRET-GUIDE-CONTENT';
+      const res = await request(createApp({ db: handle.db }))
+        .post('/api/anything')
+        .set('Content-Type', 'application/json')
+        .send(`{"guide": ${secret}}`);
+      expect(res.status).toBe(400);
+      expect(res.body).toEqual({ error: { code: 'bad-request', message: expect.any(String) } });
+      expect(res.text).not.toContain(secret);
+      expect(spy).not.toHaveBeenCalled();
+    } finally {
+      spy.mockRestore();
+    }
+  });
+
+  it('answers an oversized body with a 413 too-large', async () => {
+    const spy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    try {
+      const res = await request(createApp({ db: handle.db }))
+        .post('/api/anything')
+        .set('Content-Type', 'application/json')
+        .send(JSON.stringify({ blob: 'x'.repeat(200 * 1024) }));
+      expect(res.status).toBe(413);
+      expect(res.body.error.code).toBe('too-large');
+      expect(spy).not.toHaveBeenCalled();
+    } finally {
+      spy.mockRestore();
+    }
   });
 });
