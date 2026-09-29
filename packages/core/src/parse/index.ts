@@ -7,6 +7,7 @@ export { ErrorCode, NOT_IMPLEMENTED, WarningCode } from './issue-codes.js';
 export type { IssueCode } from './issue-codes.js';
 export { LIMITS } from './limits.js';
 export { guideFileName } from './text.js';
+export { guideJsonSchema } from './json-schema.js';
 export type { Issue, IssueSeverity } from '../model/issue.js';
 
 /** Virtual file map: path to text or raw bytes (spec §3.2). */
@@ -36,9 +37,4 @@ export function parseGuide(files: GuideFiles): ParseResult {
       },
     ],
   };
-}
-
-/** The JSON Schema for guide files. Stub: implemented in session A, Task 3. */
-export function guideJsonSchema(): Record<string, unknown> {
-  throw new Error('not implemented yet (session A, Task 3)');
 }

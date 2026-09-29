@@ -70,6 +70,7 @@ Also used in code:
 | `pnpm test` | Builds core, then core + server + client unit tests + repo tests (`test/`, alone: `pnpm test:repo`) |
 | `pnpm build` | Builds all packages |
 | `pnpm e2e` | Playwright, projects `phone` (390×844) and `handheld-4x3` (1024×768) |
+| `pnpm schema` | Regenerate `schema/sweep-guide.v1.schema.json` from core's Zod schema (commit the result) |
 | `pnpm sweep validate <file> [--json]` | Guide validator CLI (stub until session A). Relative paths resolve from the repo root, so run it there or pass an absolute path. |
 | `pnpm db:generate` / `pnpm db:migrate` / `pnpm db:studio` | drizzle-kit, run in `packages/server` (review generated SQL before committing) |
 | `pnpm build:core` | Rebuild core's `dist/` (consumers import built output) |
@@ -78,7 +79,7 @@ Also used in code:
 
 Per package: `pnpm --filter @sweep/<core|server|client> <script>`.
 
-**Planned (session A/C), not runnable yet:** `pnpm schema` (JSON Schema generation, session A) and `pnpm --filter @sweep/server create-user` (session C).
+**Planned (session C), not runnable yet:** `pnpm --filter @sweep/server create-user`.
 
 ## Packages and boundaries (spec §7)
 
