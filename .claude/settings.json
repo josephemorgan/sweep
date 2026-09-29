@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "permissions": {
+    "allow": [
+      "Bash(pnpm lint *)",
+      "Bash(pnpm typecheck *)",
+      "Bash(pnpm test *)",
+      "Bash(pnpm test:repo *)",
+      "Bash(pnpm build *)",
+      "Bash(pnpm build:core *)",
+      "Bash(pnpm e2e *)",
+      "Bash(pnpm format *)",
+      "Bash(pnpm format:check *)",
+      "Bash(pnpm sweep validate *)",
+      "Bash(pnpm db:generate *)",
+      "Bash(pnpm --filter @sweep/core test *)",
+      "Bash(pnpm --filter @sweep/core typecheck *)",
+      "Bash(pnpm --filter @sweep/core build *)",
+      "Bash(pnpm --filter @sweep/server test *)",
+      "Bash(pnpm --filter @sweep/server typecheck *)",
+      "Bash(pnpm --filter @sweep/server db:generate *)",
+      "Bash(pnpm --filter @sweep/client test *)",
+      "Bash(pnpm --filter @sweep/client typecheck *)",
+      "Bash(pnpm --filter @sweep/client e2e *)",
+      "Bash(git status *)",
+      "Bash(git diff *)",
+      "Bash(git log *)",
+      "Bash(git show *)",
+      "Bash(docker compose *)",
+      "mcp__angular-cli"
+    ]
+  },
+  "enabledMcpjsonServers": ["angular-cli"],
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/format-edited-file.sh",
+            "args": []
+          }
+        ]
+      }
+    ]
+  }
+}
