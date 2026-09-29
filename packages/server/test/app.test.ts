@@ -4,6 +4,7 @@ import { join } from 'node:path';
 import request from 'supertest';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { createApp } from '../src/app.js';
+import { JSON_BODY_LIMIT_BYTES } from '../src/limits.js';
 import { createDb, type DbHandle } from '../src/db/client.js';
 
 describe('GET /api/health', () => {
@@ -115,7 +116,7 @@ describe('error handling', () => {
       const res = await request(createApp({ db: handle.db }))
         .post('/api/anything')
         .set('Content-Type', 'application/json')
-        .send(JSON.stringify({ blob: 'x'.repeat(200 * 1024) }));
+        .send(JSON.stringify({ blob: 'x'.repeat(JSON_BODY_LIMIT_BYTES + 1) }));
       expect(res.status).toBe(413);
       expect(res.body.error.code).toBe('too-large');
       expect(spy).not.toHaveBeenCalled();
