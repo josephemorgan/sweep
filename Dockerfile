@@ -2,7 +2,8 @@
 
 # One image: Express serves /api and the built Angular client (spec §7 Deployment).
 FROM node:24.21.0-bookworm-slim AS base
-# CI=true: non-interactive Angular CLI; lefthook's postinstall skips hook install.
+# CI=true: non-interactive Angular CLI; lefthook's postinstall and the root `prepare` both skip hook install
+# (the image has no git and no .git).
 ENV CI=true
 RUN npm install -g pnpm@10.34.6
 WORKDIR /repo

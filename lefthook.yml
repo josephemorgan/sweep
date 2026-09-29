@@ -1,11 +1,10 @@
-# Git hooks, installed by `pnpm install` (lefthook postinstall; skipped when CI=true).
+# Git hooks, installed by `pnpm install` (root `prepare` + lefthook postinstall; skipped when CI is set or outside a git checkout).
 # doublestar: `**/*.ts` also matches files at the repo root.
 glob_matcher: doublestar
 
 pre-commit:
   jobs:
     - name: prettier
-      glob: '**/*.{ts,js,mjs,cjs,json,html,css,yaml,yml}'
       run: pnpm exec prettier --write --ignore-unknown {staged_files}
       stage_fixed: true
     - name: eslint

@@ -63,7 +63,7 @@ Also used in code:
 
 | Command | What |
 |---|---|
-| `pnpm install` | Install. Also builds `@sweep/core` (root `prepare`) and installs git hooks. |
+| `pnpm install` | Install. Also builds `@sweep/core` (root `prepare`) and installs git hooks (skipped when `CI` is set). |
 | `pnpm dev` | core `tsc --watch` + server (`tsx watch`, :3000) + client (`ng serve`, :4200, proxies `/api`) |
 | `pnpm lint` / `pnpm format` / `pnpm format:check` | ESLint (whole repo) / Prettier write / check |
 | `pnpm typecheck` | Builds core, then type-checks the repo tests and every package (client templates via `ngc`) |

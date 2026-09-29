@@ -8,7 +8,7 @@
     "pnpm": ">=10.34.6 <11"
   },
   "scripts": {
-    "prepare": "pnpm build:core",
+    "prepare": "pnpm build:core && if [ -z \"$CI\" ] && [ -e .git ]; then lefthook install || echo 'warning: lefthook install failed; run: pnpm exec lefthook install' >&2; fi",
     "dev": "concurrently -n core,server,client -c yellow,blue,green \"pnpm --filter @sweep/core dev\" \"pnpm --filter @sweep/server dev\" \"pnpm --filter @sweep/client start\"",
     "build": "pnpm -r build",
     "build:core": "pnpm --filter @sweep/core build",
