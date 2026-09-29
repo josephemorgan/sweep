@@ -22,8 +22,6 @@ describe('deriveCore sections on lantern-keep', () => {
     expect(s['epilogue']).toBe('locked');
     expect(s['act-1']).toBe('current');
     expect(s['act-2']).toBe('locked');
-    expect(view.windows.size).toBe(0);
-    expect(view.tasks.size).toBe(0);
   });
 
   it('moves current on after a clear', () => {
@@ -149,5 +147,109 @@ sections:
     const view = deriveCore(guide, progress({ cleared: ['b'] }));
     expect(view.sections.get('c')!.unlocked).toBe(true);
     expect(deriveCore(guide, progress()).sections.get('c')!.unlocked).toBe(false);
+  });
+});
+
+describe('deriveCore gates through groups', () => {
+  const header = `
+sweep: 1
+game: Groups
+sections:
+  - id: a
+    title: A
+    overview: o
+    requires: []
+`;
+
+  it('keeps inner leaves locked while the outer gate is closed, even if the inner gate is open', () => {
+    const guide = parseOk(`${header}
+  - id: outer
+    title: Outer
+    overview: o
+    requires: [a]
+    sections:
+      - id: inner
+        title: Inner
+        overview: o
+        requires: []
+        sections:
+          - { id: leaf-1, title: L1, overview: o, requires: [] }
+          - { id: leaf-2, title: L2, overview: o, requires: [] }
+`);
+    const view = deriveCore(guide, progress());
+    expect(view.sections.get('leaf-1')).toMatchObject({ unlocked: false, state: 'locked' });
+    expect(view.sections.get('leaf-2')!.unlocked).toBe(false);
+    expect(view.sections.get('inner')).toMatchObject({ unlocked: false, reached: false });
+    const after = deriveCore(guide, progress({ cleared: ['a'] }));
+    expect(after.sections.get('leaf-1')!.unlocked).toBe(true);
+  });
+
+  it('accepts a group in requires, all-of', () => {
+    const guide = parseOk(`${header}
+  - id: g
+    title: G
+    overview: o
+    requires: []
+    sections:
+      - { id: g1, title: G1, overview: o, requires: [] }
+      - { id: g2, title: G2, overview: o, requires: [] }
+  - { id: after, title: After, overview: o, requires: [g] }
+`);
+    expect(deriveCore(guide, progress({ cleared: ['g1'] })).sections.get('after')!.unlocked).toBe(
+      false,
+    );
+    expect(
+      deriveCore(guide, progress({ cleared: ['g1', 'g2'] })).sections.get('after')!.unlocked,
+    ).toBe(true);
+  });
+
+  it('accepts a group in requires, any-of', () => {
+    const guide = parseOk(`${header}
+  - id: g
+    title: G
+    overview: o
+    requires: []
+    sections:
+      - { id: g1, title: G1, overview: o, requires: [] }
+      - { id: g2, title: G2, overview: o, requires: [] }
+  - { id: x, title: X, overview: o, requires: [] }
+  - { id: after, title: After, overview: o, requires: { any: [g, x] } }
+`);
+    const at = (cleared: string[]): boolean | undefined =>
+      deriveCore(guide, progress({ cleared })).sections.get('after')!.unlocked;
+    expect(at(['g1'])).toBe(false);
+    expect(at(['g1', 'g2'])).toBe(true);
+    expect(at(['x'])).toBe(true);
+  });
+
+  it('reaches a locked group through a forced-cleared leaf inside it', () => {
+    const guide = parseOk(`${header}
+  - id: g
+    title: G
+    overview: o
+    requires: [a]
+    sections:
+      - { id: g1, title: G1, overview: o, requires: [] }
+      - { id: g2, title: G2, overview: o, requires: [] }
+  - id: solo
+    title: Solo
+    overview: o
+    requires: [a]
+    sections:
+      - { id: only, title: Only, overview: o, requires: [] }
+`);
+    const view = deriveCore(guide, progress({ cleared: ['g2', 'only'] }));
+    // Precedence (§4.5): cleared, then current, then locked or available by reached.
+    expect(view.sections.get('g')).toMatchObject({
+      reached: true,
+      cleared: false,
+      unlocked: false,
+    });
+    expect(view.sections.get('g')!.state).toBe('available');
+    expect(view.sections.get('g1')!.state).toBe('locked');
+    expect(view.sections.get('solo')).toMatchObject({ reached: true, cleared: true });
+    expect(view.sections.get('solo')!.state).toBe('cleared');
+    // current stays on the first unlocked, uncleared leaf, outside the group.
+    expect(view.current).toBe('a');
   });
 });

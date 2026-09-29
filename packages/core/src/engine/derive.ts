@@ -1,4 +1,4 @@
-import type { Guide, Requires } from '../model/guide.js';
+import { END, type Guide, type Requires, type Task } from '../model/guide.js';
 import type { RunProgress } from '../model/progress.js';
 import type { RunView } from './cards.js';
 import { indexGuide, isLeaf, type LeafRange } from './structure.js';
@@ -93,7 +93,55 @@ export function deriveCore(guide: Guide, progress: RunProgress): CoreView {
     views.set(id, { state, cleared, unlocked, reached });
   }
 
-  return { current, pinned, sections: views, windows: new Map(), tasks: new Map() };
+  const { windows, tasks } = deriveTasks(guide, progress, index.exclusiveMembers, views);
+  return { current, pinned, sections: views, windows, tasks };
+}
+
+/** Window and task status (§4.6, §4.7), reusing the per-section results. O(windows) overall. */
+function deriveTasks(
+  guide: Guide,
+  progress: RunProgress,
+  exclusiveMembers: ReadonlyMap<string, string[]>,
+  views: ReadonlyMap<string, SectionView>,
+): { windows: Map<string, WindowStatus[]>; tasks: Map<string, TaskStatus> } {
+  // Exclusive group name to how many of its members are stored `done`. Only stored states under
+  // task IDs count, so iterate the tasks rather than the stored map.
+  const doneInGroup = new Map<string, number>();
+  for (const [name, members] of exclusiveMembers) {
+    doneInGroup.set(name, members.filter((id) => progress.tasks.get(id) === 'done').length);
+  }
+
+  const windows = new Map<string, WindowStatus[]>();
+  const tasks = new Map<string, TaskStatus>();
+  for (const task of guide.tasks) {
+    const statuses = task.windows.map((w): WindowStatus => {
+      if (w.until !== END && views.get(w.until)?.cleared === true) return WindowStatus.Closed;
+      return views.get(w.from)?.reached === true ? WindowStatus.Open : WindowStatus.Upcoming;
+    });
+    windows.set(task.id, statuses);
+    tasks.set(task.id, taskStatus(task, statuses, progress, doneInGroup));
+  }
+  return { windows, tasks };
+}
+
+function taskStatus(
+  task: Task,
+  statuses: readonly WindowStatus[],
+  progress: RunProgress,
+  doneInGroup: ReadonlyMap<string, number>,
+): TaskStatus {
+  const stored = progress.tasks.get(task.id);
+  if (stored === 'done') return { kind: 'done' };
+  if (stored === 'dont-care') return { kind: 'dont-care' };
+  // `stored` is not done here, so any done member of the group is another one.
+  if (task.exclusive !== null && (doneInGroup.get(task.exclusive) ?? 0) > 0) {
+    return { kind: 'not-chosen' };
+  }
+  const open = statuses.indexOf(WindowStatus.Open);
+  if (open !== -1) return { kind: 'open', window: open, secondChance: open > 0 };
+  if (statuses.every((s) => s === WindowStatus.Upcoming)) return { kind: 'upcoming' };
+  const next = statuses.indexOf(WindowStatus.Upcoming);
+  return { kind: 'missed', nextChance: next === -1 ? null : task.windows[next]!.home };
 }
 
 function gateOpen(requires: Requires, isCleared: (id: string) => boolean): boolean {
