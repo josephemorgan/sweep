@@ -1,0 +1,82 @@
+import type { RunSummaryDto } from '@sweep/core';
+import { and, desc, eq } from 'drizzle-orm';
+import { Router } from 'express';
+import type { Database } from '../db/client.js';
+import { guideVersions, runs } from '../db/schema.js';
+import { loadCurrentGuide, loadVersionMeta } from '../guides/store.js';
+import { ApiErrorCode, HttpError } from '../http/errors.js';
+import { loadRun } from '../http/load-run.js';
+import { getRun, getUser } from '../http/locals.js';
+import { noQuery, parseInput, renameRunBody } from '../http/validate.js';
+import { buildPayload, toRunDto } from '../runs/dto.js';
+import { readProgress } from '../runs/progress-store.js';
+import { runSummaryStats } from '../runs/summary-stats.js';
+
+export interface RunsRouterOptions {
+  db: Database;
+}
+
+/** One consistent snapshot across several reads: no torn view if a write lands between them. */
+const SNAPSHOT = { isolationLevel: 'repeatable read', accessMode: 'read only' } as const;
+
+export function runsRouter({ db }: RunsRouterOptions): Router {
+  const router = Router();
+
+  router.get('/runs', async (req, res) => {
+    parseInput(noQuery, req.query);
+    const userId = getUser(res).id;
+    const list = await db.transaction(async (tx) => {
+      const rows = await tx
+        .select({ run: runs, game: guideVersions.game, title: guideVersions.title })
+        .from(runs)
+        .innerJoin(
+          guideVersions,
+          and(eq(guideVersions.runId, runs.id), eq(guideVersions.version, runs.currentVersion)),
+        )
+        .where(eq(runs.userId, userId))
+        .orderBy(desc(runs.updatedAt), desc(runs.id));
+      // One guide model in memory at a time: models can be several MB (Review Focus 5).
+      const out: RunSummaryDto[] = [];
+      for (const row of rows) {
+        const { guide } = await loadCurrentGuide(tx, row.run);
+        const progress = await readProgress(tx, row.run.id);
+        out.push({ ...toRunDto(row.run, row), ...runSummaryStats(guide, progress) });
+      }
+      return out;
+    }, SNAPSHOT);
+    res.json(list);
+  });
+
+  // Ownership guard for every /runs/:runId route (spec §6.4).
+  router.use('/runs/:runId', loadRun(db));
+
+  router.get('/runs/:runId', async (req, res) => {
+    parseInput(noQuery, req.query);
+    const { id } = getRun(res);
+    const payload = await db.transaction(async (tx) => {
+      // Re-read the run inside the snapshot: the pin lives on the run row, and loadRun's copy may be stale.
+      const [run] = await tx.select().from(runs).where(eq(runs.id, id));
+      if (!run) throw new HttpError(404, ApiErrorCode.NotFound, 'No such run.');
+      return buildPayload(tx, run);
+    }, SNAPSHOT);
+    res.json(payload);
+  });
+
+  router.patch('/runs/:runId', async (req, res) => {
+    parseInput(noQuery, req.query);
+    const { name } = parseInput(renameRunBody, req.body);
+    const run = getRun(res);
+    // A rename isn't play: updated_at ("last played") is left alone.
+    const [updated] = await db.update(runs).set({ name }).where(eq(runs.id, run.id)).returning();
+    if (!updated) throw new HttpError(404, ApiErrorCode.NotFound, 'No such run.');
+    res.json(toRunDto(updated, await loadVersionMeta(db, updated)));
+  });
+
+  router.delete('/runs/:runId', async (req, res) => {
+    parseInput(noQuery, req.query);
+    await db.delete(runs).where(eq(runs.id, getRun(res).id));
+    res.status(204).end();
+  });
+
+  return router;
+}

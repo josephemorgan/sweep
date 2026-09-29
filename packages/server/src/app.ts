@@ -11,6 +11,7 @@ import { sameOriginGuard } from './http/same-origin.js';
 import { securityHeaders } from './http/security-headers.js';
 import { JSON_BODY_LIMIT_BYTES, RATE_LIMITS, type RateLimits } from './limits.js';
 import { healthRouter } from './routes/health.js';
+import { runsRouter } from './routes/runs.js';
 
 export interface AppOptions {
   db: Database;
@@ -67,6 +68,7 @@ export function createApp(options: AppOptions): Express {
   app.use('/api', healthRouter(db));
   app.use('/api', requireSession(auth));
   app.use('/api', userRateLimit('api', limits.api));
+  app.use('/api', runsRouter({ db }));
   app.use('/api', () => {
     throw new HttpError(404, ApiErrorCode.NotFound, 'No such API route.');
   });
