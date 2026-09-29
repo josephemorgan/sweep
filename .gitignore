@@ -12,6 +12,7 @@ __screenshots__/
 *.local
 .claude/settings.local.json
 .claude/worktrees/
+.superpowers/
 
 # Playwright
 packages/client/playwright-report/
