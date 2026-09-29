@@ -86,7 +86,13 @@ export function parseYamlSource(
   if (doc === undefined) {
     return formatVersion('the guide is empty; start it with sweep: 1', at(0), null);
   }
-  for (const error of doc.errors) report(ErrorCode.YamlSyntax, error.message, error.pos[0], null);
+  // One typo can yield several `yaml` errors at the same offset; keep the first of each.
+  const errorOffsets = new Set<number>();
+  for (const error of doc.errors) {
+    if (errorOffsets.has(error.pos[0])) continue;
+    errorOffsets.add(error.pos[0]);
+    report(ErrorCode.YamlSyntax, error.message, error.pos[0], null);
+  }
   if (second !== undefined) {
     const message = 'a guide is a single YAML document; remove the second one';
     report(ErrorCode.YamlSyntax, message, second.range[0], null);

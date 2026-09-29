@@ -109,6 +109,13 @@ describe('parseYamlSource', () => {
     ]);
   });
 
+  it('reports one yaml-syntax issue per position', () => {
+    const text = 'sweep: 1\nsections:\n  - id: a\n     title: A\n    overview: x\n';
+    expect(parse(text).issues.map((i) => [i.code, i.line, i.column])).toEqual([
+      ['yaml-syntax', 3, 9],
+    ]);
+  });
+
   it('shifts issue lines by lineOffset', () => {
     expect(parse('sweep: 1\na: 1\na: 2\n', 1).issues).toEqual([
       expect.objectContaining({ code: 'yaml-syntax', line: 4, column: 1 }),
