@@ -1,6 +1,6 @@
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { createTestContext, type SignedIn, type TestContext } from './helpers/context.js';
-import { CRASH_EXIT, CRASH_THROW, deeplyNestedMd, TINY_YAML } from './helpers/guides.js';
+import { CRASH_EXIT, CRASH_OOM, CRASH_THROW, deeplyNestedMd, TINY_YAML } from './helpers/guides.js';
 import { countRows } from './helpers/seed.js';
 import { CRASH_WORKER_URL, nextWorker } from './helpers/workers.js';
 
@@ -151,6 +151,7 @@ describe('upload parsing in a worker (spec §6.4)', () => {
     it.each([
       ['throws', CRASH_THROW],
       ['exits without replying', CRASH_EXIT],
+      ['runs out of memory', CRASH_OOM],
     ])('a worker that %s is a logged 500, and the user can upload again', async (_, marker) => {
       const errors = vi.spyOn(console, 'error').mockImplementation(() => undefined);
       const before = await countRows(ctx.db);

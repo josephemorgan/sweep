@@ -21,7 +21,7 @@ Express 5 (ESM) API, Drizzle ORM on Postgres 16, Better Auth (email and password
 - `src/guides/renormalize.ts`: when `MODEL_VERSION` changes, stale models are re-parsed in the worker BEFORE any transaction opens (routes call `ensureCurrentModel` / `ensureUserModels` first), one shared parse per version. A source that deterministically no longer parses is remembered in-process and served as stored; a timeout or worker crash is served as stored and retried after `RENORMALIZE_RETRY_MS` (60 s). `GET /runs` lists a run whose stats throw with zero stats rather than failing the list.
 - `src/runs/`: progress store (`writeProgressChanges`, `mutateProgress` with a run row lock), summary stats, quotas (advisory lock per user), create and update flows, DTO builders.
 - `src/routes/`: `health.ts`, `runs.ts` (the one runs router), `schema.ts`.
-- `src/limits.ts`: `JSON_BODY_LIMIT_BYTES` (100 kB; uploads are multipart, so JSON stays small), `AUTH_BODY_LIMIT_BYTES` (16 kB), `PARSE_TIMEOUT_MS`, `RENORMALIZE_RETRY_MS`, `RATE_LIMITS`, `QUOTAS`.
+- `src/limits.ts`: `JSON_BODY_LIMIT_BYTES` (100 kB; uploads are multipart, so JSON stays small), `AUTH_BODY_LIMIT_BYTES` (16 kB), `PARSE_TIMEOUT_MS`, `PARSE_WORKER_HEAP_MB` (worker `resourceLimits`; out of memory fails like a crash), `RENORMALIZE_RETRY_MS`, `RATE_LIMITS`, `QUOTAS`.
 - `src/scripts/create-user.ts`: the create-user CLI.
 
 ## Rules

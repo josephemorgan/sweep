@@ -17,6 +17,12 @@ export const AUTH_BODY_LIMIT_BYTES = 16 * 1024;
 export const PARSE_TIMEOUT_MS = 5_000;
 
 /**
+ * V8 old-generation heap cap for each parse worker thread (Worker `resourceLimits`). A worker
+ * that runs out of memory fails like a crash (a logged 500) instead of taking the process down.
+ */
+export const PARSE_WORKER_HEAP_MB = 256;
+
+/**
  * After a re-normalization parse times out or its worker fails, the guide version is served with
  * its stored model and not re-parsed for this long (in-process), so load can't cause a retry storm.
  */

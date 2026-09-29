@@ -154,3 +154,4 @@ export function deeplyNestedMd(depth = 8_000): string {
 /** YAML comment lines that make helpers/crash-worker.ts fail (it matches the same text). */
 export const CRASH_THROW = '# crash-worker: throw\n';
 export const CRASH_EXIT = '# crash-worker: exit\n';
+export const CRASH_OOM = '# crash-worker: oom\n';

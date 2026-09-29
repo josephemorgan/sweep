@@ -10,6 +10,7 @@ import {
 } from '../src/guides/core-adapter.js';
 import {
   CRASH_EXIT,
+  CRASH_OOM,
   CRASH_THROW,
   deeplyNestedMd,
   TINY_GROUPED_YAML,
@@ -214,6 +215,11 @@ describe('core adapter', () => {
     it.each([
       ['throws', CRASH_THROW, /^Error: guide parse worker failed \(Error\)/],
       ['exits without replying', CRASH_EXIT, /^Error: guide parse worker exited with code 3/],
+      [
+        'runs out of memory',
+        CRASH_OOM,
+        /^Error: guide parse worker failed \(Error, ERR_WORKER_OUT_OF_MEMORY\)/,
+      ],
     ])('rejects without guide content when the worker %s', async (_, marker, logged) => {
       const parsing = parseUpload(
         { originalname: 'tiny.yaml', buffer: Buffer.from(TINY_YAML + marker) },

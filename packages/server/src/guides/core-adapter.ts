@@ -6,7 +6,7 @@ import type { Guide, Issue } from '@sweep/core';
 import { guideFileName, guideJsonSchema, LIMITS, type ParseResult } from '@sweep/core/parse';
 import { GuideContainer } from '../db/schema.js';
 import { ApiErrorCode, HttpError } from '../http/errors.js';
-import { PARSE_TIMEOUT_MS } from '../limits.js';
+import { PARSE_TIMEOUT_MS, PARSE_WORKER_HEAP_MB } from '../limits.js';
 import type { ParseJob } from './parse-worker.js';
 
 export { LIMITS };
@@ -116,6 +116,7 @@ function parseInWorker(
     const worker = new Worker(options.workerUrl ?? PARSE_WORKER_URL, {
       workerData: job,
       transferList: transfer,
+      resourceLimits: { maxOldGenerationSizeMb: PARSE_WORKER_HEAP_MB },
     });
     let settled = false;
     const finish = (settle: () => void, terminate: boolean): void => {
