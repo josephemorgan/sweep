@@ -3,12 +3,20 @@ import request from 'supertest';
 import { createApp, type AppOptions } from '../../src/app.js';
 import { createAuth, type Auth } from '../../src/auth.js';
 import type { Database } from '../../src/db/client.js';
+import { RATE_LIMITS, type RateLimits } from '../../src/limits.js';
 import { createUser } from '../../src/scripts/create-user.js';
 import { createTestDb, type TestDb } from './test-db.js';
 
 export const TEST_ORIGIN = 'http://localhost:4200';
 export const TEST_SECRET = 'sweep-test-secret-0123456789abcdef0123456789';
 export const TEST_PASSWORD = 'test-password-123';
+
+/** High limits so ordinary tests never trip them; rate-limit tests override one rule. */
+export const TEST_RATE_LIMITS: RateLimits = {
+  auth: { ...RATE_LIMITS.auth, limit: 1_000 },
+  uploads: { ...RATE_LIMITS.uploads, limit: 1_000 },
+  api: { ...RATE_LIMITS.api, limit: 10_000 },
+};
 
 type Agent = ReturnType<typeof request.agent>;
 export type AgentRequest = ReturnType<Agent['get']>;
@@ -37,7 +45,7 @@ export interface SignedIn {
   userId: string;
 }
 
-export type ContextOptions = Partial<Omit<AppOptions, 'db' | 'auth'>> & {
+export type ContextOptions = Partial<Omit<AppOptions, 'db' | 'auth' | 'sameOrigin'>> & {
   /** BETTER_AUTH_URL for this context. Default TEST_ORIGIN. */
   origin?: string;
 };
@@ -55,13 +63,19 @@ export interface TestContext {
 }
 
 export async function createTestContext(options: ContextOptions = {}): Promise<TestContext> {
-  const { origin = TEST_ORIGIN, ...appOptions } = options;
+  const { origin = TEST_ORIGIN, rateLimits, ...appOptions } = options;
   const testDb = await createTestDb();
   const authOptions = { db: testDb.db, secret: TEST_SECRET, baseURL: origin };
   const auth = createAuth({ ...authOptions, signupEnabled: false });
   // Only the create-user script builds a sign-up-enabled instance; tests mirror that.
   const scriptAuth = createAuth({ ...authOptions, signupEnabled: true });
-  const app = createApp({ db: testDb.db, auth, ...appOptions });
+  const app = createApp({
+    db: testDb.db,
+    auth,
+    sameOrigin: origin,
+    ...appOptions,
+    rateLimits: { ...TEST_RATE_LIMITS, ...rateLimits },
+  });
 
   async function addUser(email: string): Promise<string> {
     const name = email.split('@')[0] ?? email;
@@ -92,8 +106,8 @@ export async function createTestContext(options: ContextOptions = {}): Promise<T
 /** An app on a database that may be unreachable (health/static tests). No test DB is created. */
 export function offlineApp(
   db: Database,
-  options: Partial<Omit<AppOptions, 'db' | 'auth'>> = {},
+  options: Partial<Omit<AppOptions, 'db' | 'auth' | 'sameOrigin'>> = {},
 ): Express {
   const auth = createAuth({ db, secret: TEST_SECRET, baseURL: TEST_ORIGIN, signupEnabled: false });
-  return createApp({ db, auth, ...options });
+  return createApp({ db, auth, sameOrigin: TEST_ORIGIN, rateLimits: TEST_RATE_LIMITS, ...options });
 }

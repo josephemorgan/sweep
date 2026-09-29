@@ -5,15 +5,24 @@ import type { Auth } from './auth.js';
 import type { Database } from './db/client.js';
 import { describeError, errorHandler } from './http/error-handler.js';
 import { ApiErrorCode, HttpError } from './http/errors.js';
+import { authRateLimit, userRateLimit } from './http/rate-limits.js';
 import { requireSession } from './http/require-session.js';
-import { JSON_BODY_LIMIT_BYTES } from './limits.js';
+import { sameOriginGuard } from './http/same-origin.js';
+import { securityHeaders } from './http/security-headers.js';
+import { JSON_BODY_LIMIT_BYTES, RATE_LIMITS, type RateLimits } from './limits.js';
 import { healthRouter } from './routes/health.js';
 
 export interface AppOptions {
   db: Database;
   auth: Auth;
+  /** BETTER_AUTH_URL's origin. State-changing /api requests must send it as `Origin`. */
+  sameOrigin: string;
   /** Built Angular app (dist/client/browser). Unset in dev, where ng serve proxies /api. */
   clientDistDir?: string | undefined;
+  /** Express `trust proxy` hop count (TRUST_PROXY). Default false. */
+  trustProxy?: number | false | undefined;
+  /** Overrides for the spec §6.4 rate limits. */
+  rateLimits?: Partial<RateLimits> | undefined;
 }
 
 /**
@@ -36,17 +45,28 @@ function safeAuthHandler(auth: Auth): (request: Request) => Promise<Response> {
 
 const NO_CACHE_FILES = new Set(['index.html', 'ngsw-worker.js', 'ngsw.json']);
 
+/**
+ * Order: helmet, trust proxy, /api/auth (limit + Better Auth), JSON, same-origin, health,
+ * session guard, per-user limit, routers, /api 404, static/SPA, errors.
+ */
 export function createApp(options: AppOptions): Express {
-  const { db, auth, clientDistDir } = options;
+  const { db, auth, sameOrigin, clientDistDir } = options;
+  const limits: RateLimits = { ...RATE_LIMITS, ...options.rateLimits };
   const app = express();
   app.disable('x-powered-by');
+  app.use(securityHeaders());
+  app.set('trust proxy', options.trustProxy ?? false);
 
   // Better Auth reads the raw request stream, so it mounts before express.json().
+  app.use('/api/auth', authRateLimit(limits.auth));
   app.all('/api/auth/*splat', toNodeHandler(safeAuthHandler(auth)));
   app.use(express.json({ limit: JSON_BODY_LIMIT_BYTES }));
 
+  app.use('/api', sameOriginGuard(sameOrigin));
+
   app.use('/api', healthRouter(db));
   app.use('/api', requireSession(auth));
+  app.use('/api', userRateLimit('api', limits.api));
   app.use('/api', () => {
     throw new HttpError(404, ApiErrorCode.NotFound, 'No such API route.');
   });

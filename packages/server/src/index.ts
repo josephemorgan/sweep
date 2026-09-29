@@ -19,7 +19,14 @@ const auth = createAuth({
   baseURL: env.betterAuthUrl,
   signupEnabled: env.signupEnabled,
 });
-const server = createApp({ db, auth, clientDistDir: env.clientDistDir }).listen(env.port, () => {
+const app = createApp({
+  db,
+  auth,
+  sameOrigin: env.betterAuthUrl,
+  clientDistDir: env.clientDistDir,
+  trustProxy: env.trustProxy,
+});
+const server = app.listen(env.port, () => {
   console.log(`Sweep server listening on http://localhost:${env.port}`);
 });
 
