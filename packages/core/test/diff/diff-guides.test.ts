@@ -82,10 +82,43 @@ describe('diffGuides', () => {
     expect(d.sections.edited).toEqual([{ id: 'b', fields: ['requires'] }]);
   });
 
-  it('flags a shifted sibling index as position', () => {
-    const d = diffGuides(guide(linear(['a', 'c'])), guide(linear(['a', 'b', 'c'])));
+  it('does not flag siblings after a same-group insert as moved', () => {
+    const d = diffGuides(guide(linear(['a', 'c', 'd'])), guide(linear(['a', 'b', 'c', 'd'])));
     expect(d.sections.added).toEqual(['b']);
-    expect(d.sections.edited).toEqual([{ id: 'c', fields: ['requires', 'position'] }]);
+    expect(d.sections.edited).toEqual([{ id: 'c', fields: ['requires'] }]);
+  });
+
+  it('does not flag siblings after a removal as moved', () => {
+    const d = diffGuides(guide(linear(['a', 'b', 'c', 'd'])), guide(linear(['a', 'c', 'd'])));
+    expect(d.sections.removed).toEqual(['b']);
+    expect(d.sections.edited).toEqual([{ id: 'c', fields: ['requires'] }]);
+  });
+
+  it('flags swapped siblings as position', () => {
+    const flat = (ids: string[]): string =>
+      'sections:\n' +
+      ids.map((id) => `  - { id: ${id}, title: ${id}, overview: o, requires: [] }\n`).join('');
+    const d = diffGuides(guide(flat(['a', 'b', 'c'])), guide(flat(['a', 'c', 'b'])));
+    expect(d.sections.edited).toEqual([
+      { id: 'c', fields: ['position'] },
+      { id: 'b', fields: ['position'] },
+    ]);
+  });
+
+  it('ignores requires order but not form or duplicates', () => {
+    const req = (r: unknown): ReturnType<typeof parseOk> => {
+      const g = guide(linear(['a', 'b', 'c']));
+      g.sections[2]!.requires = r as never;
+      return g;
+    };
+    const base = req({ all: ['a', 'b'] });
+    expect(diffGuides(base, req({ all: ['b', 'a'] })).sections.edited).toEqual([]);
+    expect(diffGuides(base, req({ any: ['a', 'b'] })).sections.edited).toEqual([
+      { id: 'c', fields: ['requires'] },
+    ]);
+    expect(diffGuides(base, req({ all: ['a', 'a', 'b'] })).sections.edited).toEqual([
+      { id: 'c', fields: ['requires'] },
+    ]);
   });
 
   it('flags a leaf moved to another group as position', () => {

@@ -96,14 +96,23 @@ function renameMap(m: Matching): RenameMap {
   return new Map(m.renames.map((r) => [r.from, r.to]));
 }
 
-/** Parent ID and index among siblings, for every section. */
-function positions(guide: Guide): Map<string, { parent: string | null; index: number }> {
+/**
+ * Parent ID and index among siblings, for every section. `translate` maps an ID into the new
+ * guide's ID space, or to null to leave a section out of the sibling count (it has no counterpart
+ * in the other guide, so its insertion or removal must not shift the others).
+ */
+function positions(
+  guide: Guide,
+  translate: (id: string) => string | null,
+): Map<string, { parent: string | null; index: number }> {
   const out = new Map<string, { parent: string | null; index: number }>();
   const walk = (siblings: readonly Section[], parent: string | null): void => {
-    siblings.forEach((s, index) => {
-      out.set(s.id, { parent, index });
+    let index = 0;
+    for (const s of siblings) {
+      out.set(s.id, { parent: parent === null ? null : (translate(parent) ?? parent), index });
+      if (translate(s.id) !== null) index++;
       walk(s.children, s.id);
-    });
+    }
   };
   walk(guide.sections, null);
   return out;
@@ -114,7 +123,7 @@ function same(a: unknown, b: unknown): boolean {
 }
 
 function requiresOf(r: Requires, tr: (id: string) => string): Requires {
-  return 'all' in r ? { all: r.all.map(tr) } : { any: r.any.map(tr) };
+  return 'all' in r ? { all: r.all.map(tr).sort() } : { any: r.any.map(tr).sort() };
 }
 
 function diffKind(m: Matching, fieldsOf: (oldId: string, newId: string) => string[]): KindDiff {
@@ -150,8 +159,12 @@ export function diffGuides(oldGuide: Guide, newGuide: Guide, progress?: RunProgr
 
   const oldSections = new Map(flatten(oldGuide.sections).map((s) => [s.id, s]));
   const newSections = new Map(flatten(newGuide.sections).map((s) => [s.id, s]));
-  const oldPos = positions(oldGuide);
-  const newPos = positions(newGuide);
+  const addedSections = new Set(sec.added);
+  const oldPos = positions(oldGuide, (id) => {
+    const to = secTr(id);
+    return newSections.has(to) && !addedSections.has(to) ? to : null;
+  });
+  const newPos = positions(newGuide, (id) => (addedSections.has(id) ? null : id));
   const sections = diffKind(sec, (oldId, newId) => {
     const a = oldSections.get(oldId)!;
     const b = newSections.get(newId)!;
@@ -160,12 +173,12 @@ export function diffGuides(oldGuide: Guide, newGuide: Guide, progress?: RunProgr
       title: a.title !== b.title,
       overview: a.overview !== b.overview,
       walkthrough: a.walkthrough !== b.walkthrough,
-      requires: !same(requiresOf(a.requires, secTr), b.requires),
-      spoiler: a.spoiler !== b.spoiler,
-      position: !same(
-        { parent: pa.parent === null ? null : secTr(pa.parent), index: pa.index },
-        newPos.get(newId),
+      requires: !same(
+        requiresOf(a.requires, secTr),
+        requiresOf(b.requires, (id) => id),
       ),
+      spoiler: a.spoiler !== b.spoiler,
+      position: !same({ parent: pa.parent, index: pa.index }, newPos.get(newId)),
     };
     return SECTION_FIELDS.filter((f) => differs[f]);
   });
