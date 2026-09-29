@@ -11,6 +11,7 @@
     "dev": "tsx watch src/index.ts",
     "build": "rm -rf dist && tsc -p tsconfig.build.json",
     "start": "node dist/index.js",
+    "create-user": "tsx src/scripts/create-user.ts",
     "typecheck": "tsc -p tsconfig.json",
     "test": "vitest run",
     "db:generate": "drizzle-kit generate",
