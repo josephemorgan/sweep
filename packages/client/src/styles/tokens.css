@@ -1,0 +1,27 @@
+/*
+ * Sweep design tokens (spec §5.9). Dark only in v1; a light theme can redefine these later.
+ * Components use them through Tailwind utilities (bg-surface, text-fg-muted, border-border,
+ * text-missed, rounded-card, ...). The default palette is disabled, so raw colors don't exist.
+ */
+@theme {
+  --color-*: initial;
+
+  /* Surfaces and text */
+  --color-surface: #14151b;
+  --color-surface-raised: #1d1f27;
+  --color-border: #2e313c;
+  --color-fg: #e8e9ee;
+  --color-fg-muted: #a3a6b3;
+  --color-accent: #6cc4d9;
+
+  /* Task status (spec §4.7, §5.2) */
+  --color-open: #7fd49a;
+  --color-missed: #f07a7a;
+  --color-last-chance: #f2b45e;
+  --color-not-chosen: #6e7180;
+
+  /* Spacing base and radii */
+  --spacing: 0.25rem;
+  --radius-control: 0.5rem;
+  --radius-card: 0.75rem;
+}
