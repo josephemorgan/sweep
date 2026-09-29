@@ -22,6 +22,8 @@ describe('guides/examples (spec §8)', () => {
     (s) =>
       guides.includes(`${s}.md`) && guides.some((f) => /\.ya?ml$/.test(f) && f.startsWith(`${s}.`)),
   );
+  it('has a .yaml/.md pair', () => expect(pairs).toContain('lantern-keep'));
+
   it.each(pairs)('%s: .yaml and .md produce the same model', (stem) => {
     const yamlName = guides.find((f) => f === `${stem}.yaml` || f === `${stem}.yml`)!;
     const md = parse(`${stem}.md`).guide;

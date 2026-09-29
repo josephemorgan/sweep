@@ -120,11 +120,7 @@ Sections, tasks, categories and exclusive groups are named by IDs.
 - **Reserved:** `end` can't be a section or task ID (`id-reserved`). It's the special `until` value that means "never closes".
 - **Flat and bare.** IDs are unique within their namespace across the whole guide, and never paths. Write `west-tower`, never `act-2/west-tower` (that's `id-format`). Nesting doesn't namespace IDs.
 
-IDs start with a letter so YAML never reads them as numbers. The slugs `true`, `false` and `null` are still read by YAML as a boolean or null, and fail validation. Pick another ID, or quote it (`id: "true"`). Any non-string in an ID or reference field (`id`, `category`, `exclusive`, `from`, `until`, `home`, `requires` entries, `renamed_from` entries) is a `type` error. The validator doesn't convert these to strings. The message names the field and ends with what YAML read, such as `found true`, or `found an empty value` for `null`:
-
-```text
-`tasks[0].windows[0].from` must be a section ID, a slug (lowercase letters and digits in words joined by single hyphens, starting with a letter, at most 64 characters, like forest-chest); found an empty value
-```
+IDs start with a letter so YAML never reads them as numbers. The slugs `true`, `false` and `null` are still read by YAML as a boolean or null, and fail validation. Any non-string in an ID or reference field (`id`, `category`, `exclusive`, `from`, `until`, `home`, `requires` entries, `renamed_from` entries), such as an unquoted `null`, `true` or `false`, is a `type` error. The validator doesn't convert these to strings. Quote such values (`"null"`, `"true"`, `"false"`), as in `id: "true"`, or pick another ID.
 
 ## Field reference
 
