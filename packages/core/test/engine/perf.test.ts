@@ -79,8 +79,12 @@ function section(id: string, children: Section[], all: string[]): Section {
   };
 }
 
+// The 50 ms spec target is for a phone; this is a regression smoke test. Shared CI runners are
+// noisy, so CI gets 3× the budget.
+const BUDGET_MS = process.env.CI ? 150 : 50;
+
 describe('performance', () => {
-  it('derives a 10,000-task guide with metrics in under 50 ms (median of 5)', () => {
+  it(`derives a 10,000-task guide with metrics in under ${BUDGET_MS} ms (median of 5)`, () => {
     const { guide, leafIds } = buildGuide();
     expect(leafIds).toHaveLength(1960);
     expect(guide.tasks).toHaveLength(TASKS);
@@ -98,6 +102,8 @@ describe('performance', () => {
       times.push(performance.now() - start);
     }
     times.sort((a, b) => a - b);
-    expect(times[2]!, `runs (ms): ${times.map((t) => t.toFixed(1)).join(', ')}`).toBeLessThan(50);
+    expect(times[2]!, `runs (ms): ${times.map((t) => t.toFixed(1)).join(', ')}`).toBeLessThan(
+      BUDGET_MS,
+    );
   });
 });
