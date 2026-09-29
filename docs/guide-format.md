@@ -101,10 +101,10 @@ Talk to the elder, then buy a **lantern** from the shop.
    - an ATX heading indented by 1–3 spaces
    - a level-1 heading inside a list item or a blockquote
 
-   A well-formed heading that names no section is `md-unknown-section`.
+   A well-formed heading that names no section is `md-unknown-section`. If it names a task, the message says so.
 4. **Once each.** A section ID may appear as a heading at most once (`md-duplicate-section`). A section with a body heading must not also have an inline `walkthrough` in the front matter (`walkthrough-twice`).
 5. **Walkthrough text.** The text after a heading, up to the next split point, is that section's walkthrough. Leading blank lines and trailing whitespace are trimmed. Headings inside it must be level 2 or deeper.
-6. **Preamble.** Non-blank text between the front matter and the first heading is ignored and gives the warning `md-preamble`.
+6. **Preamble.** Non-blank text between the front matter and the first heading is ignored and gives the warning `md-preamble`. A malformed level-1 heading isn't a split point, so one that comes before every valid heading also counts as preamble: you get `md-heading` and `md-preamble` on the same line, and fixing the heading clears both.
 
 The front matter follows the same YAML rules and field reference as a `.yaml` guide.
 
@@ -120,7 +120,11 @@ Sections, tasks, categories and exclusive groups are named by IDs.
 - **Reserved:** `end` can't be a section or task ID (`id-reserved`). It's the special `until` value that means "never closes".
 - **Flat and bare.** IDs are unique within their namespace across the whole guide, and never paths. Write `west-tower`, never `act-2/west-tower` (that's `id-format`). Nesting doesn't namespace IDs.
 
-IDs start with a letter so YAML never reads them as numbers. The slugs `true`, `false` and `null` are still read by YAML as a boolean or null, and fail validation. Pick another ID, or quote it (`id: "true"`). Any non-string in an ID or reference field (`id`, `category`, `exclusive`, `from`, `until`, `home`, `requires` entries, `renamed_from` entries) is a `type` error. The validator doesn't convert these to strings. The message reads roughly (provisional wording): "`from` must be a section ID (a string); YAML read `null` as null, so quote it: `from: "null"`".
+IDs start with a letter so YAML never reads them as numbers. The slugs `true`, `false` and `null` are still read by YAML as a boolean or null, and fail validation. Pick another ID, or quote it (`id: "true"`). Any non-string in an ID or reference field (`id`, `category`, `exclusive`, `from`, `until`, `home`, `requires` entries, `renamed_from` entries) is a `type` error. The validator doesn't convert these to strings. The message names the field and ends with what YAML read, such as `found true`, or `found an empty value` for `null`:
+
+```text
+`tasks[0].windows[0].from` must be a section ID, a slug (lowercase letters and digits in words joined by single hyphens, starting with a letter, at most 64 characters, like forest-chest); found an empty value
+```
 
 ## Field reference
 
@@ -190,7 +194,7 @@ Window rules compare positions of leaves in route order (0 for the first leaf, 1
 ### Plain text, `renamed_from` and defaults
 
 - **Plain-text scalars.** In the plain-text fields (`game`, `title`, `overview`, category `name` and `about`) and in `walkthrough` and `how`, a value YAML reads as a number or boolean is kept as you wrote it: `game: 1942` becomes the text `"1942"`. Other fields aren't converted: `spoiler: "true"` is a `type` error.
-- **Empty text.** A plain-text field set to `""` is a `required` error ("must not be empty"). A `walkthrough` or `how` that is empty after trimming counts as absent.
+- **Empty text.** A plain-text field set to `""` is a `required` error ("must not be empty"). A `walkthrough` or `how` that is empty after trimming counts as absent. A key with nothing after it (`how:`) is different: YAML reads it as `null`, and that's a `type` error ("found an empty value").
 - **`renamed_from`.** When you rename a section or task in a later version of a guide, list its old IDs here so the run's progress carries over. A string is the same as a one-item list. An entry must not equal any current section or task ID, or an entry claimed by another element (`rename-conflict`).
 
 ## Requires
@@ -338,9 +342,9 @@ The validator works in phases. Some errors stop it before later phases run, beca
 3. **YAML:** parse the YAML. Errors stop. Then check `sweep`, which also stops.
 4. **Structure:** required fields, types, ID formats, lengths and counts. Any error stops.
 5. **Identity and references:** duplicate and reserved IDs, references to sections and categories, `requires-empty-any`, exclusive groups and renames. `id-duplicate`, `unknown-section` and `requires-empty-any` stop.
-6. **Graph:** `requires-lineage`, then `requires-cycle` (skipped if there's a lineage error).
-7. **Windows:** `end-not-last`, `home-not-leaf`, `until-before-from`, `home-outside-window`, `window-order`.
-8. **Markdown body** (`.md` only, once the structure phase has passed, because it needs the section IDs): `md-heading`, `md-unknown-section`, `md-duplicate-section`, `walkthrough-twice` and `md-preamble`.
+6. **Markdown body** (`.md` only, because it needs the section IDs): `md-heading`, `md-unknown-section`, `md-duplicate-section`, `walkthrough-twice`, `md-preamble`, and `limit` for a body walkthrough over 100,000 characters. None of these stop.
+7. **Graph:** `requires-lineage`, then `requires-cycle` (skipped if there's a lineage error).
+8. **Windows:** `end-not-last`, `home-not-leaf`, `until-before-from`, `home-outside-window`, `window-order`. They run even when the graph has errors.
 9. **Prose warnings:** `md-html` and `md-image` in every `walkthrough` and `how`.
 
 ### Errors
@@ -350,16 +354,16 @@ The validator works in phases. Some errors stop it before later phases run, beca
 | `encoding` | The file isn't valid UTF-8. | The first invalid byte. |
 | `too-large` | The file is over 2 MiB. | No location. |
 | `no-root-file` | There isn't exactly one `guide.yaml`, `guide.yml` or `guide.md`. | No location. |
-| `yaml-syntax` | YAML parse error, multiple documents, duplicate key, custom tag, or alias limit exceeded. | The parse error; the second of two duplicate keys; the tagged node; the start of the second document; the first alias. |
+| `yaml-syntax` | YAML parse error, multiple documents, duplicate key, custom tag, or alias limit exceeded. | The parse error; the second of two duplicate keys; the value after the custom tag; the start of the second document; the first alias. |
 | `md-front-matter` | A `.md` file doesn't start with a closed `---` front-matter block. | Line 1, column 1. |
-| `format-version` | `sweep` is missing or isn't `1`. | The `sweep` value, or the start of the file's top-level mapping when `sweep` is absent. |
-| `required` | A required field is missing, a plain-text field is empty, or `categories` is missing while tasks exist. | The start of the mapping that lacks the field. |
+| `format-version` | `sweep` is missing or isn't `1`, or the YAML is empty or isn't a mapping. | The `sweep` value, or the start of the file's top-level mapping when `sweep` is absent, or the start of the YAML when it's empty or not a mapping. |
+| `required` | A required field is missing, a plain-text field is empty, or `categories` is missing or empty while tasks exist. | The start of the mapping that lacks the field; the empty value; for `categories`, the `tasks` value. |
 | `type` | A field has the wrong type, a group's `sections` or a task's `windows` is an empty list, or `requires` is in an unsupported shape. | The field's value. |
 | `id-format` | An ID, category ID, exclusive name, `renamed_from` entry, or reference to one isn't a valid slug of 64 characters or fewer. | The offending value (for a category ID, the key). |
 | `id-duplicate` | An ID is used twice in the section/task namespace, or a category key is duplicated. | The second (and later) `id` value, or the second category key. |
 | `id-reserved` | A section or task uses the ID `end`. | The `id` value. |
 | `no-leaves` | The guide has no leaf sections (top-level `sections: []`). | The `sections` value. |
-| `unknown-section` | `requires`, `from`, `until` or `home` names a section that doesn't exist. | The unknown ID. |
+| `unknown-section` | `requires`, `from`, `until` or `home` names a section that doesn't exist. A task ID there is also `unknown-section`, and the message says it's a task. | The unknown ID. |
 | `unknown-category` | A task's `category` isn't defined. | The `category` value. |
 | `requires-empty-any` | `{any: []}`. | The empty `any` list. |
 | `requires-lineage` | A section requires itself, one of its ancestors, or one of its descendants. | The offending ID in `requires`. |
@@ -375,7 +379,7 @@ The validator works in phases. Some errors stop it before later phases run, beca
 | `md-unknown-section` | A `.md` heading names a section that doesn't exist. | The heading line, column 1. |
 | `md-duplicate-section` | The same section heading appears twice. | The later heading line, column 1. |
 | `walkthrough-twice` | A section has both an inline `walkthrough` and a body heading. | The heading line, column 1. |
-| `limit` | A limit is exceeded: a length from the field reference, or an item in [Limits](#limits). | The value that is too long, the list that has too many entries, or the section, task or category that goes over the count or the depth. |
+| `limit` | A limit is exceeded: a length from the field reference, or an item in [Limits](#limits). | The value that is too long, the list that has too many entries, the section, task or category that goes over the count, or the `id` of a section nested too deep. For a `.md` body walkthrough, the heading line, column 1. |
 
 ### Warnings
 
@@ -394,8 +398,9 @@ How common structural mistakes map to codes:
 
 | Situation | Code |
 |---|---|
-| A required key is absent | `required`, at the mapping that lacks it |
+| A required key is absent | `required`, at the mapping that lacks it (a missing `categories` is reported at `tasks`) |
 | A plain-text field is `""` | `required` ("must not be empty") |
+| A key with no value (`how:`), which YAML reads as `null` | `type` ("found an empty value") |
 | Wrong type, `sections: []` on a group, `windows: []`, an unsupported `requires` shape, a value that isn't one of its allowed literals | `type` |
 | Top-level `sections: []` | `no-leaves` |
 | A non-string in an ID or reference field, such as an unquoted `true`, `false` or `null` | `type` |
@@ -413,7 +418,7 @@ pnpm sweep validate <file> [--json]
 ```
 
 - `<file>` is resolved from the directory you ran `pnpm` in. Its extension must be `.yaml`, `.yml` or `.md` (any case).
-- `-h` or `--help` prints usage. Reading from stdin (`-`) isn't supported.
+- `-h` or `--help`, anywhere on the command line, prints usage and exits `0`. Reading from stdin (`-`) isn't supported.
 
 Text output has one line per issue, then a summary:
 
@@ -423,15 +428,27 @@ Text output has one line per issue, then a summary:
 <n> errors, <m> warnings
 ```
 
-The second form is for issues without a location. The summary uses the singular for 1 (`1 error, 1 warning`). For example (illustrative; message wording isn't final):
+The second form is for issues without a location. The summary uses the singular for 1 (`1 error, 1 warning`).
+
+For example, take a copy of Lantern Keep with three mistakes: `untill: marsh` on `village-chest` (a misspelled key), `until: throne-rom` on `moonshield` (a typo), and `home: village` on `keep-history`, whose window starts at `act-2`:
 
 ```text
-guides/my-guide.yaml:12:5 warning unknown-key unknown key "overveiw"; did you mean "overview"?
-guides/my-guide.yaml:48:16 error unknown-section until names section "keep-gat", which doesn't exist
+guides/my-guide.yaml:75:9 warning unknown-key unknown key `untill` is ignored; did you mean `until`?
+guides/my-guide.yaml:112:16 error unknown-section "throne-rom" is not a section ID in this guide
 1 error, 1 warning
 ```
 
-`--json` prints one object, indented with 2 spaces. Each issue's `file` is the path you passed:
+The `home` mistake isn't reported yet: `unknown-section` stops the validator before the window checks (see [Phases](#phases)). Fix the typo and run it again:
+
+```text
+guides/my-guide.yaml:75:9 warning unknown-key unknown key `untill` is ignored; did you mean `until`?
+guides/my-guide.yaml:96:15 error home-outside-window task keep-history, window 1: home village is outside the window from act-2 to end
+1 error, 1 warning
+```
+
+The warning matters too: the misspelled `untill` is ignored, so that window silently closes at `village` instead of `marsh`.
+
+`--json` prints one object, indented with 2 spaces. Each issue's `file` is the path you passed. The first run above, with `--json`:
 
 ```json
 {
@@ -442,20 +459,20 @@ guides/my-guide.yaml:48:16 error unknown-section until names section "keep-gat",
     {
       "severity": "warning",
       "code": "unknown-key",
-      "message": "…",
+      "message": "unknown key `untill` is ignored; did you mean `until`?",
       "file": "guides/my-guide.yaml",
-      "line": 12,
-      "column": 5,
-      "path": "sections[0].overveiw"
+      "line": 75,
+      "column": 9,
+      "path": "tasks[1].windows[0].untill"
     },
     {
       "severity": "error",
       "code": "unknown-section",
-      "message": "…",
+      "message": "\"throne-rom\" is not a section ID in this guide",
       "file": "guides/my-guide.yaml",
-      "line": 48,
+      "line": 112,
       "column": 16,
-      "path": "tasks[3].windows[0].until"
+      "path": "tasks[6].windows[0].until"
     }
   ]
 }
@@ -479,7 +496,7 @@ guides/my-guide.yaml:48:16 error unknown-section until names section "keep-gat",
 | Windows per task | 8 | `limit` |
 | IDs in one `requires` | 50 | `limit` |
 | `renamed_from` entries per element | 20 | `limit` |
-| `walkthrough` | 100,000 characters | `limit` |
+| `walkthrough` | 100,000 characters, inline or in a `.md` body section | `limit` |
 | `how` | 10,000 characters | `limit` |
 | YAML alias expansions | 100 | `yaml-syntax` |
 
