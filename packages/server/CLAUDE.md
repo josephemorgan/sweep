@@ -25,6 +25,7 @@ Express 5 (ESM) API, Drizzle ORM on Postgres 16, Better Auth (session C). Spec �
 
 ## Session C to-dos the scaffold leaves open
 
+- Raise the `express.json()` limit (default 100 kB, set in `src/app.ts`) to fit upload limits (`LIMITS.fileBytes` is 2 MB), and update the 413 test in `test/app.test.ts`, which relies on the default.
 - Better Auth tables and config; make `BETTER_AUTH_SECRET` and `BETTER_AUTH_URL` required in `readEnv`.
 - helmet + strict CSP, rate limits, quotas (spec §6.4, §6.5). Serve `/schema/sweep-guide.v1.schema.json`.
 - `create-user` script (`pnpm --filter @sweep/server create-user`, planned; the script doesn't exist yet).
