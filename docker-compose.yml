@@ -21,8 +21,10 @@ services:
     environment:
       DATABASE_URL: postgres://sweep:sweep@postgres:5432/sweep
       BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:-dev-only-secret-change-me-0000000000}
-      BETTER_AUTH_URL: ${BETTER_AUTH_URL:-http://localhost:3000}
+      # Not BETTER_AUTH_URL: compose would read the dev value (:4200) from the root .env.
+      BETTER_AUTH_URL: ${SWEEP_APP_URL:-http://localhost:3000}
       SIGNUP_ENABLED: ${SIGNUP_ENABLED:-false}
+      TRUST_PROXY: ${TRUST_PROXY:-}
       PORT: '3000'
     ports:
       - '127.0.0.1:3000:3000'

@@ -82,3 +82,42 @@ jobs:
           name: playwright-report
           path: packages/client/playwright-report/
           retention-days: 7
+
+  docker:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      BETTER_AUTH_SECRET: ci-only-secret-not-used-anywhere-else-000
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Build and start the image with Postgres
+        run: docker compose up -d --build
+
+      - name: Wait for /api/health
+        run: |
+          for i in $(seq 1 60); do
+            body=$(curl -fsS http://127.0.0.1:3000/api/health || true)
+            if [ "$body" = '{"ok":true,"db":true}' ]; then
+              echo "healthy: $body"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "app never became healthy"
+          exit 1
+
+      - name: Create a user with the bundled script
+        run: printf 'ci-password-123456\n' | docker compose exec -T app node server/dist/scripts/create-user.js --email ci@example.com
+
+      - name: Serve the client with no-cache index.html
+        run: |
+          curl -fsSI http://127.0.0.1:3000/ | grep -i '^cache-control: no-cache'
+
+      - name: Logs on failure
+        if: failure()
+        run: docker compose logs
+
+      - name: Stop
+        if: always()
+        run: docker compose down -v
