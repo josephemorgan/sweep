@@ -737,7 +737,7 @@ These patterns cover the common shapes of real games. The first three come with 
 The "how it plays out" notes use the app's terms:
 
 - A task is **open** while one of its windows is open, and **upcoming** before any window has opened. It's **missed** when a window has closed without it being done and no window is open now. If a later window is still upcoming, it shows as "missed, 2nd chance at X". Otherwise it's missed for good.
-- **Current** is the leaf the user is at: the leaf they pinned with **I'm here**, or else the earliest unlocked leaf they haven't cleared.
+- **Current** is the leaf the user is at: a valid pin (the leaf they pinned with **I'm here**), or else the earliest unlocked leaf they haven't cleared.
 - The bottom bar shows four counts. **HERE** is the open tasks whose `home` is the current leaf. **NOW** is all open tasks. **CLOSING** is the tasks that clearing the current leaf would make missed. **LAST CHANCE** is the part of CLOSING with no later window.
 
 ### Open world, per-window `home`

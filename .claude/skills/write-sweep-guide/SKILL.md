@@ -64,7 +64,7 @@ Ask, or state your assumption, before converting:
 - Write in the guide's own voice. Never "the source says" or "the author recommends". Never mention the guide's own structure ("the next leaf", "this card", "window").
 - Drop pointers to parts of the source the guide doesn't include ("see the Side Quests page", "read the next section for the boss"): keep any fact that comes with the pointer, and name the missing page in the report under Left out.
 - Each `how` is read on its own. When the source gives a direction relative to something earlier ("east of the chest"), name that thing ("east of the Potion 1 chest").
-- In YAML (`.md` front matter too), write every `how` and inline `walkthrough` as a `|` block scalar, and quote other text values as the doc's YAML rules (Quoting) say: `: `, ` #` or a leading indicator.
+- In YAML (`.md` front matter too), write every `how` and inline `walkthrough` as a `|` block scalar (the example guides use plain scalars where nothing needs quoting; in a conversion, `|` avoids quoting mistakes), and quote other text values as the doc's YAML rules (Quoting) say: `: `, ` #` or a leading indicator.
 
 **h. Attribution.** Credit goes in a comment at the top of the file and in the report, never in user-facing text (v1 has no credit field). In `.yaml`, a `#` comment at the top (below the schema comment, if any). In `.md`, line 1 must be `---`, so put the `#` comment on the first line inside the front matter.
 
@@ -119,9 +119,9 @@ Exit `0` means no errors and `1` means the guide has errors. Exit `2` is a usage
 | `overview-long` (warning) | Over 200 characters or has a line break → one short sentence; detail goes in the walkthrough. |
 | `type` | Often an unquoted `true`, `false` or `null` ID, which YAML reads as a boolean or null → rename or quote it (`id: "true"`). Also `yes`/`no` for a boolean, `windows: []`, or an empty key (`how:` with nothing after it is YAML null; the message says it found an empty value) → fill it in or delete the key. Also a value YAML read as a list or mapping: a value that is all `[…]`, or a value on the line below its key that contains `: ` → quote it, or use a `\|` block scalar. |
 
-**If the validator is unavailable or prints "not implemented yet", run the hand checklist on the whole file.** A missing validator never means "done". Say in the report that you checked by hand.
+**If the validator is unavailable, run the hand checklist on the whole file.** A missing validator never means "done". Say in the report that you checked by hand.
 
-- [ ] Top level: `sweep: 1`, `game`, `sections`; `categories` if there are tasks. Every category has `name` and `about`; every section `id`, `title`, `overview`; every task `id`, `title`, `category`, `windows`; every window `from`. No plain-text field is `""`. No key missing from the doc's Field reference.
+- [ ] Top level: `sweep: 1`, `game`, `sections`; `categories` if there are tasks. Every category has `name` and `about`; every section `id`, `title`, `overview`; every task `id`, `title`, `category`, `windows`; every window `from`. No plain-text field is `""`. Every key appears in the doc's Field reference.
 - [ ] Slugs: every ID matches `^[a-z][a-z0-9]*(-[a-z0-9]+)*$`, 64 characters or fewer, unique across sections and tasks. No section or task is `end`. No unquoted `true`, `false` or `null` in an ID or reference field.
 - [ ] References: every `requires`, `from`, `until`, `home` and `category` exists; `home` is a leaf.
 - [ ] Overviews: one sentence, 200 characters or fewer, single-line.
@@ -163,7 +163,7 @@ If you catch yourself thinking one of these, stop and apply the rule.
 | Thought | Rule |
 |---|---|
 | "I'll leave `until` out; the default is fine." | Omitting `until` is a closure claim. Decide it with the four rules and quote the reason. |
-| "There's a later fallback, so `until: end`." | A list framed by a stated closure ("last chance", "no going back") is a closure for every item on it; "make sure" or "before you" on its own is advice (rule 3). Model each named chance as a window; a fallback past the last leaf goes in the report. |
+| "There's a later fallback, so `until: end`." | A later chance beyond the guide's last leaf is never a reason for `until: end`. A list framed by a stated closure ("last chance", "no going back") is a closure for every item on it; "make sure" or "before you" on its own is advice (rule 3). Model each named chance as a window; report a fallback past the last leaf. |
 | "The source says 'make sure to' or 'before X', so it closes at X." | Advice isn't unavailability. Close only on a stated loss of access, and check whether the source sends the player back. |
 | "The point of no return is somewhere in this section." | Split the leaf so the last-chance leaf is cleared before the irreversible step. |
 | "I'll put the sub-area in the title." | Locations belong in the tree: area leaves, or `home`. |
