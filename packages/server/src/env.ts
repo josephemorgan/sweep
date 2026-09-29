@@ -38,6 +38,25 @@ function readOrigin(raw: string | undefined): string {
   return url.origin;
 }
 
+/** Exact WHATWG hostnames (lower-cased, IPv6 bracketed), never a prefix match. */
+const LOOPBACK_HOSTS = new Set(['localhost', '127.0.0.1', '[::1]']);
+
+/**
+ * In production, Better Auth's cookies must be Secure, which follows BETTER_AUTH_URL's scheme.
+ * The error names the variable and scheme only: the URL could carry credentials.
+ */
+function requireHttpsInProduction(origin: string, nodeEnv: string | undefined): void {
+  const url = new URL(origin);
+  if (nodeEnv !== 'production' || url.protocol === 'https:') return;
+  // Spec §6.4: loopback is exempt. The image runs with NODE_ENV=production, and compose and the
+  // CI smoke job serve it on http://localhost:3000; a loopback origin can't serve other users,
+  // and browsers treat loopback as a secure context.
+  if (LOOPBACK_HOSTS.has(url.hostname)) return;
+  throw new Error(
+    `BETTER_AUTH_URL must be https in production (only loopback origins may use http), got scheme "${url.protocol.slice(0, -1)}".`,
+  );
+}
+
 function readSecret(raw: string | undefined): string {
   if (!raw || raw.length < MIN_SECRET_LENGTH) {
     // Never echo the value: it is a secret even when it's too short.
@@ -84,12 +103,14 @@ export function readEnv(source: NodeJS.ProcessEnv = process.env): Env {
   if (signup !== 'true' && signup !== 'false') {
     throw new Error(`SIGNUP_ENABLED must be "true" or "false", got "${signup}".`);
   }
+  const betterAuthUrl = readOrigin(source['BETTER_AUTH_URL']);
+  requireHttpsInProduction(betterAuthUrl, source['NODE_ENV']);
   return {
     databaseUrl,
     port,
     signupEnabled: signup === 'true',
     betterAuthSecret: readSecret(source['BETTER_AUTH_SECRET']),
-    betterAuthUrl: readOrigin(source['BETTER_AUTH_URL']),
+    betterAuthUrl,
     clientDistDir: source['CLIENT_DIST_DIR'] || undefined,
     trustProxy: readTrustProxy(source['TRUST_PROXY']),
     parseTimeoutMs: readParseTimeout(source['PARSE_TIMEOUT_MS']),

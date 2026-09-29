@@ -64,6 +64,52 @@ describe('readEnv', () => {
     },
   );
 
+  describe('in production (spec §6.4: cookies are always Secure)', () => {
+    const production = (url: string) =>
+      readEnv({ ...base, NODE_ENV: 'production', BETTER_AUTH_URL: url });
+
+    it('accepts an https origin', () => {
+      expect(production('https://sweep.example').betterAuthUrl).toBe('https://sweep.example');
+    });
+
+    it.each([
+      ['http://localhost:3000', 'http://localhost:3000'],
+      ['http://127.0.0.1:3000', 'http://127.0.0.1:3000'],
+      ['http://[::1]:3000', 'http://[::1]:3000'],
+      ['http://LOCALHOST', 'http://localhost'],
+    ])('accepts the http loopback origin %s', (url, origin) => {
+      expect(production(url).betterAuthUrl).toBe(origin);
+    });
+
+    it.each([
+      'http://sweep.example',
+      'http://localhost.evil.com',
+      'http://127.0.0.1.evil.com',
+      'http://10.0.0.5:3000',
+    ])('refuses the http origin %s, naming the variable and scheme only', (url) => {
+      const withSecret = url.replace('http://', 'http://user:hunter2@');
+      let message = '';
+      try {
+        production(withSecret);
+      } catch (err) {
+        message = (err as Error).message;
+      }
+      expect(message).toMatch(/BETTER_AUTH_URL/);
+      expect(message).toMatch(/https/);
+      expect(message).toContain('"http"');
+      expect(message).not.toContain('hunter2');
+      expect(message).not.toContain(new URL(url).hostname);
+    });
+
+    it('allows any http origin outside production', () => {
+      expect(readEnv({ ...base, BETTER_AUTH_URL: 'http://sweep.example' }).betterAuthUrl).toBe(
+        'http://sweep.example',
+      );
+      const dev = { ...base, NODE_ENV: 'development', BETTER_AUTH_URL: 'http://sweep.example' };
+      expect(readEnv(dev).betterAuthUrl).toBe('http://sweep.example');
+    });
+  });
+
   it('treats an empty TRUST_PROXY as unset', () => {
     expect(readEnv({ ...base, TRUST_PROXY: '' }).trustProxy).toBe(false);
   });
