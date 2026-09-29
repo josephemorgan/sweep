@@ -8,16 +8,20 @@
     "pnpm": ">=10.34.6 <11"
   },
   "scripts": {
+    "prepare": "pnpm build:core",
     "build": "pnpm -r build",
+    "build:core": "pnpm --filter @sweep/core build",
     "lint": "eslint .",
-    "typecheck": "tsc -p tsconfig.json && pnpm -r typecheck",
-    "test": "pnpm -r test && pnpm test:repo",
+    "typecheck": "pnpm build:core && tsc -p tsconfig.json && pnpm -r typecheck",
+    "test": "pnpm build:core && pnpm -r test && pnpm test:repo",
     "test:repo": "vitest run",
+    "sweep": "sweep",
     "format": "prettier --write .",
     "format:check": "prettier --check ."
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",
+    "@sweep/core": "workspace:*",
     "@types/node": "24.19.0",
     "angular-eslint": "22.5.0",
     "eslint": "10.11.0",
