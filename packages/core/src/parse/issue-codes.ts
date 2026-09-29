@@ -43,7 +43,4 @@ export const WarningCode = {
 } as const;
 export type WarningCode = (typeof WarningCode)[keyof typeof WarningCode];
 
-/** Scaffold-only code returned by the parseGuide stub. Session A deletes it. */
-export const NOT_IMPLEMENTED = 'not-implemented' as const;
-
-export type IssueCode = ErrorCode | WarningCode | typeof NOT_IMPLEMENTED;
+export type IssueCode = ErrorCode | WarningCode;

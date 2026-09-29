@@ -20,7 +20,6 @@ Pure TypeScript: guide model, parser and validator (`@sweep/core/parse`), engine
 
 ## Scaffold stubs to replace in session A
 
-- `parseGuide` returns a single `not-implemented` error. Once the real parser lands, delete `NOT_IMPLEMENTED` from `src/parse/issue-codes.ts` (the constant and its member of the `IssueCode` union), its import and re-export in `src/parse/index.ts`, and the stub test `test/parse-stub.test.ts`.
 - `sweep validate` prints "not implemented yet" and exits 1. Implement per spec §9: `file:line:col severity code message`, `--json`, exit codes 0/1/2. Resolve file arguments against `process.env.INIT_CWD ?? process.cwd()`, because `pnpm sweep` runs from the repo root, then drop the run-from-root caveat in the root and core CLAUDE.md.
 - `Issue` (`src/model/issue.ts`) uses `null` for missing locations. Refine it if the validator needs to.
 - Add `deriveRun`, `clearImpact`, `diffGuides`, `migrateProgress` and the API DTO types to the main entry (spec §4.12). Bump `MODEL_VERSION` whenever `Guide`'s shape changes.

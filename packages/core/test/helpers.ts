@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs';
 import type { Guide, RunProgress, TaskState } from '../src/index.js';
+import { parseGuide, type ParseResult } from '../src/parse/index.js';
 
 export const FIXTURES = new URL('./fixtures/', import.meta.url);
 export function readFixture(rel: string): string {
@@ -8,6 +9,18 @@ export function readFixture(rel: string): string {
 /** The hand-written expected model for a valid fixture: fixtures/valid/<name>.json. */
 export function loadGuide(name: string): Guide {
   return JSON.parse(readFixture(`valid/${name}.json`)) as Guide;
+}
+/** Parses `text` as a `guide.yaml`. */
+export function parseYaml(text: string): ParseResult {
+  return parseGuide({ 'guide.yaml': text });
+}
+/** Parses `text` as a `guide.yaml` and returns the model, throwing (with the issues) on any error. */
+export function parseOk(text: string): Guide {
+  const result = parseYaml(text);
+  if (result.guide === undefined) {
+    throw new Error(`expected a guide, got issues:\n${JSON.stringify(result.issues, null, 2)}`);
+  }
+  return result.guide;
 }
 export function progress(
   p: {

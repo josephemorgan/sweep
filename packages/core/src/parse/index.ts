@@ -2,13 +2,14 @@
 import type { Guide } from '../model/guide.js';
 import type { Issue } from '../model/issue.js';
 import { splitFrontMatter } from './container.js';
-import { ErrorCode, NOT_IMPLEMENTED } from './issue-codes.js';
+import { ErrorCode } from './issue-codes.js';
 import { issue, sortIssues } from './issues.js';
+import { normalize } from './normalize.js';
 import { checkStructure } from './structure.js';
 import { readSource } from './text.js';
 import { parseYamlSource } from './yaml.js';
 
-export { ErrorCode, NOT_IMPLEMENTED, WarningCode } from './issue-codes.js';
+export { ErrorCode, WarningCode } from './issue-codes.js';
 export type { IssueCode } from './issue-codes.js';
 export { LIMITS } from './limits.js';
 export { guideFileName } from './text.js';
@@ -25,7 +26,7 @@ export interface ParseResult {
 
 /**
  * Parses and validates a guide from a virtual file map (spec §3.2): exactly one of
- * `guide.yaml`, `guide.yml` or `guide.md`. Scaffold stub: session A implements it.
+ * `guide.yaml`, `guide.yml` or `guide.md`. `guide` is set only when there are no errors.
  */
 export function parseGuide(files: GuideFiles): ParseResult {
   // Phase 1: text.
@@ -54,9 +55,8 @@ export function parseGuide(files: GuideFiles): ParseResult {
     parsed.locator,
   );
   if (raw === undefined) return { issues: sortIssues(structureIssues) };
-  // Later phases (identity and references onwards) arrive in the following tasks.
-  const notImplemented = issue('error', NOT_IMPLEMENTED, NOT_IMPLEMENTED_MESSAGE, null, null, null);
-  return { issues: sortIssues([...structureIssues, notImplemented]) };
+  // Phase 5: identity and references (a pass-through until checkReferences lands).
+  // Phase 6: normalize. A `.md` body isn't parsed yet, so it contributes no walkthroughs.
+  const { guide } = normalize(raw, new Map());
+  return { guide, issues: sortIssues(structureIssues) };
 }
-
-const NOT_IMPLEMENTED_MESSAGE = 'parseGuide is not implemented yet (arrives in session A).';

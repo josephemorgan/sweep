@@ -295,7 +295,8 @@ const WARNING_CASES: WarningCase[] = [
 describe.each(WARNING_CASES)('$name', (c) => {
   it(`warns ${c.code} at ${c.line}:${c.column}`, () => {
     const result = parseGuide(c.files);
-    // `guide` is asserted once parseGuide returns it (a later task).
+    expect(result.guide).toBeDefined();
+    expect(result.issues.filter((i) => i.severity === 'error')).toEqual([]);
     expect(result.issues).toContainEqual(
       expect.objectContaining({
         severity: 'warning',
