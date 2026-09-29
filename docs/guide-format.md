@@ -324,7 +324,7 @@ Spoilers are part of a layered reveal (spec §5.6). Section titles and overviews
 - Duplicate keys are an error (`yaml-syntax`). A duplicated key directly under `categories` is reported as `id-duplicate`.
 - Custom tags (`!something`) are an error (`yaml-syntax`).
 - Anchors and aliases are allowed, with at most 100 alias expansions. More is `yaml-syntax`.
-- UTF-8 only, with no NUL (U+0000) characters or unpaired surrogates, written or produced by an escape such as `"\0"` (`encoding`). A byte-order mark is accepted and stripped. Windows (`\r\n`) and old Mac (`\r`) line endings are accepted.
+- UTF-8 only, with no NUL (U+0000), and no NUL or unpaired surrogate produced by an escape such as `"\0"` or `"\ud800"` (`encoding`). A byte-order mark is accepted and stripped. Windows (`\r\n`) and old Mac (`\r`) line endings are accepted.
 
 ## Validation
 

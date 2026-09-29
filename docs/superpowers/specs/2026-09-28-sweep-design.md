@@ -222,7 +222,7 @@ A group's `requires` is a gate on every section inside it. The children's own `r
 - YAML 1.2 core schema, one document only.
 - Duplicate keys are an error. Custom tags are an error.
 - Anchors and aliases are allowed, with at most 100 alias expansions.
-- UTF-8 only. A BOM is accepted and stripped.
+- UTF-8 only, with no U+0000 or unpaired surrogates, including from escapes (`encoding`). A BOM is accepted and stripped.
 
 ### 3.6 Validation
 
