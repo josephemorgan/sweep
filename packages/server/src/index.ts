@@ -6,12 +6,22 @@ import { loadRootEnvFile } from './load-env.js';
 
 loadRootEnvFile();
 const env = readEnv();
-const { db } = createDb(env.databaseUrl);
+const { db, pool } = createDb(env.databaseUrl);
 
 // Spec §7: migrations run at start, before the server listens.
 const migrations = await runMigrations(db);
 console.log(migrations === 'applied' ? 'Migrations applied.' : 'No migrations to apply yet.');
 
-createApp({ db, clientDistDir: env.clientDistDir }).listen(env.port, () => {
+const server = createApp({ db, clientDistDir: env.clientDistDir }).listen(env.port, () => {
   console.log(`Sweep server listening on http://localhost:${env.port}`);
 });
+
+// `docker stop` sends SIGTERM: stop accepting connections, close the pool, exit.
+function shutdown(): void {
+  server.close(() => {
+    void pool.end().finally(() => process.exit(0));
+  });
+  server.closeIdleConnections();
+}
+process.once('SIGTERM', shutdown);
+process.once('SIGINT', shutdown);
