@@ -1,4 +1,4 @@
-import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import request from 'supertest';
@@ -66,6 +66,7 @@ describe('API 404 and client serving', () => {
 
   afterAll(async () => {
     await handle.pool.end();
+    rmSync(clientDir, { recursive: true, force: true });
   });
 
   it('never answers /api routes with index.html', async () => {

@@ -1,4 +1,4 @@
-import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, sep } from 'node:path';
 import { eq } from 'drizzle-orm';
@@ -28,17 +28,25 @@ describe('runMigrations', () => {
 
   it('is a no-op (no DB access) when no migrations exist yet', async () => {
     const empty = mkdtempSync(join(tmpdir(), 'sweep-migrations-'));
-    await expect(runMigrations(handle.db, empty)).resolves.toBe('none');
+    try {
+      await expect(runMigrations(handle.db, empty)).resolves.toBe('none');
+    } finally {
+      rmSync(empty, { recursive: true, force: true });
+    }
   });
 
   it('is also a no-op when drizzle-kit left an empty journal', async () => {
     const dir = mkdtempSync(join(tmpdir(), 'sweep-migrations-'));
-    mkdirSync(join(dir, 'meta'));
-    writeFileSync(
-      join(dir, 'meta', '_journal.json'),
-      JSON.stringify({ version: '7', dialect: 'postgresql', entries: [] }),
-    );
-    await expect(runMigrations(handle.db, dir)).resolves.toBe('none');
+    try {
+      mkdirSync(join(dir, 'meta'));
+      writeFileSync(
+        join(dir, 'meta', '_journal.json'),
+        JSON.stringify({ version: '7', dialect: 'postgresql', entries: [] }),
+      );
+      await expect(runMigrations(handle.db, dir)).resolves.toBe('none');
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
   });
 });
 

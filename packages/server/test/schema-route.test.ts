@@ -1,4 +1,4 @@
-import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import request from 'supertest';
@@ -26,11 +26,16 @@ describe('GET /schema/sweep-guide.v1.schema.json', () => {
 
   it('wins over the SPA fallback when the client is served', async () => {
     const clientDir = mkdtempSync(join(tmpdir(), 'sweep-client-'));
-    writeFileSync(join(clientDir, 'index.html'), '<app-root></app-root>');
-    const res = await request(offlineApp(handle.db, { clientDistDir: clientDir })).get(
-      '/schema/sweep-guide.v1.schema.json',
-    );
-    expect(res.headers['content-type']).toMatch(/application\/json/);
-    expect(res.text).not.toContain('<app-root>');
+    try {
+      writeFileSync(join(clientDir, 'index.html'), '<app-root></app-root>');
+      const res = await request(offlineApp(handle.db, { clientDistDir: clientDir })).get(
+        '/schema/sweep-guide.v1.schema.json',
+      );
+      expect(res.status).toBe(200);
+      expect(res.headers['content-type']).toMatch(/application\/json/);
+      expect(res.text).not.toContain('<app-root>');
+    } finally {
+      rmSync(clientDir, { recursive: true, force: true });
+    }
   });
 });

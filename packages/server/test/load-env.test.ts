@@ -1,4 +1,4 @@
-import { mkdtempSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -30,11 +30,15 @@ describe('loadRootEnvFile', () => {
 
   it('loads variables without overriding ones already set', () => {
     const dir = mkdtempSync(join(tmpdir(), 'sweep-env-'));
-    const file = join(dir, '.env');
-    writeFileSync(file, 'SWEEP_TEST_A=from-file\nSWEEP_TEST_B=from-file\n');
-    process.env['SWEEP_TEST_A'] = 'from-env';
-    expect(loadRootEnvFile(file)).toBe(true);
-    expect(process.env['SWEEP_TEST_A']).toBe('from-env');
-    expect(process.env['SWEEP_TEST_B']).toBe('from-file');
+    try {
+      const file = join(dir, '.env');
+      writeFileSync(file, 'SWEEP_TEST_A=from-file\nSWEEP_TEST_B=from-file\n');
+      process.env['SWEEP_TEST_A'] = 'from-env';
+      expect(loadRootEnvFile(file)).toBe(true);
+      expect(process.env['SWEEP_TEST_A']).toBe('from-env');
+      expect(process.env['SWEEP_TEST_B']).toBe('from-file');
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
   });
 });
