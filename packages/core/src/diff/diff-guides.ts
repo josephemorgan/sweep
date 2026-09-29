@@ -270,10 +270,10 @@ function progressDiff(
   sectionRenames: readonly Renamed[],
   taskRenames: readonly Renamed[],
 ): ProgressDiff {
-  const migrated = progressMoves(sectionRenames, taskRenames, progress);
-  const moved = new Set(migrated.map((m) => `${m.kind}\0${m.from}`));
   const oldLeaves = leafIds(oldGuide);
   const newLeaves = leafIds(newGuide);
+  const migrated = progressMoves(sectionRenames, taskRenames, progress, { oldLeaves, newLeaves });
+  const moved = new Set(migrated.map((m) => `${m.kind}\0${m.from}`));
   const oldTasks = new Set(oldGuide.tasks.map((t) => t.id));
   const newTasks = new Set(newGuide.tasks.map((t) => t.id));
   const oldCats = new Set(oldGuide.categories.map((c) => c.id));

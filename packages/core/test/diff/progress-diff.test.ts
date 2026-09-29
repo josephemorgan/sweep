@@ -145,6 +145,53 @@ tasks: []
     ]);
   });
 
+  it('orphans progress on a renamed leaf that becomes a group', () => {
+    const next = guide(`sections:
+  - { id: a, title: A, overview: o }
+  - id: bee
+    title: B
+    overview: o
+    renamed_from: [b]
+    sections:
+      - { id: b1, title: B1, overview: o }
+  - { id: c, title: C, overview: o }
+tasks: []
+`);
+    const p = progress({ cleared: ['b'], pin: 'b' });
+    const d = diffGuides(OLD, next, p);
+    expect(d.sections.renamed.map((r) => r.to)).toEqual(['bee']);
+    expect(d.progress).toEqual({
+      migrated: [],
+      orphaned: [
+        { kind: 'cleared', id: 'b' },
+        { kind: 'pin', id: 'b' },
+      ],
+      restored: [],
+    });
+    const moved = migrateProgress(p, d);
+    expect(progressToDto(moved)).toEqual(progressToDto(p));
+  });
+
+  it('does not migrate a stored group ID whose group is renamed to a leaf', () => {
+    const old = guide(`sections:
+  - id: g
+    title: G
+    overview: o
+    sections:
+      - { id: g1, title: G1, overview: o }
+tasks: []
+`);
+    const next = guide(`sections:
+  - { id: gee, title: G, overview: o, renamed_from: [g] }
+tasks: []
+`);
+    const p = progress({ cleared: ['g'] });
+    const d = diffGuides(old, next, p);
+    expect(d.sections.renamed.map((r) => r.to)).toEqual(['gee']);
+    expect(d.progress).toEqual({ migrated: [], orphaned: [], restored: [] });
+    expect(progressToDto(migrateProgress(p, d))).toEqual(progressToDto(p));
+  });
+
   it('restores progress whose ID comes back', () => {
     const old = guide(`sections:
   - { id: a, title: A, overview: o }
