@@ -1,0 +1,37 @@
+{
+  "name": "@sweep/server",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "files": [
+    "dist",
+    "drizzle"
+  ],
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "rm -rf dist && tsc -p tsconfig.build.json",
+    "start": "node dist/index.js",
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "db:studio": "drizzle-kit studio"
+  },
+  "dependencies": {
+    "@sweep/core": "workspace:*",
+    "drizzle-orm": "^0.45.3",
+    "express": "^5.2.1",
+    "pg": "^8.23.0"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.6",
+    "@types/node": "24.19.0",
+    "@types/pg": "^8.23.1",
+    "@types/supertest": "^7.2.1",
+    "drizzle-kit": "^0.31.11",
+    "supertest": "^7.3.0",
+    "tsx": "^4.23.15",
+    "typescript": "~6.0.3",
+    "vitest": "5.0.2"
+  }
+}

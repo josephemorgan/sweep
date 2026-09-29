@@ -15,6 +15,9 @@
     "typecheck": "pnpm build:core && tsc -p tsconfig.json && pnpm -r typecheck",
     "test": "pnpm build:core && pnpm -r test && pnpm test:repo",
     "test:repo": "vitest run",
+    "db:generate": "pnpm --filter @sweep/server db:generate",
+    "db:migrate": "pnpm --filter @sweep/server db:migrate",
+    "db:studio": "pnpm --filter @sweep/server db:studio",
     "sweep": "sweep",
     "format": "prettier --write .",
     "format:check": "prettier --check ."

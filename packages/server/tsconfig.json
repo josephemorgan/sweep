@@ -1,0 +1,10 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "module": "nodenext",
+    "lib": ["ES2024"],
+    "types": ["node"],
+    "noEmit": true
+  },
+  "include": ["src", "test", "vitest.config.ts", "drizzle.config.ts"]
+}
