@@ -467,6 +467,54 @@ const CASES: InvalidCase[] = [
     column: 16,
     path: 'tasks[0].windows[0].until',
   },
+  {
+    name: 'closing hashes in a level-1 heading',
+    fixture: 'md-heading.md',
+    code: 'md-heading',
+    line: 18,
+    column: 1,
+    path: null,
+  },
+  {
+    name: 'setext level-1 heading',
+    fixture: 'md-heading-setext.md',
+    code: 'md-heading',
+    line: 18,
+    column: 1,
+    path: null,
+  },
+  {
+    name: 'level-1 heading nested in a blockquote',
+    fixture: 'md-heading-nested.md',
+    code: 'md-heading',
+    line: 18,
+    column: 1,
+    path: null,
+  },
+  {
+    name: 'body heading naming no section',
+    fixture: 'md-unknown-section.md',
+    code: 'md-unknown-section',
+    line: 18,
+    column: 1,
+    path: null,
+  },
+  {
+    name: 'section with two body headings',
+    fixture: 'md-duplicate-section.md',
+    code: 'md-duplicate-section',
+    line: 22,
+    column: 1,
+    path: null,
+  },
+  {
+    name: 'inline walkthrough and a body heading',
+    fixture: 'walkthrough-twice.md',
+    code: 'walkthrough-twice',
+    line: 15,
+    column: 1,
+    path: null,
+  },
 ];
 
 describe.each(CASES)('$name', (c) => {
@@ -532,6 +580,14 @@ const WARNING_CASES: WarningCase[] = [
     line: 7,
     column: 3,
     path: 'categories.cards',
+  },
+  {
+    name: 'text before the first markdown heading',
+    files: { 'guide.md': readFixture('valid/md-preamble.md') },
+    code: 'md-preamble',
+    line: 12,
+    column: 1,
+    path: null,
   },
 ];
 

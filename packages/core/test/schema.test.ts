@@ -1,4 +1,4 @@
-import { existsSync, readdirSync, readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { Ajv2020 } from 'ajv/dist/2020.js';
@@ -29,9 +29,8 @@ describe('guide JSON Schema', () => {
     expect(validate(data), JSON.stringify(validate.errors)).toBe(true);
   });
 
-  it('accepts the lantern-keep.md front matter once it exists', () => {
+  it('accepts the lantern-keep.md front matter', () => {
     const path = join(validDir, 'lantern-keep.md');
-    if (!existsSync(path)) return;
     const match = /^---\r?\n([\s\S]*?)\r?\n---/.exec(readFileSync(path, 'utf8'));
     const data: unknown = parse(match?.[1] ?? '');
     expect(validate(data), JSON.stringify(validate.errors)).toBe(true);

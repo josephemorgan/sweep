@@ -1,12 +1,13 @@
 // @sweep/core/parse entry (spec §4.12). Used by the server and the CLI, never by the client.
 import type { Guide } from '../model/guide.js';
 import type { Issue } from '../model/issue.js';
-import { splitFrontMatter } from './container.js';
+import { splitBody, splitFrontMatter } from './container.js';
 import { checkGraph } from './graph.js';
 import { ErrorCode } from './issue-codes.js';
 import { issue, sortIssues } from './issues.js';
 import { normalize } from './normalize.js';
 import { checkReferences } from './references.js';
+import type { RawGuide } from './schema.js';
 import { checkStructure } from './structure.js';
 import { readSource } from './text.js';
 import { checkWindows } from './windows.js';
@@ -38,6 +39,7 @@ export function parseGuide(files: GuideFiles): ParseResult {
   // Phase 2: container.
   let yamlText = source.text;
   let lineOffset = 0;
+  let bodyStart: { body: string; line: number } | null = null;
   if (source.file === 'guide.md') {
     const split = splitFrontMatter(source.text);
     if (split === null) {
@@ -47,6 +49,7 @@ export function parseGuide(files: GuideFiles): ParseResult {
     }
     yamlText = split.frontMatter;
     lineOffset = split.frontMatterLine - 1;
+    bodyStart = { body: split.body, line: split.bodyLine };
   }
   // Phase 3: YAML and format version.
   const { parsed, issues: yamlIssues } = parseYamlSource(yamlText, source.file, lineOffset);
@@ -62,8 +65,24 @@ export function parseGuide(files: GuideFiles): ParseResult {
   const { issues: referenceIssues, blocking } = checkReferences(raw, source.file, parsed.locator);
   const issues = [...structureIssues, ...referenceIssues];
   if (blocking) return { issues: sortIssues(issues) };
-  // Phase 6: normalize. A `.md` body isn't parsed yet, so it contributes no walkthroughs.
-  const { guide, sources } = normalize(raw, new Map());
+  // Phase 6: the `.md` body (needs the raw section IDs), then normalize. Body errors don't block
+  // normalization, but they do block `guide`.
+  let bodyWalkthroughs = new Map<string, string>();
+  if (bodyStart !== null) {
+    const ids = new Set<string>();
+    const inline = new Set<string>();
+    const visit = (section: RawGuide['sections'][number]): void => {
+      ids.add(section.id);
+      if (section.walkthrough !== undefined) inline.add(section.id);
+      (section.sections ?? []).forEach(visit);
+    };
+    raw.sections.forEach(visit);
+    const taskIds = new Set((raw.tasks ?? []).map((task) => task.id));
+    const body = splitBody(bodyStart.body, bodyStart.line, ids, inline, taskIds);
+    bodyWalkthroughs = body.walkthroughs;
+    issues.push(...body.issues);
+  }
+  const { guide, sources } = normalize(raw, bodyWalkthroughs);
   // Phase 7: graph.
   issues.push(...checkGraph(guide, sources, source.file, parsed.locator));
   // Phase 8: windows. Independent of the requires graph, so it runs after graph errors too.
