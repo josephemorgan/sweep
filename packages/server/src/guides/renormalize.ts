@@ -94,11 +94,14 @@ export function renormalizer(options: RenormalizerOptions): Renormalizer {
       return;
     }
     // One statement, so its own short transaction. Conditional on the old model_version, so a
-    // concurrent writer (another process) makes this a no-op rather than a lost update.
+    // concurrent writer (another process) makes this a no-op rather than a lost update. The
+    // denormalized game/title columns follow the fresh model.
     await db
       .update(guideVersions)
-      .set({ model: fresh, modelVersion: MODEL_VERSION })
-      .where(and(eq(guideVersions.id, versionId), eq(guideVersions.modelVersion, row.modelVersion)));
+      .set({ model: fresh, modelVersion: MODEL_VERSION, game: fresh.game, title: fresh.title })
+      .where(
+        and(eq(guideVersions.id, versionId), eq(guideVersions.modelVersion, row.modelVersion)),
+      );
   }
 
   function ensureVersion(db: Database, versionId: string): Promise<void> {

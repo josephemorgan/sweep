@@ -54,12 +54,21 @@ describe('re-normalization (spec §6.1 model_version)', () => {
   it('re-parses the source when model_version is stale and stores the fresh model', async () => {
     const runId = await uploadRun(ann.agent);
     await makeStale(runId);
+    await ctx.db
+      .update(guideVersions)
+      .set({ game: 'Stale game', title: 'Stale title' })
+      .where(eq(guideVersions.runId, runId));
     const res = await ann.agent.get(`/api/runs/${runId}`);
     expect(res.status).toBe(200);
     expect(res.body.guide).toEqual(TINY_GUIDE);
     const row = await versionRow(runId);
     expect(row.modelVersion).toBe(MODEL_VERSION);
     expect(row.model).toEqual(TINY_GUIDE);
+    // The denormalized columns follow the fresh model.
+    expect({ game: row.game, title: row.title }).toEqual({
+      game: TINY_GUIDE.game,
+      title: TINY_GUIDE.title,
+    });
   });
 
   it('serves the stored model and logs only issue codes when the source no longer parses', async () => {
