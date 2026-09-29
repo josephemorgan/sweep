@@ -128,6 +128,7 @@ Depends on session A. Session C's API contract (§6.2) is enough to start, using
 Done when: §8 client and e2e tests pass at both viewports.
 
 Also in scope (deferred from the scaffold):
+- CSP (spec §6.4): `script-src 'self'` blocks any inline script or handler, and `base-uri 'self'` keeps `<base href="/">` working. Session C sets `optimization.styles.inlineCritical: false` in the client's production build for this reason; keep it off, and never add inline scripts or event-handler attributes to index.html.
 - Manifest icons use a combined "maskable any" purpose; split into separate maskable and any icons.
 - app.config.ts import order; the <noscript> left by ng add.
 - The e2e webServer reuses a stale local server on :4200 if one is running; make reuse explicit (e.g. only when !CI and documented).

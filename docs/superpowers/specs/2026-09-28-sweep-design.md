@@ -204,7 +204,7 @@ A group's `requires` is a gate on every section inside it. The children's own `r
 
 "Within the window" and "in route order" use leaf positions. Let `first(s)` and `last(s)` be the route-order positions of the first and last leaf in `s`; for a leaf, both are the leaf's own position. For `until: end`, `last` is the last leaf.
 
-**Why per-window `home`:** it solves the Breath of the Wild problem. About 700 tasks become doable the moment you leave the Great Plateau. Without `home`, they'd all land in the first open-world card. Windows are invisible metadata that drive computed state, and `home` decides placement (§3.8.1). The "everything doable now" view is the NOW sheet (§4.9).
+**Why per-window `home`:** it solves the Breath of the Wild problem. About 700 tasks become doable the moment you leave the Great Plateau. Without `home`, they'd all land in the first open-world card. Windows are invisible metadata that drive computed state, and `home` decides placement (§3.9.1). The "everything doable now" view is the NOW sheet (§4.9).
 
 **Why event-based closure:** a window closes when `until` is *cleared*, not when the user's route position passes it. This stays correct in non-linear games where the user visits sections in any order. Route order is only display order and the definition of "next".
 
@@ -298,7 +298,6 @@ The validator returns a list of **issues**: `{severity, code, message, file, lin
 This is a small fictional game. It exercises:
 
 - default and explicit `requires`, with any-order towers
-- a group gate
 - a group used as `from`
 - a non-default `home`
 - a 2nd chance
@@ -1239,7 +1238,9 @@ Write endpoints check that the ID exists and has the right kind in the **current
   - Markdown is rendered with raw HTML disabled, images disabled and a link-scheme allowlist.
   - The output then goes through **DOMPurify** before being bound. Angular's sanitizer runs as a further layer.
 - **Headers:**
-  - `helmet` with a strict CSP: `default-src 'self'; script-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; img-src 'self' data:; connect-src 'self'`.
+  - `helmet` with a strict CSP: `default-src 'self'; script-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; img-src 'self' data:; connect-src 'self'`.
+    - **Why `base-uri 'self'`, not `'none'`:** `'none'` makes browsers ignore Angular's `<base href="/">`. The built `index.html` loads its bundles by relative path, so reloading a deep link such as `/runs/<id>` would request `/runs/main-*.js`. `'self'` still blocks an injected `<base>` pointing at another origin.
+  - The client's production build turns off Angular's critical-CSS inlining (`optimization.styles.inlineCritical: false`). The inlined stylesheet is applied by an `onload` handler, which is an inline script and so blocked by `script-src 'self'`.
   - `style-src 'self'` plus whatever Angular's runtime component styles need. A nonce through `ngCspNonce` is preferred, and `'unsafe-inline'` for styles only is the accepted fallback.
   - Inline scripts are never allowed.
 - **Rate limits:**
