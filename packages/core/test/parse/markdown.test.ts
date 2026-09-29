@@ -159,3 +159,25 @@ describe('walkthrough-twice with an empty inline walkthrough', () => {
     expect(result.issues.map((i) => [i.code, i.line])).toEqual([['walkthrough-twice', 11]]);
   });
 });
+
+describe('markdown walkthrough limit', () => {
+  // The raw slice after `# a` starts with the heading's newline, so it is 1 + n characters.
+  it('accepts a body walkthrough of exactly 100,000 characters', () => {
+    const result = parseGuide({ 'guide.md': `${MINI}# a\n${'x'.repeat(99_999)}` });
+    expect(result.issues).toEqual([]);
+    expect(result.guide).toBeDefined();
+  });
+
+  it('reports limit at the heading for 100,001 characters', () => {
+    const result = parseGuide({ 'guide.md': `${MINI}# a\n${'x'.repeat(100_000)}` });
+    expect(result.guide).toBeUndefined();
+    expect(result.issues.map((i) => [i.code, i.line, i.column, i.path])).toEqual([
+      ['limit', 12, 1, null],
+    ]);
+  });
+
+  it('measures the slice before trimming', () => {
+    const result = parseGuide({ 'guide.md': `${MINI}# a\n${'\n'.repeat(100_000)}x` });
+    expect(result.issues.map((i) => i.code)).toEqual(['limit']);
+  });
+});

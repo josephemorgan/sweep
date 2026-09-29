@@ -3,6 +3,7 @@ import type { Heading, Root, RootContent } from 'mdast';
 import type { Issue } from '../model/issue.js';
 import { ErrorCode, WarningCode } from './issue-codes.js';
 import { issue } from './issues.js';
+import { LIMITS } from './limits.js';
 
 const FENCE = /^---[ \t]*$/;
 
@@ -113,10 +114,12 @@ export function splitBody(
     }
     seen.add(point.id);
     const next = points[i + 1];
-    walkthroughs.set(
-      point.id,
-      body.slice(point.end, next === undefined ? body.length : next.start),
-    );
+    const text = body.slice(point.end, next === undefined ? body.length : next.start);
+    if (text.length > LIMITS.walkthroughChars) {
+      const message = `walkthrough of "${point.id}" is over ${LIMITS.walkthroughChars} characters`;
+      issues.push(issue('error', ErrorCode.Limit, message, file, at(point.line), null));
+    }
+    walkthroughs.set(point.id, text);
   });
   const preamble = body.slice(0, points[0]?.start ?? body.length).split('\n');
   const first = preamble.findIndex((line) => line.trim() !== '');

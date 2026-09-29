@@ -515,6 +515,16 @@ const CASES: InvalidCase[] = [
     column: 1,
     path: null,
   },
+  {
+    name: 'markdown walkthrough over 100,000 characters',
+    files: {
+      'guide.md': `---\nsweep: 1\ngame: G\nsections:\n  - id: a\n    title: A\n    overview: One.\n---\n\n# a\n${'x'.repeat(100_000)}\n`,
+    },
+    code: 'limit',
+    line: 10,
+    column: 1,
+    path: null,
+  },
 ];
 
 describe.each(CASES)('$name', (c) => {
