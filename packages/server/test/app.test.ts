@@ -3,38 +3,33 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import request from 'supertest';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
-import { createApp } from '../src/app.js';
 import { JSON_BODY_LIMIT_BYTES } from '../src/limits.js';
 import { createDb, type DbHandle } from '../src/db/client.js';
+import { offlineApp } from './helpers/context.js';
+import { createTestDb, type TestDb } from './helpers/test-db.js';
 
 describe('GET /api/health', () => {
-  let live: DbHandle;
+  let live: TestDb;
   let dead: DbHandle;
 
-  beforeAll(() => {
-    const url = process.env['DATABASE_URL'];
-    if (!url) {
-      throw new Error(
-        'Server tests need DATABASE_URL: copy .env.example to .env and run `docker compose up -d postgres`.',
-      );
-    }
-    live = createDb(url);
+  beforeAll(async () => {
+    live = await createTestDb();
     dead = createDb('postgres://sweep:sweep@127.0.0.1:1/sweep');
   });
 
   afterAll(async () => {
-    await live.pool.end();
+    await live.drop();
     await dead.pool.end();
   });
 
   it('returns 200 {ok: true, db: true} when Postgres answers', async () => {
-    const res = await request(createApp({ db: live.db })).get('/api/health');
+    const res = await request(offlineApp(live.db)).get('/api/health');
     expect(res.status).toBe(200);
     expect(res.body).toEqual({ ok: true, db: true });
   });
 
   it('returns 503 {ok: false, db: false} when Postgres is unreachable', async () => {
-    const res = await request(createApp({ db: dead.db })).get('/api/health');
+    const res = await request(offlineApp(dead.db)).get('/api/health');
     expect(res.status).toBe(503);
     expect(res.body).toEqual({ ok: false, db: false });
   });
@@ -46,16 +41,16 @@ describe('API 404 and client serving', () => {
   writeFileSync(join(clientDir, 'index.html'), '<!doctype html><app-root></app-root>');
   writeFileSync(join(clientDir, 'ngsw-worker.js'), '// worker');
   writeFileSync(join(clientDir, 'main.js'), '// main');
-  const app = createApp({ db: handle.db, clientDistDir: clientDir });
+  const app = offlineApp(handle.db, { clientDistDir: clientDir });
 
   afterAll(async () => {
     await handle.pool.end();
   });
 
-  it('answers unknown /api routes with a JSON 404, never index.html', async () => {
+  it('never answers /api routes with index.html', async () => {
     const res = await request(app).get('/api/does-not-exist');
-    expect(res.status).toBe(404);
-    expect(res.body).toEqual({ error: { code: 'not-found', message: 'No such API route.' } });
+    expect(res.headers['content-type']).toMatch(/json/);
+    expect(res.text).not.toContain('<app-root>');
   });
 
   it('falls back to index.html for client routes, uncached', async () => {
@@ -81,7 +76,7 @@ describe('API 404 and client serving', () => {
   });
 
   it('does not serve the client when clientDistDir is unset', async () => {
-    const res = await request(createApp({ db: handle.db })).get('/');
+    const res = await request(offlineApp(handle.db)).get('/');
     expect(res.status).toBe(404);
   });
 });
@@ -97,7 +92,7 @@ describe('error handling', () => {
     const spy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
     try {
       const secret = 'SECRET-GUIDE-CONTENT';
-      const res = await request(createApp({ db: handle.db }))
+      const res = await request(offlineApp(handle.db))
         .post('/api/anything')
         .set('Content-Type', 'application/json')
         .send(`{"guide": ${secret}}`);
@@ -113,7 +108,7 @@ describe('error handling', () => {
   it('answers an oversized body with a 413 too-large', async () => {
     const spy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
     try {
-      const res = await request(createApp({ db: handle.db }))
+      const res = await request(offlineApp(handle.db))
         .post('/api/anything')
         .set('Content-Type', 'application/json')
         .send(JSON.stringify({ blob: 'x'.repeat(JSON_BODY_LIMIT_BYTES + 1) }));

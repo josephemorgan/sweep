@@ -1,4 +1,5 @@
 import { createApp } from './app.js';
+import { createAuth } from './auth.js';
 import { createDb } from './db/client.js';
 import { runMigrations } from './db/migrate.js';
 import { readEnv } from './env.js';
@@ -12,7 +13,13 @@ const { db, pool } = createDb(env.databaseUrl);
 const migrations = await runMigrations(db);
 console.log(migrations === 'applied' ? 'Migrations applied.' : 'No migrations to apply yet.');
 
-const server = createApp({ db, clientDistDir: env.clientDistDir }).listen(env.port, () => {
+const auth = createAuth({
+  db,
+  secret: env.betterAuthSecret,
+  baseURL: env.betterAuthUrl,
+  signupEnabled: env.signupEnabled,
+});
+const server = createApp({ db, auth, clientDistDir: env.clientDistDir }).listen(env.port, () => {
   console.log(`Sweep server listening on http://localhost:${env.port}`);
 });
 
