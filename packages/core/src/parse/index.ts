@@ -5,6 +5,7 @@ import { splitFrontMatter } from './container.js';
 import { ErrorCode } from './issue-codes.js';
 import { issue, sortIssues } from './issues.js';
 import { normalize } from './normalize.js';
+import { checkReferences } from './references.js';
 import { checkStructure } from './structure.js';
 import { readSource } from './text.js';
 import { parseYamlSource } from './yaml.js';
@@ -55,8 +56,12 @@ export function parseGuide(files: GuideFiles): ParseResult {
     parsed.locator,
   );
   if (raw === undefined) return { issues: sortIssues(structureIssues) };
-  // Phase 5: identity and references (a pass-through until checkReferences lands).
+  // Phase 5: identity and references.
+  const { issues: referenceIssues, blocking } = checkReferences(raw, source.file, parsed.locator);
+  const issues = [...structureIssues, ...referenceIssues];
+  if (blocking) return { issues: sortIssues(issues) };
   // Phase 6: normalize. A `.md` body isn't parsed yet, so it contributes no walkthroughs.
   const { guide } = normalize(raw, new Map());
-  return { guide, issues: sortIssues(structureIssues) };
+  const hasErrors = issues.some((i) => i.severity === 'error');
+  return { guide: hasErrors ? undefined : guide, issues: sortIssues(issues) };
 }
