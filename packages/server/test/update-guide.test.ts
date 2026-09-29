@@ -1,6 +1,6 @@
 import { eq, sql } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
-import { runs } from '../src/db/schema.js';
+import { guideVersions, runs } from '../src/db/schema.js';
 import { parseUpload, requireValidGuide } from '../src/guides/core-adapter.js';
 import { insertGuideVersion } from '../src/guides/store.js';
 import { lockRun } from '../src/runs/progress-store.js';
@@ -191,6 +191,20 @@ describe('update flow (spec §6.3)', () => {
     });
   });
 
+  /** Resolves once exactly one session in this test database is waiting on a lock. */
+  async function oneLockWaiter(): Promise<void> {
+    await vi.waitFor(
+      async () => {
+        const result = await ctx.db.execute(
+          sql`select count(*)::int as n from pg_stat_activity
+              where datname = current_database() and wait_event_type = 'Lock'`,
+        );
+        expect((result.rows[0] as { n: number }).n).toBe(1);
+      },
+      { timeout: 5_000, interval: 20 },
+    );
+  }
+
   it('checks a progress write against the version current once it holds the run lock', async () => {
     const runId = await uploadRun(ann.agent);
     const next = await parseUpload({
@@ -207,16 +221,7 @@ describe('update flow (spec §6.3)', () => {
         .put(`/api/runs/${runId}/sections/marsh`)
         .send({ cleared: true })
         .then((r) => r);
-      await vi.waitFor(
-        async () => {
-          const result = await ctx.db.execute(
-            sql`select count(*)::int as n from pg_stat_activity
-                where datname = current_database() and wait_event_type = 'Lock'`,
-          );
-          expect((result.rows[0] as { n: number }).n).toBe(1);
-        },
-        { timeout: 5_000, interval: 20 },
-      );
+      await oneLockWaiter();
       await insertGuideVersion(tx, { runId, version: 2, upload: next, guide });
       await tx.update(runs).set({ currentVersion: 2 }).where(eq(runs.id, runId));
     });
@@ -225,6 +230,35 @@ describe('update flow (spec §6.3)', () => {
     expect(res.body.error?.code).toBe('unknown-id');
     expect((await ann.agent.get(`/api/runs/${runId}`)).body.progress.cleared).toEqual([]);
   });
+  it('refuses an apply whose baseVersion went stale while it waited for the run lock', async () => {
+    const runId = await uploadRun(ann.agent);
+    const next = await parseUpload({
+      originalname: 'next.yaml',
+      buffer: Buffer.from(TINY_RENAMED_YAML),
+    });
+    const guide = requireValidGuide(next.result);
+    let apply: Promise<{ status: number; body: { error?: { code: string } } }> | undefined;
+    // A second apply with the same baseVersion passes the route's pre-check, then waits on the
+    // run lock while this transaction commits v2 as the first apply would. Under the lock it
+    // must see v2 and refuse, never base v3 on a version the client didn't preview.
+    await ctx.db.transaction(async (tx) => {
+      await lockRun(tx, runId);
+      apply = post(runId, TINY_GROUPED_YAML, '1', false).then((r) => r);
+      await oneLockWaiter();
+      await insertGuideVersion(tx, { runId, version: 2, upload: next, guide });
+      await tx.update(runs).set({ currentVersion: 2 }).where(eq(runs.id, runId));
+    });
+    const res = await apply!;
+    expect(res.status).toBe(409);
+    expect(res.body.error?.code).toBe('stale-version');
+    const [run] = await ctx.db.select().from(runs).where(eq(runs.id, runId));
+    expect(run!.currentVersion).toBe(2);
+    const versions = await ctx.db
+      .select({ version: guideVersions.version })
+      .from(guideVersions)
+      .where(eq(guideVersions.runId, runId));
+    expect(versions.map((v) => v.version).sort()).toEqual([1, 2]);
+  }, 15_000);
 });
 
 describe('update flow: a parse over its time budget (spec §6.4)', () => {
