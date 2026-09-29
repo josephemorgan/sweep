@@ -85,12 +85,15 @@ export function checkReferences(
     }
   }
 
-  // Section references. A reference to a task ID is unknown too: only sections can be reached.
+  // Section references. A task ID is unknown too, since only sections can be reached.
   const sectionIds = new Set(sections.map((s) => s.section.id));
+  const taskIds = new Set(tasks.map((t) => t.id));
   const checkSection = (id: string, path: PathSegment[]): void => {
-    if (!sectionIds.has(id)) {
-      error(ErrorCode.UnknownSection, `"${id}" is not a section ID in this guide`, path);
-    }
+    if (sectionIds.has(id)) return;
+    const message = taskIds.has(id)
+      ? `"${id}" is a task ID, not a section ID`
+      : `"${id}" is not a section ID in this guide`;
+    error(ErrorCode.UnknownSection, message, path);
   };
   for (const { section, path } of sections) {
     const req = section.requires;

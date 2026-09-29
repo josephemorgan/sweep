@@ -53,6 +53,18 @@ sections:
     );
   });
 
+  it('says so when a reference names a task ID', () => {
+    const result = parseYaml(readFixture('invalid/unknown-section-task-id.yaml'));
+    const found = result.issues.filter((i) => i.code === 'unknown-section');
+    expect(found).toHaveLength(1);
+    expect(found[0]!.message).toBe('"forest-chest" is a task ID, not a section ID');
+  });
+
+  it('reports only id-duplicate for the duplicate-section fixture', () => {
+    const result = parseYaml(readFixture('invalid/id-duplicate.yaml'));
+    expect(result.issues.map((i) => i.code)).toEqual(['id-duplicate']);
+  });
+
   it('does not flag until: end', () => {
     const result = parseYaml(`${HEAD}
 categories:

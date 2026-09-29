@@ -1,4 +1,4 @@
-# id-duplicate: a section reuses an earlier section ID
+# unknown-section: requires names a task ID, not a section ID
 sweep: 1
 game: Tiny Linear
 categories:
@@ -14,8 +14,9 @@ sections:
     overview: The second area.
   - id: cave
     title: Cave
+    requires: [forest-chest]
     overview: The third area.
-  - id: forest
+  - id: summit
     title: Summit
     overview: The last area.
 tasks:
