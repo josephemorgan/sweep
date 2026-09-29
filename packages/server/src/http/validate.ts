@@ -19,7 +19,18 @@ export const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0
 export const RUN_NAME_MAX_LENGTH = 100;
 
 export const idSchema = z.string().max(ID_MAX_LENGTH).regex(ID_PATTERN);
-export const runNameSchema = z.string().trim().min(1).max(RUN_NAME_MAX_LENGTH);
+/**
+ * 1-100 characters (code points, matching the runs_name_length check's char_length), trimmed,
+ * no control characters: Postgres text rejects NUL, and the others don't belong in a display name.
+ */
+export const runNameSchema = z
+  .string()
+  .trim()
+  .regex(/^[^\p{Cc}]*$/u)
+  .refine((s) => {
+    const length = [...s].length;
+    return length >= 1 && length <= RUN_NAME_MAX_LENGTH;
+  });
 
 export const renameRunBody = z.strictObject({
   name: runNameSchema,

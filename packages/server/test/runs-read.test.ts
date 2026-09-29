@@ -3,6 +3,7 @@ import { eq } from 'drizzle-orm';
 import request from 'supertest';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { runs } from '../src/db/schema.js';
+import { RUN_NAME_MAX_LENGTH } from '../src/http/validate.js';
 import { writeProgressChanges } from '../src/runs/progress-store.js';
 import { createTestContext, type SignedIn, type TestContext } from './helpers/context.js';
 import { TINY_GUIDE } from './helpers/guides.js';
@@ -99,7 +100,11 @@ describe('runs read, rename and delete', () => {
   it.each([
     { name: '' },
     { name: '   ' },
-    { name: 'x'.repeat(101) },
+    { name: 'x'.repeat(RUN_NAME_MAX_LENGTH + 1) },
+    { name: '🗺'.repeat(RUN_NAME_MAX_LENGTH + 1) },
+    { name: 'a\u0000b' },
+    { name: 'a\nb' },
+    { name: 'a\u001bb' },
     { name: 5 },
     {},
     { name: 'ok', extra: 1 },
@@ -109,6 +114,16 @@ describe('runs read, rename and delete', () => {
     expect(res.status).toBe(400);
     expect(res.body.error.code).toBe('bad-request');
   });
+
+  it.each(['x'.repeat(RUN_NAME_MAX_LENGTH), '🗺'.repeat(RUN_NAME_MAX_LENGTH)])(
+    'accepts a name of exactly the maximum length in characters (%#)',
+    async (name) => {
+      const runId = await seedRun(ctx.db, ann.userId);
+      const res = await ann.agent.patch(`/api/runs/${runId}`).send({ name });
+      expect(res.status).toBe(200);
+      expect(res.body.name).toBe(name);
+    },
+  );
 
   it('rejects any query key with 400 on a read and on a mutation', async () => {
     const runId = await seedRun(ctx.db, ann.userId);
