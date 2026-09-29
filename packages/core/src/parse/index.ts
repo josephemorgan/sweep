@@ -2,6 +2,7 @@
 import type { Guide } from '../model/guide.js';
 import type { Issue } from '../model/issue.js';
 import { splitFrontMatter } from './container.js';
+import { checkGraph } from './graph.js';
 import { ErrorCode } from './issue-codes.js';
 import { issue, sortIssues } from './issues.js';
 import { normalize } from './normalize.js';
@@ -61,7 +62,9 @@ export function parseGuide(files: GuideFiles): ParseResult {
   const issues = [...structureIssues, ...referenceIssues];
   if (blocking) return { issues: sortIssues(issues) };
   // Phase 6: normalize. A `.md` body isn't parsed yet, so it contributes no walkthroughs.
-  const { guide } = normalize(raw, new Map());
+  const { guide, sources } = normalize(raw, new Map());
+  // Phase 7: graph.
+  issues.push(...checkGraph(guide, sources, source.file, parsed.locator));
   const hasErrors = issues.some((i) => i.severity === 'error');
   return { guide: hasErrors ? undefined : guide, issues: sortIssues(issues) };
 }
