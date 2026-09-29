@@ -162,6 +162,8 @@ function checkNodes(doc: Document.Parsed, report: Report): AliasRef[] {
   };
 
   const duplicateKey = (name: string, key: unknown, path: PathSegment[]): void => {
+    // The key's own `encoding` error covers it, and no message or path may carry such a name.
+    if (firstUnstorable(name) >= 0) return;
     const keyPath = [...path, name];
     if (path.length === 1 && path[0] === 'categories') {
       report(ErrorCode.IdDuplicate, `category ${name} is defined twice`, startOf(key), keyPath);

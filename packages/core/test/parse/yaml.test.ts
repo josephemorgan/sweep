@@ -208,6 +208,16 @@ describe('parseYamlSource', () => {
       ]);
     });
 
+    it.each([
+      ['a nested map', 'sweep: 1\nx:\n  "a\\0": 1\n  "a\\0": 2\n'],
+      ['categories', 'sweep: 1\ncategories:\n  "a\\ud800": {}\n  "a\\ud800": {}\n'],
+    ])('reports only encoding for a repeated bad key in %s', (_name, text) => {
+      expect(parse(text).issues.map((i) => [i.code, i.line, i.column])).toEqual([
+        ['encoding', 3, 3],
+        ['encoding', 4, 3],
+      ]);
+    });
+
     it('reports a multi-line scalar at its start, and each bad scalar once', () => {
       const text = 'sweep: 1\na: [x, "one\n  two \\0"]\nb: "\\ud800"\nc: *nope\n';
       expect(parse(text).issues.map((i) => [i.code, i.line, i.column, i.path])).toEqual([
