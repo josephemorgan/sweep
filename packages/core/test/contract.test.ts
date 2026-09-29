@@ -1,4 +1,5 @@
 import { describe, expect, expectTypeOf, it } from 'vitest';
+import { loadGuide, progress } from './helpers.js';
 import * as core from '../src/index.js';
 import * as parse from '../src/parse/index.js';
 import type { ClearImpact, Guide, GuideDiff } from '../src/index.js';
@@ -95,6 +96,17 @@ describe('public contract', () => {
       tasks: 1,
       categories: 1,
     });
+  });
+
+  it('has no stubs left', () => {
+    const guide = loadGuide('tiny-linear');
+    const empty = progress();
+    const leaf = guide.sections[0]!.id;
+    const run = core.deriveRun(guide, empty);
+    expect(() => core.clearImpact(guide, empty, leaf)).not.toThrow();
+    expect(() => core.deriveMetrics(guide, empty, run)).not.toThrow();
+    const diff = core.diffGuides(guide, guide, empty);
+    expect(() => core.migrateProgress(empty, diff)).not.toThrow();
   });
 
   it('names uploads', () => {

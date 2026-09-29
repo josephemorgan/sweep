@@ -1,5 +1,6 @@
 import { END, type Guide, type Requires, type Section } from '../model/guide.js';
 import type { RunProgress } from '../model/progress.js';
+import { progressMoves } from './progress-moves.js';
 
 export interface Edited {
   id: string;
@@ -141,7 +142,6 @@ function diffKind(m: Matching, fieldsOf: (oldId: string, newId: string) => strin
 }
 
 export function diffGuides(oldGuide: Guide, newGuide: Guide, progress?: RunProgress): GuideDiff {
-  void progress; // The progress half comes with Task 19.
   const sec = match(
     flatten(oldGuide.sections).map((s) => s.id),
     flatten(newGuide.sections),
@@ -223,7 +223,91 @@ export function diffGuides(oldGuide: Guide, newGuide: Guide, progress?: RunProgr
   const newCount = newSections.size + newTasks.size;
   const likelyRegenerated = oldCount >= 10 && removed / oldCount >= 0.5 && added / newCount >= 0.5;
 
-  return { sections, tasks, categories, likelyRegenerated, progress: null };
+  return {
+    sections,
+    tasks,
+    categories,
+    likelyRegenerated,
+    progress:
+      progress === undefined
+        ? null
+        : progressDiff(oldGuide, newGuide, progress, sections.renamed, tasks.renamed),
+  };
+}
+
+function leafIds(guide: Guide): Set<string> {
+  return new Set(
+    flatten(guide.sections)
+      .filter((s) => s.children.length === 0)
+      .map((s) => s.id),
+  );
+}
+
+const KIND_ORDER: readonly ProgressKind[] = [
+  ProgressKind.Cleared,
+  ProgressKind.Pin,
+  ProgressKind.Task,
+  ProgressKind.Tracked,
+];
+
+function sortRefs(refs: ProgressRef[]): ProgressRef[] {
+  return refs.sort(
+    (a, b) =>
+      KIND_ORDER.indexOf(a.kind) - KIND_ORDER.indexOf(b.kind) ||
+      (a.id < b.id ? -1 : a.id > b.id ? 1 : 0),
+  );
+}
+
+/**
+ * What this update does to stored progress. Usable means: a cleared or pin ID is a leaf, a task
+ * state ID is a task, a tracked ID is a category. Progress usable in both guides is untouched, and
+ * progress unusable in both isn't listed. Migrated progress is not also reported as orphaned.
+ */
+function progressDiff(
+  oldGuide: Guide,
+  newGuide: Guide,
+  progress: RunProgress,
+  sectionRenames: readonly Renamed[],
+  taskRenames: readonly Renamed[],
+): ProgressDiff {
+  const migrated = progressMoves(sectionRenames, taskRenames, progress);
+  const moved = new Set(migrated.map((m) => `${m.kind}\0${m.from}`));
+  const oldLeaves = leafIds(oldGuide);
+  const newLeaves = leafIds(newGuide);
+  const oldTasks = new Set(oldGuide.tasks.map((t) => t.id));
+  const newTasks = new Set(newGuide.tasks.map((t) => t.id));
+  const oldCats = new Set(oldGuide.categories.map((c) => c.id));
+  const newCats = new Set(newGuide.categories.map((c) => c.id));
+
+  const entries: { ref: ProgressRef; old: Set<string>; next: Set<string> }[] = [
+    ...[...progress.cleared].map((id) => ({
+      ref: { kind: ProgressKind.Cleared, id },
+      old: oldLeaves,
+      next: newLeaves,
+    })),
+    ...(progress.pin === null
+      ? []
+      : [{ ref: { kind: ProgressKind.Pin, id: progress.pin }, old: oldLeaves, next: newLeaves }]),
+    ...[...progress.tasks.keys()].map((id) => ({
+      ref: { kind: ProgressKind.Task, id },
+      old: oldTasks,
+      next: newTasks,
+    })),
+    ...[...progress.tracked.keys()].map((id) => ({
+      ref: { kind: ProgressKind.Tracked, id },
+      old: oldCats,
+      next: newCats,
+    })),
+  ];
+  const orphaned: ProgressRef[] = [];
+  const restored: ProgressRef[] = [];
+  for (const { ref, old, next } of entries) {
+    const before = old.has(ref.id);
+    const after = next.has(ref.id);
+    if (before && !after && !moved.has(`${ref.kind}\0${ref.id}`)) orphaned.push(ref);
+    if (!before && after) restored.push(ref);
+  }
+  return { migrated, orphaned: sortRefs(orphaned), restored: sortRefs(restored) };
 }
 
 /** Every section in route order (parents before children). */
