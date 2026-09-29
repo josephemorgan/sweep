@@ -1,0 +1,53 @@
+sweep: 1
+game: Final Fantasy VIII
+title: Card sample
+categories:
+  cards:
+    name: Cards
+    about: Triple Triad cards worth chasing.
+sections:
+  - id: disc-1
+    title: Disc 1
+    overview: From the SeeD exam to the Timber mission.
+    sections:
+      - id: balamb-garden
+        title: Balamb Garden
+        overview: Get to class and prepare for the field exam.
+      - id: fire-cavern
+        title: Fire Cavern
+        overview: Obtain Ifrit before the exam.
+      - id: dollet
+        title: Dollet
+        overview: The SeeD field exam.
+      - id: timber
+        title: Timber
+        overview: Meet the Forest Owls.
+  - id: disc-2
+    title: Disc 2
+    overview: Galbadia and beyond.
+    sections:
+      - id: deling-city
+        title: Deling City
+        overview: The sorceress parade.
+  - id: disc-3
+    title: Disc 3
+    overview: The Garden takes to the sea.
+    sections:
+      - id: garden-return
+        title: Balamb Garden (Disc 3)
+        overview: Explore the mobile Garden.
+tasks:
+  - id: quistis-card
+    title: Quistis card
+    category: cards
+    how: Challenge the Trepies, Quistis's fan club, in the Garden.
+    windows:
+      - from: balamb-garden
+        until: dollet
+      - from: garden-return
+        until: end
+  - id: dollet-pub-card
+    title: Card from the Dollet pub owner
+    category: cards
+    windows:
+      - from: dollet

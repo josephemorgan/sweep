@@ -1,6 +1,6 @@
 # JSON Schema
 
-`sweep-guide.v1.schema.json` will live here. Session A **generates** it from `@sweep/core`'s Zod schema definition with `pnpm schema`, and it is committed. Once it exists, CI fails if the committed file drifts from the generated output (spec §9).
+`sweep-guide.v1.schema.json` lives here. It is **generated** from `@sweep/core`'s Zod schema definition with `pnpm schema`, and it is committed. A core test fails if the committed file drifts from the generated output (spec §9).
 
 Don't edit the JSON by hand. Change the schema definition in `packages/core` and regenerate.
 

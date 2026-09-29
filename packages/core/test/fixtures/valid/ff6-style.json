@@ -1,0 +1,139 @@
+{
+  "formatVersion": 1,
+  "game": "Final Fantasy VI",
+  "title": "Relic choice sample",
+  "categories": [
+    {
+      "id": "relics",
+      "name": "Relics",
+      "about": "Relics worth planning around.",
+      "tracked": true
+    }
+  ],
+  "sections": [
+    {
+      "id": "world-of-balance",
+      "title": "World of Balance",
+      "overview": "The first half of the game.",
+      "walkthrough": null,
+      "requires": {
+        "all": []
+      },
+      "spoiler": false,
+      "renamedFrom": [],
+      "children": [
+        {
+          "id": "south-figaro",
+          "title": "South Figaro",
+          "overview": "Pass through the town on the way to the hideout.",
+          "walkthrough": null,
+          "requires": {
+            "all": []
+          },
+          "spoiler": false,
+          "renamedFrom": [],
+          "children": []
+        },
+        {
+          "id": "returner-hideout",
+          "title": "Returner Hideout",
+          "overview": "Meet Banon and hear the Returners' plan.",
+          "walkthrough": null,
+          "requires": {
+            "all": [
+              "south-figaro"
+            ]
+          },
+          "spoiler": false,
+          "renamedFrom": [],
+          "children": []
+        },
+        {
+          "id": "lete-river",
+          "title": "Lete River",
+          "overview": "Ride the raft downstream with Banon.",
+          "walkthrough": null,
+          "requires": {
+            "all": [
+              "returner-hideout"
+            ]
+          },
+          "spoiler": false,
+          "renamedFrom": [],
+          "children": []
+        }
+      ]
+    },
+    {
+      "id": "world-of-ruin",
+      "title": "World of Ruin",
+      "overview": "The second half of the game.",
+      "walkthrough": null,
+      "requires": {
+        "all": []
+      },
+      "spoiler": false,
+      "renamedFrom": [],
+      "children": [
+        {
+          "id": "figaro-cave",
+          "title": "Figaro Cave",
+          "overview": "Reach the castle through the cave.",
+          "walkthrough": null,
+          "requires": {
+            "all": [
+              "lete-river"
+            ]
+          },
+          "spoiler": false,
+          "renamedFrom": [],
+          "children": []
+        }
+      ]
+    }
+  ],
+  "tasks": [
+    {
+      "id": "gauntlet",
+      "title": "Gauntlet",
+      "category": "relics",
+      "how": "A Returner hands you one relic; which one depends on how you answer Banon.",
+      "windows": [
+        {
+          "from": "returner-hideout",
+          "until": "returner-hideout",
+          "home": "returner-hideout"
+        },
+        {
+          "from": "figaro-cave",
+          "until": "end",
+          "home": "figaro-cave"
+        }
+      ],
+      "exclusive": "banon-relic",
+      "spoiler": true,
+      "renamedFrom": []
+    },
+    {
+      "id": "genji-glove",
+      "title": "Genji Glove",
+      "category": "relics",
+      "how": "A Returner hands you one relic; which one depends on how you answer Banon.",
+      "windows": [
+        {
+          "from": "returner-hideout",
+          "until": "returner-hideout",
+          "home": "returner-hideout"
+        },
+        {
+          "from": "figaro-cave",
+          "until": "end",
+          "home": "figaro-cave"
+        }
+      ],
+      "exclusive": "banon-relic",
+      "spoiler": true,
+      "renamedFrom": []
+    }
+  ]
+}

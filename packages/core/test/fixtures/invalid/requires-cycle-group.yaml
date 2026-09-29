@@ -1,0 +1,42 @@
+# requires-cycle: group gate needs a leaf that needs a leaf in the group
+sweep: 1
+game: Tiny Linear
+categories:
+  loot:
+    name: Loot
+    about: Things to pick up.
+sections:
+  - id: start
+    title: Start
+    overview: The first area.
+  - id: grove
+    title: Grove
+    requires: [gatehouse]
+    overview: A group.
+    sections:
+      - id: grove-a
+        title: Grove A
+        overview: First.
+      - id: grove-b
+        title: Grove B
+        overview: Second.
+  - id: gatehouse
+    title: Gatehouse
+    requires: [grove-a]
+    overview: Beyond.
+  - id: forest
+    title: Forest
+    overview: The second area.
+  - id: cave
+    title: Cave
+    overview: The third area.
+  - id: summit
+    title: Summit
+    overview: The last area.
+tasks:
+  - id: forest-chest
+    title: Chest in the forest
+    category: loot
+    windows:
+      - from: forest
+        until: cave

@@ -22,14 +22,23 @@
     "bin"
   ],
   "scripts": {
-    "build": "rm -rf dist && tsc -p tsconfig.build.json",
+    "build": "tsc -p tsconfig.build.json",
+    "clean": "rm -rf dist",
     "dev": "tsc -p tsconfig.build.json --watch --preserveWatchOutput",
     "typecheck": "tsc -p tsconfig.lib.json && tsc -p tsconfig.json",
-    "test": "vitest run"
+    "test": "vitest run",
+    "schema": "pnpm build && node dist/cli/write-schema.js ../../schema/sweep-guide.v1.schema.json"
   },
   "devDependencies": {
+    "@types/mdast": "4.0.4",
     "@types/node": "24.19.0",
+    "ajv": "8.20.0",
     "typescript": "~6.0.3",
     "vitest": "5.0.2"
+  },
+  "dependencies": {
+    "mdast-util-from-markdown": "2.0.3",
+    "yaml": "2.9.1",
+    "zod": "4.6.5"
   }
 }

@@ -1,25 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { ErrorCode, LIMITS, NOT_IMPLEMENTED, WarningCode, parseGuide } from '../src/parse/index.js';
+import { ErrorCode, LIMITS, WarningCode } from '../../src/parse/index.js';
 
 const SLUG = /^[a-z][a-z0-9]*(-[a-z0-9]+)*$/;
 
-describe('@sweep/core/parse (scaffold stub)', () => {
-  it('returns no guide and a single not-implemented error', () => {
-    const result = parseGuide({ 'guide.yaml': 'sweep: 1\n' });
-    expect(result.guide).toBeUndefined();
-    expect(result.issues).toEqual([
-      {
-        severity: 'error',
-        code: NOT_IMPLEMENTED,
-        message: 'parseGuide is not implemented yet (arrives in session A).',
-        file: null,
-        line: null,
-        column: null,
-        path: null,
-      },
-    ]);
-  });
-
+describe('issue codes and limits', () => {
   it('lists every spec §3.6 issue code as a slug, errors and warnings disjoint', () => {
     const errors = Object.values(ErrorCode);
     const warnings = Object.values(WarningCode);

@@ -1,0 +1,10 @@
+# yaml-syntax: a group lists an alias to itself as a child section
+sweep: 1
+game: Tiny Linear
+sections:
+  - &grove
+    id: grove
+    title: Grove
+    overview: A group.
+    sections:
+      - *grove

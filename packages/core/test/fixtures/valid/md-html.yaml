@@ -1,0 +1,18 @@
+# md-html (warning): raw HTML in a task's how
+sweep: 1
+game: Tiny Linear
+categories:
+  loot:
+    name: Loot
+    about: Things to pick up.
+sections:
+  - id: start
+    title: Start
+    overview: The first area.
+tasks:
+  - id: start-chest
+    title: Chest at the start
+    category: loot
+    how: "Press <kbd>A</kbd>"
+    windows:
+      - from: start
