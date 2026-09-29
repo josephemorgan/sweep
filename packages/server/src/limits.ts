@@ -24,3 +24,17 @@ export const RATE_LIMITS: RateLimits = {
   uploads: { limit: 30, windowMs: 60 * 60_000 },
   api: { limit: 600, windowMs: 60_000 },
 };
+
+export interface Quotas {
+  runsPerUser: number;
+  versionsPerRun: number;
+  /** Sum of guide_versions.source_bytes over all the user's runs and versions. */
+  sourceBytesPerUser: number;
+}
+
+/** Spec §6.5. createApp takes overrides (tests use small quotas). */
+export const QUOTAS: Quotas = {
+  runsPerUser: 50,
+  versionsPerRun: 100,
+  sourceBytesPerUser: 100 * 1024 * 1024,
+};
