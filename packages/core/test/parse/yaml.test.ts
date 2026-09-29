@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
+import { firstUnstorable } from '../../src/parse/text.js';
 import { parseYamlSource } from '../../src/parse/yaml.js';
 
 function parse(text: string, lineOffset = 0): ReturnType<typeof parseYamlSource> {
@@ -216,6 +217,48 @@ describe('parseYamlSource', () => {
         ['encoding', 3, 3],
         ['encoding', 4, 3],
       ]);
+    });
+
+    it.each([
+      [
+        'a bad value',
+        'sweep: 1\n"a\\0": "\\0"\n',
+        [
+          ['encoding', 2, 1, ''],
+          ['encoding', 2, 8, ''],
+        ],
+      ],
+      [
+        'a nested bad value',
+        'sweep: 1\nx:\n  "a\\0": {b: "\\0"}\n',
+        [
+          ['encoding', 3, 3, 'x'],
+          ['encoding', 3, 14, 'x.b'],
+        ],
+      ],
+      [
+        'a custom tag',
+        'sweep: 1\n"a\\0": !foo x\n',
+        [
+          ['encoding', 2, 1, ''],
+          ['yaml-syntax', 2, 13, ''],
+        ],
+      ],
+      [
+        'an undefined alias',
+        'sweep: 1\n"a\\0": *nope\n',
+        [
+          ['encoding', 2, 1, ''],
+          ['yaml-syntax', 2, 8, ''],
+        ],
+      ],
+    ])('keeps a bad key out of the paths and messages under it: %s', (_name, text, expected) => {
+      const { issues } = parse(text);
+      expect(issues.map((i) => [i.code, i.line, i.column, i.path])).toEqual(expected);
+      for (const i of issues) {
+        expect(firstUnstorable(i.path ?? '')).toBeLessThan(0);
+        expect(firstUnstorable(i.message)).toBeLessThan(0);
+      }
     });
 
     it('reports a multi-line scalar at its start, and each bad scalar once', () => {

@@ -162,8 +162,6 @@ function checkNodes(doc: Document.Parsed, report: Report): AliasRef[] {
   };
 
   const duplicateKey = (name: string, key: unknown, path: PathSegment[]): void => {
-    // The key's own `encoding` error covers it, and no message or path may carry such a name.
-    if (firstUnstorable(name) >= 0) return;
     const keyPath = [...path, name];
     if (path.length === 1 && path[0] === 'categories') {
       report(ErrorCode.IdDuplicate, `category ${name} is defined twice`, startOf(key), keyPath);
@@ -208,7 +206,9 @@ function checkNodes(doc: Document.Parsed, report: Report): AliasRef[] {
       for (const pair of node.items) {
         steps.push(() => visit(pair.key, path));
         const name = isScalar(pair.key) ? String(pair.key.value) : undefined;
-        if (name === undefined) {
+        // A key that can't be stored has its own `encoding` error. Keep it out of every path and
+        // message, so there's no duplicate check for it and its value gets the parent's path.
+        if (name === undefined || firstUnstorable(name) >= 0) {
           steps.push(() => visit(pair.value, path));
           continue;
         }
