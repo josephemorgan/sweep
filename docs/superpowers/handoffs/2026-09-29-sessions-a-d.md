@@ -119,11 +119,11 @@ Keep an eye out for good pausing points to run a compact, and let me know whenev
 
 Pass these instructions along to any sub-sessions that you suggest.
 
-Read first: CLAUDE.md, packages/client/CLAUDE.md, spec docs/superpowers/specs/2026-09-28-sweep-design.md (§4.12, §5, §8 client/e2e), docs/adr/. Use the Angular CLI MCP server (angular-cli in .mcp.json) for Angular APIs.
+Read first: CLAUDE.md, packages/client/CLAUDE.md, packages/server/CLAUDE.md ("Follow-ups for session D"), spec docs/superpowers/specs/2026-09-28-sweep-design.md (§4.12, §5, §6.2–§6.4, §8 client/e2e), docs/adr/. Use the Angular CLI MCP server (angular-cli in .mcp.json) for Angular APIs.
 
 Scope: every screen in §5: engine wrapped in computed() signals, run view, checking tasks, Clear and pin with the clearImpact warning, bottom bar, layered spoiler reveal, writes with a retry queue, resume and PWA, update-guide diff preview, and the 4:3 landscape pass. Component tests and Playwright flows at both viewports (phone 390×844, handheld-4x3 1024×768).
 
-Depends on session A. Session C's API contract (§6.2) is enough to start, using a fake API service until C lands.
+Sessions A (core) and C (server) are merged. Build against the real API: `pnpm dev` with `docker compose up -d postgres`, and create an account with `pnpm --filter @sweep/server create-user --email <e>`. A fake API service is still fine for component tests. Server behaviours the client must handle: a second concurrent upload returns 429 (show it and allow a retry); a parse timeout is an ordinary invalid-guide response with a single `limit` issue (dry run 200, create and apply 422); sessions slide on any authenticated call, so a 401 means the session really ended.
 
 Done when: §8 client and e2e tests pass at both viewports.
 
