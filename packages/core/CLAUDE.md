@@ -21,7 +21,8 @@ Pure TypeScript: guide model, parser and validator (`@sweep/core/parse`), engine
 
 ## Layout
 
-- Parse phases, in order (`src/parse/`, orchestrated by `index.ts`): `text.ts` (size, decode), `container.ts` (md front matter), `yaml.ts` (syntax, `format-version`), `structure.ts` + `schema.ts` (Zod), `references.ts` (ids, references), `normalize.ts`, `graph.ts` (lineage, cycles), `windows.ts`, `container.ts` again for the md body split, `prose.ts` (warnings). Codes live in `issue-codes.ts`.
+- Parse phases, in order (`src/parse/`, orchestrated by `index.ts`): `text.ts` (size, decode), `container.ts` (md front matter), `yaml.ts` (syntax, `format-version`), `structure.ts` + `schema.ts` (Zod), `references.ts` (ids, references), `container.ts` again for the md body split, `normalize.ts`, `graph.ts` (lineage, cycles), `windows.ts`, `prose.ts` (warnings). Codes live in `issue-codes.ts`.
+- `parseGuide` never throws, whatever the input (`test/parse/never-throws.test.ts`). Walk YAML and Markdown trees with an explicit stack, not recursion.
 - Engine (`src/engine/`): `structure`, `derive`, `cards`, `clear-impact`, `metrics`, `summary`.
 - Diff (`src/diff/`): `diff-guides`, `progress-moves`, `progress-kind`, `migrate-progress`.
 - Fixtures: `test/fixtures/valid/` and `test/fixtures/invalid/`. `test/parse/invalid-fixtures.test.ts` holds the table: every new error code needs a `CASES` row, every warning a `WARNING_CASES` row.
