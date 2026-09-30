@@ -205,6 +205,7 @@ export class RunPage implements RunActions {
     const next = this.store.view()?.current ?? null;
     this.layout.resetLeaves([leafId, next]);
     if (next) this.layout.scrollTo(next);
+    this.focusHeader(next ?? leafId);
     this.toasts.show(`Cleared ${label}.`, {
       key: 'clear',
       action: { label: 'Undo', run: () => this.undoClear(leafId, previousPin) },
@@ -219,8 +220,23 @@ export class RunPage implements RunActions {
 
   private undoClear(leafId: string, previousPin: string | null): void {
     this.store.setCleared(leafId, false);
-    if (previousPin === leafId) this.store.setPin(leafId);
+    // Restore the pin only if nothing pinned since (the clear left it null).
+    if (previousPin === leafId && (this.store.progress()?.pin ?? null) === null) {
+      this.store.setPin(leafId);
+    }
     this.layout.resetLeaves([leafId]);
     this.layout.scrollTo(leafId);
+    this.focusHeader(leafId);
+  }
+
+  /** The clicked button vanishes when its card collapses, so focus would fall to <body>. */
+  private focusHeader(sectionId: string): void {
+    afterNextRender(
+      () =>
+        this.doc
+          .querySelector<HTMLElement>(`#section-${sectionId} button[aria-expanded]`)
+          ?.focus({ preventScroll: true }),
+      { injector: this.injector },
+    );
   }
 }

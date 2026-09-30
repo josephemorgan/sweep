@@ -93,6 +93,14 @@ describe('LeafCard (§5.2)', () => {
     expect(actions.unpin).not.toHaveBeenCalled();
   });
 
+  it("offers I'm here, not Unpin, on a derived (unpinned) current card", async () => {
+    const { button, fixture, layout } = await renderCard('village');
+    layout.setExpanded('village', true);
+    await fixture.whenStable();
+    expect(button("I'm here")).toBeTruthy();
+    expect(button('Unpin')).toBeFalsy();
+  });
+
   it('does not spoil a hidden section named as the next chance (spoiler-safe label)', async () => {
     const guide = structuredClone(LANTERN_KEEP) as Guide;
     const second = guide.tasks.find((t) => t.id === 'lost-cat')!.windows[1]!;

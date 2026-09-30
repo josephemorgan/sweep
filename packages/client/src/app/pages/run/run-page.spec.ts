@@ -134,7 +134,7 @@ describe('RunPage clear and pin (§5.4)', () => {
     expect(store.view()?.current).toBe('village');
   });
 
-  it('closes the sheet and empties the SheetStack before the Undo toast shows', async () => {
+  it('closes the sheet and shows Undo outside it', async () => {
     const { el, fixture } = await renderPage();
     const stack = TestBed.inject(SheetStack);
     fixture.componentInstance.requestClear('village');
@@ -194,5 +194,52 @@ describe('RunPage clear and pin (§5.4)', () => {
     fixture.componentInstance.requestPin('west-tower');
     expect(store.view()?.current).toBe('west-tower');
     expect(store.view()?.pinned).toBe(true);
+  });
+
+  it('undo does not clobber a newer pin', async () => {
+    const { fixture, store } = await renderPage({
+      cleared: ['village', 'marsh', 'keep-gate'],
+      pin: 'east-tower',
+    });
+    fixture.componentInstance.requestClear('east-tower');
+    await fixture.whenStable();
+    fixture.componentInstance.requestPin('west-tower');
+    const toasts = TestBed.inject(Toasts);
+    toasts.runAction(toasts.toasts()[0]!.id);
+    expect(store.view()?.sections.get('east-tower')?.cleared).toBe(false);
+    expect(store.view()?.current).toBe('west-tower');
+    expect(store.view()?.pinned).toBe(true);
+  });
+
+  it('asks first when clearing a locked leaf with nothing closing', async () => {
+    const { el, fixture, store } = await renderPage();
+    fixture.componentInstance.requestClear('keep-gate');
+    await fixture.whenStable();
+    expect(dialog(el)?.textContent).toContain('Keep Gate is locked');
+    expect(store.view()?.sections.get('keep-gate')?.cleared).toBe(false);
+  });
+
+  it('moves focus to the new current card header after an immediate clear', async () => {
+    const { fixture } = await renderPage({ cleared: ['village', 'marsh'] });
+    fixture.componentInstance.requestClear('keep-gate');
+    await fixture.whenStable();
+    await vi.waitFor(() =>
+      expect(document.activeElement).toBe(
+        document.querySelector('#section-east-tower button[aria-expanded]'),
+      ),
+    );
+  });
+
+  it('moves focus to the new current card header after Clear anyway', async () => {
+    const { el, fixture } = await renderPage();
+    fixture.componentInstance.requestClear('village');
+    await fixture.whenStable();
+    click(dialog(el)!, 'Clear anyway');
+    await fixture.whenStable();
+    await vi.waitFor(() =>
+      expect(document.activeElement).toBe(
+        document.querySelector('#section-marsh button[aria-expanded]'),
+      ),
+    );
   });
 });

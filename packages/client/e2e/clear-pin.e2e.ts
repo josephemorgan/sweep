@@ -48,10 +48,9 @@ test('pins a locked section after confirming, then unpins', async ({ page, runs 
   const marsh = page.getByRole('region', { name: 'Whisper Marsh' });
   await marsh.getByRole('button', { name: /Whisper Marsh/ }).click();
   await marsh.getByRole('button', { name: "I'm here" }).click();
-  await page
-    .getByRole('dialog', { name: 'Pin a locked section?' })
-    .getByRole('button', { name: 'Pin anyway' })
-    .click();
+  const pinDialog = page.getByRole('dialog', { name: 'Pin a locked section?' });
+  await expectAccessible(page);
+  await pinDialog.getByRole('button', { name: 'Pin anyway' }).click();
   await expect(marsh).toHaveAttribute('data-state', 'current');
   await expect(marsh.getByText('Pinned')).toBeVisible();
   await expect(marsh.getByText('Requires: Harrow Village')).toBeVisible();
