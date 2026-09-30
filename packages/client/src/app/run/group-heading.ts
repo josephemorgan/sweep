@@ -19,14 +19,15 @@ import { SpoilerText } from './spoiler-text';
       <div
         role="heading"
         [attr.aria-level]="level()"
-        class="min-w-0 flex-1"
+        class="flex min-w-0 flex-1 items-center gap-2"
         [class]="
           depth() <= 1 ? 'text-xs text-fg-muted' : 'font-display text-[15px]/5 font-semibold'
         "
       >
         <button
           type="button"
-          class="flex min-h-11 w-full items-center gap-2 text-left"
+          class="flex min-h-11 min-w-0 items-center gap-2 text-left"
+          [class.flex-1]="depth() > 1"
           [attr.aria-expanded]="!collapsed()"
           [attr.aria-label]="
             (collapsed() ? 'Expand ' : 'Collapse ') + (blurred() ? 'hidden section' : group().title)
@@ -40,11 +41,11 @@ import { SpoilerText } from './spoiler-text';
           } @else {
             <span class="min-w-0">{{ group().title }}</span>
           }
-          <span class="text-xs font-normal text-fg-muted" [class.ml-auto]="depth() > 1"
-            >{{ progress().cleared }} of {{ progress().total
-            }}<span class="sr-only"> leaves cleared</span></span
-          >
         </button>
+        <span class="text-xs font-normal text-fg-muted" [class.ml-auto]="depth() > 1"
+          >{{ progress().cleared }} of {{ progress().total
+          }}<span class="sr-only"> leaves cleared</span></span
+        >
       </div>
       @if (group().walkthrough) {
         <button

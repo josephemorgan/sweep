@@ -109,4 +109,13 @@ describe('GroupHeading route styles (R3)', () => {
     expect(el.querySelectorAll('button button').length).toBe(0);
     expect(button('Walkthrough for Act 1').className).toContain('text-accent');
   });
+
+  it('keeps the count outside the toggle so its aria-label does not hide it', async () => {
+    const { el } = await renderGroup('act-1', { cleared: ['village'] });
+    const heading = el.querySelector('[role="heading"]')!;
+    const toggle = heading.querySelector('button')!;
+    expect(toggle.textContent).not.toContain(' of ');
+    expect(heading.textContent).toContain('1 of 2');
+    expect(heading.textContent).toContain('leaves cleared');
+  });
 });

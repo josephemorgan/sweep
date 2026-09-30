@@ -78,7 +78,8 @@ export class SectionList {
     const current = this.current();
     if (!index || current === null) return null;
     const pos = index.pos.get(current);
-    return pos === undefined ? null : (index.leaves[pos + 1]?.id ?? null);
+    const next = pos === undefined ? null : (index.leaves[pos + 1]?.id ?? null);
+    return next !== null && this.store.view()?.sections.get(next)?.cleared ? null : next;
   });
 
   protected readonly hint = computed(() => {

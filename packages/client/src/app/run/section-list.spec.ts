@@ -131,4 +131,11 @@ describe('SectionList (route rail)', () => {
     expect(sub.className).toContain('font-display');
     expect(sub.getAttribute('aria-level')).toBe('3');
   });
+
+  it('shows no hint when the leaf after current is already cleared', async () => {
+    const { el, store, fixture } = await renderList({ cleared: ['marsh'], pin: 'village' });
+    expect(store.view()!.current).toBe('village');
+    await fixture.whenStable();
+    expect(hintText(el)).toEqual([]);
+  });
 });
