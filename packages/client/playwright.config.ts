@@ -1,5 +1,5 @@
 import { defineConfig } from '@playwright/test';
-import { BASE_URL, serverEnv, storageStatePath } from './e2e/support/e2e-env';
+import { BASE_URL, serverEnv } from './e2e/support/e2e-env';
 
 const ci = !!process.env['CI'];
 // Escape hatch for distros where Playwright's bundled chromium lacks system libs.
@@ -9,6 +9,10 @@ export default defineConfig({
   testDir: './e2e',
   testMatch: '**/*.e2e.ts',
   fullyParallel: true,
+  // Auth budget: the server's auth limiter allows 10 non-GET requests/min per IP (in memory, reset on
+  // start). Worst case per run: each project's workers sign in once each (2 projects x workers)
+  // plus the sign-in flow's 2 attempts per project (4) = 2w + 4 <= 8, so w = 2.
+  workers: 2,
   forbidOnly: ci,
   retries: ci ? 1 : 0,
   reporter: ci ? [['github'], ['html', { open: 'never' }]] : [['list']],
@@ -23,24 +27,19 @@ export default defineConfig({
   },
   // Spec §8: phone portrait is primary; a 4:3 landscape handheld must stay usable.
   projects: [
-    { name: 'setup', testMatch: /auth\.setup\.ts/ },
     {
       name: 'phone',
-      dependencies: ['setup'],
       use: {
         viewport: { width: 390, height: 844 },
         deviceScaleFactor: 3,
         isMobile: true,
         hasTouch: true,
-        storageState: storageStatePath('phone'),
       },
     },
     {
       name: 'handheld-4x3',
-      dependencies: ['setup'],
       use: {
         viewport: { width: 1024, height: 768 },
-        storageState: storageStatePath('handheld-4x3'),
       },
     },
   ],

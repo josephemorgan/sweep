@@ -4,17 +4,17 @@ import path from 'node:path';
 export const E2E_PORT = 3100;
 export const BASE_URL = `http://localhost:${E2E_PORT}`;
 export const E2E_PASSWORD = 'e2e-password-123456';
-export const E2E_PROJECTS = ['phone', 'handheld-4x3'] as const;
 
 const ROOT_ENV = path.join(__dirname, '../../../../.env');
 if (!process.env['DATABASE_URL'] && existsSync(ROOT_ENV)) process.loadEnvFile(ROOT_ENV);
 
-export function userEmail(project: string): string {
-  return `e2e-${project}@sweep.test`;
+/** One user per (project, parallel worker slot): the server checks one guide at a time per user. */
+export function userEmail(project: string, slot: number): string {
+  return `e2e-${project}-w${slot}@sweep.test`;
 }
 
-export function storageStatePath(project: string): string {
-  return path.join(__dirname, `../.auth/${project}.json`);
+export function storageStatePath(project: string, slot: number): string {
+  return path.join(__dirname, `../.auth/${project}-w${slot}.json`);
 }
 
 /** DATABASE_URL's server, database `sweep_e2e` (or SWEEP_E2E_DB). Never the dev database. */

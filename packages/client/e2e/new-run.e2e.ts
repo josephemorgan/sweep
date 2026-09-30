@@ -7,9 +7,6 @@ import {
   test,
 } from './support/fixtures';
 
-// The server checks one guide at a time per user, so this file's uploads must not overlap.
-test.describe.configure({ mode: 'serial' });
-
 test('uploads Lantern Keep, shows the report and creates a run', async ({
   page,
   runs,
@@ -56,4 +53,38 @@ test('blocks a guide with errors', async ({ page }, testInfo) => {
   await expect(page.getByRole('button', { name: 'Create' })).toHaveCount(0);
   await expectAccessible(page);
   await expectNoHorizontalScroll(page);
+});
+
+test('a concurrent upload gets the one-guide-at-a-time message; Try again succeeds', async ({
+  page,
+}) => {
+  // Overlapping two real parses reliably isn't possible (a parse takes milliseconds), so the first
+  // dry-run POST is answered with the server's exact 429 (packages/server/src/http/upload.ts).
+  let refused = false;
+  await page.route(
+    (url) => url.pathname === '/api/runs' && url.searchParams.has('dryRun'),
+    async (route) => {
+      if (refused) return route.continue();
+      refused = true;
+      await route.fulfill({
+        status: 429,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          error: {
+            code: 'rate-limited',
+            message:
+              'Another guide is still being checked. Only one of your guides can be checked at a time.',
+          },
+        }),
+      });
+    },
+  );
+  await page.goto('/runs/new');
+  await page.getByLabel(/Guide file/).setInputFiles(LANTERN_KEEP);
+  await expect(page.getByRole('alert')).toContainText(
+    'Another guide is still being checked. Only one of your guides can be checked at a time.',
+  );
+  await page.getByRole('button', { name: 'Try again' }).click();
+  await expect(page.getByText('No errors.')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Create' })).toBeVisible();
 });

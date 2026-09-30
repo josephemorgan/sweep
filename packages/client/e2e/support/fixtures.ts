@@ -2,7 +2,8 @@ import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test as base, type Page } from '@playwright/test';
-import { BASE_URL } from './e2e-env';
+import { BASE_URL, storageStatePath, userEmail } from './e2e-env';
+import { createUser, signInToFile } from './seed-user';
 
 export const LANTERN_KEEP = path.join(__dirname, '../../../../guides/examples/lantern-keep.yaml');
 
@@ -14,32 +15,45 @@ export interface RunsHelper {
   setTask(runId: string, taskId: string, state: 'done' | 'dont-care' | null): Promise<void>;
 }
 
-export const test = base.extend<{ runs: RunsHelper }>({
+export interface WorkerUser {
+  email: string;
+  storageState: string;
+}
+
+export const test = base.extend<{ runs: RunsHelper }, { workerUser: WorkerUser }>({
+  // One seeded, signed-in user per (project, parallel slot). parallelIndex (not workerIndex) is
+  // reused when a worker restarts after a failure, so restarts cost no extra sign-ins.
+  workerUser: [
+    // eslint-disable-next-line no-empty-pattern
+    async ({}, use, workerInfo) => {
+      const email = userEmail(workerInfo.project.name, workerInfo.parallelIndex);
+      const storageState = storageStatePath(workerInfo.project.name, workerInfo.parallelIndex);
+      createUser(email);
+      await signInToFile(email, storageState);
+      await use({ email, storageState });
+    },
+    { scope: 'worker' },
+  ],
+  storageState: async ({ workerUser }, use) => {
+    await use(workerUser.storageState);
+  },
   runs: async ({ page }, use) => {
     const headers = { Origin: BASE_URL };
     await use({
       async create(name, file = LANTERN_KEEP) {
-        // The server checks one guide at a time per user (429), and this user's other
-        // parallel tests may be uploading too, so wait a moment and retry.
-        for (let attempt = 0; ; attempt++) {
-          const res = await page.request.post('/api/runs', {
-            headers,
-            multipart: {
-              name,
-              file: {
-                name: path.basename(file),
-                mimeType: 'application/yaml',
-                buffer: readFileSync(file),
-              },
+        const res = await page.request.post('/api/runs', {
+          headers,
+          multipart: {
+            name,
+            file: {
+              name: path.basename(file),
+              mimeType: 'application/yaml',
+              buffer: readFileSync(file),
             },
-          });
-          if (res.status() === 429 && attempt < 10) {
-            await page.waitForTimeout(500);
-            continue;
-          }
-          expect(res.status(), await res.text()).toBe(201);
-          return ((await res.json()) as { runId: string }).runId;
-        }
+          },
+        });
+        expect(res.status(), await res.text()).toBe(201);
+        return ((await res.json()) as { runId: string }).runId;
       },
       async clear(runId, sectionIds) {
         for (const id of sectionIds) {
