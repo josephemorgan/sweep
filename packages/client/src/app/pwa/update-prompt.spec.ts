@@ -11,13 +11,24 @@ function setup(
 ) {
   const versionUpdates = new Subject<VersionEvent>();
   const unrecoverable = new Subject<{ type: 'UNRECOVERABLE_STATE'; reason: string }>();
-  const reload = vi.fn();
+  const order: string[] = [];
+  const reload = vi.fn(() => order.push('reload'));
+  const activateUpdate = vi.fn(() => {
+    order.push('activate');
+    return Promise.resolve(true);
+  });
   const size = signal(queue?.size ?? 0);
-  const flush = vi.fn(queue?.flush ?? (() => Promise.resolve()));
+  const flush = vi.fn(() => {
+    order.push('flush');
+    return (queue?.flush ?? (() => Promise.resolve()))();
+  });
   const checkForUpdate = vi.fn().mockResolvedValue(false);
   TestBed.configureTestingModule({
     providers: [
-      { provide: SwUpdate, useValue: { isEnabled, versionUpdates, unrecoverable, checkForUpdate } },
+      {
+        provide: SwUpdate,
+        useValue: { isEnabled, versionUpdates, unrecoverable, checkForUpdate, activateUpdate },
+      },
       { provide: RELOAD, useValue: reload },
       { provide: WriteQueue, useValue: { size, flush } },
     ],
@@ -37,6 +48,8 @@ function setup(
     reload,
     flush,
     checkForUpdate,
+    activateUpdate,
+    order,
     ready,
   };
 }
@@ -108,6 +121,58 @@ describe('UpdatePrompt (§5.7 PWA)', () => {
     await vi.waitFor(() => expect(reload).toHaveBeenCalledTimes(1));
     await new Promise((r) => setTimeout(r, 20));
     expect(reload).toHaveBeenCalledTimes(1);
+  });
+
+  it('activates the new version after the flush and before reloading', async () => {
+    const { fixture, el, reload, order, ready } = setup();
+    ready();
+    await fixture.whenStable();
+    el.querySelector('button')!.click();
+    await vi.waitFor(() => expect(reload).toHaveBeenCalledTimes(1));
+    expect(order).toEqual(['flush', 'activate', 'reload']);
+  });
+
+  it('still reloads when activateUpdate rejects', async () => {
+    const { fixture, el, reload, activateUpdate, ready } = setup();
+    activateUpdate.mockRejectedValueOnce(new Error('nope'));
+    ready();
+    await fixture.whenStable();
+    el.querySelector('button')!.click();
+    await vi.waitFor(() => expect(reload).toHaveBeenCalledTimes(1));
+    expect(activateUpdate).toHaveBeenCalled();
+  });
+
+  it('only reloads after an unrecoverable state', async () => {
+    const { fixture, el, reload, activateUpdate, unrecoverable } = setup();
+    unrecoverable.next({ type: 'UNRECOVERABLE_STATE', reason: 'gone' });
+    await fixture.whenStable();
+    el.querySelector('button')!.click();
+    await vi.waitFor(() => expect(reload).toHaveBeenCalledTimes(1));
+    expect(activateUpdate).not.toHaveBeenCalled();
+  });
+
+  it('keeps an always-present status region', async () => {
+    const { fixture, el, ready } = setup();
+    await fixture.whenStable();
+    expect(el.querySelector('[role="status"]')).not.toBeNull();
+    ready();
+    await fixture.whenStable();
+    expect(el.querySelectorAll('[role="status"]').length).toBe(1);
+    expect(el.querySelector('[role="status"] button')).not.toBeNull();
+  });
+
+  it('keeps focus on the button while busy (aria-disabled, not disabled)', async () => {
+    const { fixture, el, ready } = setup(true, {
+      size: 0,
+      flush: () => new Promise<void>(() => undefined),
+    });
+    ready();
+    await fixture.whenStable();
+    const button = el.querySelector('button')!;
+    button.click();
+    fixture.detectChanges();
+    expect(button.disabled).toBe(false);
+    expect(button.getAttribute('aria-disabled')).toBe('true');
   });
 
   it('also asks for a reload after an unrecoverable state', async () => {

@@ -19,35 +19,48 @@ export const NOTE_MS = 1_500;
 
 @Component({
   selector: 'app-update-prompt',
+  // The banner sits outside any open modal sheet, so it is inert until the sheet closes. It
+  // persists, so the user still sees it afterwards.
   template: `
-    @if (message(); as text) {
-      <div
-        role="status"
-        class="fixed inset-x-0 top-0 z-50 flex flex-wrap items-center justify-center gap-3 border-b border-border bg-surface-raised px-4 py-1 text-sm"
-      >
-        <span>{{ text }}</span>
-        <button type="button" class="btn-primary" [disabled]="busy()" (click)="reload()">
-          Reload to update
-        </button>
-      </div>
-    }
+    <div role="status">
+      @if (message(); as text) {
+        <div
+          class="fixed inset-x-0 top-0 z-50 flex flex-wrap items-center justify-center gap-3 border-b border-border bg-surface-raised px-4 py-1 text-sm"
+        >
+          <span>{{ text }}</span>
+          <button
+            type="button"
+            class="btn-primary"
+            [attr.aria-disabled]="busy() ? 'true' : null"
+            (click)="reload()"
+          >
+            {{ busy() ? 'Reloading…' : 'Reload to update' }}
+          </button>
+        </div>
+      }
+    </div>
   `,
 })
 export class UpdatePrompt {
   private readonly reloadPage = inject(RELOAD);
   private readonly queue = inject(WriteQueue);
+  private readonly updates = inject(SwUpdate);
+  private versionReady = false;
   protected readonly message = signal<string | null>(null);
   protected readonly busy = signal(false);
 
   constructor() {
-    const updates = inject(SwUpdate);
+    const updates = this.updates;
     if (!updates.isEnabled) return;
     updates.versionUpdates
       .pipe(
         filter((e: VersionEvent): e is VersionReadyEvent => e.type === 'VERSION_READY'),
         takeUntilDestroyed(),
       )
-      .subscribe(() => this.message.set('A new version of Sweep is ready.'));
+      .subscribe(() => {
+        this.versionReady = true;
+        this.message.set('A new version of Sweep is ready.');
+      });
     updates.unrecoverable
       .pipe(takeUntilDestroyed())
       .subscribe(() => this.message.set('Sweep needs to reload to keep working.'));
@@ -75,6 +88,8 @@ export class UpdatePrompt {
       );
       await new Promise<void>((resolve) => setTimeout(resolve, NOTE_MS));
     }
+    // Activate the downloaded version so the reload boots the new shell, not the old one.
+    if (this.versionReady) await this.updates.activateUpdate().catch(() => false);
     this.reloadPage();
   }
 }
