@@ -118,6 +118,27 @@ describe('Session', () => {
     expect(localStorage.getItem(LAST_USER_KEY)).toBeNull();
   });
 
+  it.each([400, 401])(
+    'signs out locally when the server answers %i (session already gone)',
+    async (status) => {
+      localStorage.setItem(LAST_USER_KEY, JSON.stringify(ANA));
+      auth.signOut.mockRejectedValue(new ApiError(status, 'bad-request', 'No session.'));
+      const session = TestBed.inject(Session);
+      session.user.set(ANA);
+      await expect(session.signOut()).resolves.toBeUndefined();
+      expect(session.user()).toBeNull();
+      expect(localStorage.getItem(LAST_USER_KEY)).toBeNull();
+    },
+  );
+
+  it('stays signed in when sign-out gets a server error', async () => {
+    auth.signOut.mockRejectedValue(new ApiError(503, 'unavailable', 'Try later.'));
+    const session = TestBed.inject(Session);
+    session.user.set(ANA);
+    await expect(session.signOut()).rejects.toBeInstanceOf(ApiError);
+    expect(session.user()).toEqual(ANA);
+  });
+
   it('stays signed in when sign-out fails', async () => {
     auth.signOut.mockRejectedValue(new ApiError(0, 'network', 'offline'));
     const session = TestBed.inject(Session);

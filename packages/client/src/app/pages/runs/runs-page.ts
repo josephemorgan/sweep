@@ -24,7 +24,9 @@ type LoadState = 'loading' | 'ready' | 'failed';
       <h1 class="m-0 flex-1 text-lg font-semibold">Runs</h1>
       <app-unsaved-badge />
       <a routerLink="/runs/new" class="btn-primary">New run</a>
-      <button type="button" class="btn-quiet" (click)="signOut()">Sign out</button>
+      <button type="button" class="btn-quiet" [disabled]="signingOut()" (click)="signOut()">
+        Sign out
+      </button>
     </header>
     <main class="mx-auto w-full max-w-[720px] px-4 py-4">
       @switch (state()) {
@@ -84,6 +86,7 @@ export class RunsPage {
   protected readonly runs = signal<readonly RunSummaryDto[]>([]);
   protected readonly error = signal('');
   protected readonly confirmSignOut = signal(false);
+  protected readonly signingOut = signal(false);
   protected readonly unsavedMessage = computed(() => {
     const n = this.queue.size();
     const what = n === 1 ? "1 change hasn't" : `${n} changes haven't`;
@@ -107,8 +110,11 @@ export class RunsPage {
 
   /** Retry queue rule 12: flush, confirm if writes remain, then drop the resume cache and sign out. */
   protected async signOut(): Promise<void> {
+    if (this.signingOut()) return;
+    this.signingOut.set(true);
     await this.queue.flush();
     if (this.queue.size() > 0) {
+      this.signingOut.set(false);
       this.confirmSignOut.set(true);
       return;
     }
@@ -116,6 +122,7 @@ export class RunsPage {
   }
 
   protected async finishSignOut(): Promise<void> {
+    this.signingOut.set(true);
     // Close the run store first: it flushes its debounced cache write, which clear() must follow.
     // The cache holds guide content, so an explicit sign-out deletes it.
     this.runStore.close();
@@ -124,7 +131,9 @@ export class RunsPage {
       await this.session.signOut();
       await this.router.navigateByUrl('/sign-in');
     } catch (err) {
-      this.toasts.show(`Couldn't sign out. ${toApiError(err).message}`);
+      this.toasts.show(`Couldn't sign out. You're still signed in. ${toApiError(err).message}`);
+    } finally {
+      this.signingOut.set(false);
     }
   }
 }

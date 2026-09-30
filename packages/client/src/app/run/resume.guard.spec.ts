@@ -7,6 +7,7 @@ import {
   type RouterStateSnapshot,
   type UrlTree,
 } from '@angular/router';
+import type { SessionUser } from '../api/auth-api';
 import { Session } from '../auth/session';
 import { RUN_ID, TEST_USER, lanternKeepPayload } from '../../testing/lantern-keep';
 import { ResumeCache } from './resume-cache';
@@ -33,5 +34,24 @@ describe('resumeGuard', () => {
 
   it('falls back to the runs list', async () => {
     expect(await target()).toBe('/runs');
+  });
+
+  it("doesn't resume another user's run", async () => {
+    TestBed.inject(ResumeCache).write(lanternKeepPayload());
+    const other: SessionUser = { id: 'u2', email: 'bo@sweep.test', name: 'bo' };
+    TestBed.inject(Session).user.set(other);
+    expect(await target()).toBe('/runs');
+  });
+
+  it('falls back to the runs list when storage throws', async () => {
+    TestBed.inject(ResumeCache).write(lanternKeepPayload());
+    vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
+      throw new Error('blocked');
+    });
+    try {
+      expect(await target()).toBe('/runs');
+    } finally {
+      vi.restoreAllMocks();
+    }
   });
 });

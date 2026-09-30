@@ -1,8 +1,13 @@
 import { Service, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
+import { isRetryable, toApiError, type ApiError } from '../api/api-error';
 import { AuthApi, type SessionUser } from '../api/auth-api';
 import { SafeStorage } from '../shared/safe-storage';
 import { Toasts } from '../shared/toasts';
+
+function isRejection(e: ApiError): boolean {
+  return e.status >= 400 && e.status < 500 && !isRetryable(e);
+}
 
 export const LAST_USER_KEY = 'sweep.lastUser';
 
@@ -45,7 +50,13 @@ export class Session {
   }
 
   async signOut(): Promise<void> {
-    await this.auth.signOut();
+    try {
+      await this.auth.signOut();
+    } catch (err) {
+      // A 4xx means the server has no such session (already ended, cookie gone): signed out
+      // anyway. No answer or a 5xx: stay signed in, so the user can try again.
+      if (!isRejection(toApiError(err))) throw err;
+    }
     this.forget();
   }
 

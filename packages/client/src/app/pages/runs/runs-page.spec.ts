@@ -90,7 +90,7 @@ describe('RunsPage', () => {
     const api = createRunsApiFake();
     api.listRuns.mockResolvedValue([]);
     const size = signal(1);
-    const queue = { size, flush: vi.fn().mockResolvedValue(undefined) };
+    const queue = { size, stalled: signal(true), flush: vi.fn().mockResolvedValue(undefined) };
     const clear = vi.fn();
     const close = vi.fn();
     const signOut = vi.fn().mockResolvedValue(undefined);
