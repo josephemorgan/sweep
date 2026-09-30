@@ -243,3 +243,46 @@ describe('RunPage clear and pin (§5.4)', () => {
     );
   });
 });
+
+describe('RunPage update guide (§5.8)', () => {
+  it('opens the update sheet from the menu and closes it after an applied update', async () => {
+    const { el, fixture, api } = await renderPage();
+    const press = (root: Element, name: string): void =>
+      [...root.querySelectorAll('button')].find((b) => b.textContent?.trim() === name)!.click();
+    el.querySelector<HTMLButtonElement>('button[aria-label="Run menu"]')!.click();
+    await fixture.whenStable();
+    press(el, 'Update guide');
+    await fixture.whenStable();
+    const sheet = el.querySelector('app-update-guide-sheet');
+    expect(sheet).not.toBeNull();
+    const empty = { added: [], removed: [], edited: [], renamed: [] };
+    api.dryRunUpdate.mockResolvedValue({
+      issues: [],
+      diff: {
+        sections: empty,
+        tasks: { ...empty, added: ['new-task'] },
+        categories: empty,
+        likelyRegenerated: false,
+        progress: null,
+        labels: {
+          sections: {},
+          tasks: { 'new-task': { title: 'New', spoiler: false } },
+          categories: {},
+        },
+      },
+    });
+    api.applyUpdate.mockResolvedValue(lanternKeepPayload());
+    const input = sheet!.querySelector('input[type="file"]') as HTMLInputElement;
+    Object.defineProperty(input, 'files', {
+      value: [new File(['x'], 'g.yaml')],
+      configurable: true,
+    });
+    input.dispatchEvent(new Event('change'));
+    await vi.waitFor(() =>
+      expect(api.dryRunUpdate).toHaveBeenCalledWith(RUN_ID, expect.any(File), 1),
+    );
+    await fixture.whenStable();
+    press(sheet!, 'Apply');
+    await vi.waitFor(() => expect(el.querySelector('app-update-guide-sheet')).toBeNull());
+  });
+});

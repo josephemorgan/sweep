@@ -127,7 +127,7 @@ const MAX_NAME = 100;
   `,
 })
 export class RunMenu {
-  /** The Update guide item was chosen (Task 24 builds the flow behind it). */
+  /** The Update guide item was chosen (the run page hosts the flow). */
   readonly updateGuide = output<void>();
   protected readonly store = inject(RunStore);
   private readonly queue = inject(WriteQueue);

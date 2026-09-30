@@ -26,6 +26,7 @@ import { RunActions } from '../../run/run-actions';
 import { RunLayout } from '../../run/run-layout';
 import { RunMenu } from '../../run/run-menu';
 import { RunStore } from '../../run/run-store';
+import { UpdateGuideSheet } from '../../run/update-guide-sheet';
 import { SectionList } from '../../run/section-list';
 import { sectionLabel } from '../../run/spoiler';
 
@@ -40,6 +41,7 @@ import { sectionLabel } from '../../run/spoiler';
     ConfirmSheet,
     RunMenu,
     Sheet,
+    UpdateGuideSheet,
   ],
   providers: [RunLayout, { provide: RunActions, useExisting: forwardRef(() => RunPage) }],
   template: `
@@ -57,7 +59,7 @@ import { sectionLabel } from '../../run/spoiler';
           {{ store.run()?.name ?? 'Run' }}
         </h1>
         <app-unsaved-badge />
-        <app-run-menu />
+        <app-run-menu (updateGuide)="updating.set(true)" />
       </header>
       <main class="mx-auto w-full max-w-[720px] flex-1 px-3 pb-36 pt-2 handheld:pb-16">
         @if (store.view()) {
@@ -99,6 +101,11 @@ import { sectionLabel } from '../../run/spoiler';
             (confirmed)="confirmClear()"
             (cancelled)="pendingClear.set(null)"
           />
+        }
+      </app-sheet>
+      <app-sheet heading="Update guide" [(open)]="updating">
+        @if (updating()) {
+          <app-update-guide-sheet (done)="onUpdated()" (cancelled)="updating.set(false)" />
         }
       </app-sheet>
       <app-confirm-sheet
@@ -154,6 +161,7 @@ export class RunPage implements RunActions {
 
   protected readonly pendingClear = signal<{ leafId: string; impact: ClearImpact } | null>(null);
   protected readonly pendingPin = signal<string | null>(null);
+  protected readonly updating = signal(false);
   protected readonly clearHeading = computed(() => {
     const pending = this.pendingClear();
     return pending ? `Clear ${this.label(pending.leafId)}?` : 'Clear section';
@@ -192,6 +200,13 @@ export class RunPage implements RunActions {
     const leafId = this.pendingPin();
     this.pendingPin.set(null);
     if (leafId !== null) this.store.setPin(leafId);
+  }
+
+  /** §5.8: the new guide version is in; close the sheet and return to the current card. */
+  protected onUpdated(): void {
+    this.updating.set(false);
+    const current = this.store.view()?.current;
+    if (current) this.layout.scrollTo(current);
   }
 
   protected onClearSheet(open: boolean): void {
