@@ -1065,8 +1065,8 @@ The parser is a separate entry point so the client doesn't bundle the YAML and M
 
 ### 5.5 Bottom bar
 
-- **Layout:** four always-visible numbers (HERE · NOW · CLOSING · LAST CHANCE) and a category filter chip (default "All tracked").
-- **Highlights:** LAST CHANCE is highlighted when it's above 0, and CLOSING is emphasized.
+- **Layout:** four always-visible numbers (HERE · NOW · CLOSING · LAST CHANCE), each shown as the number over a sentence-case label ("Here", "Now", "Closing", "Last chance"), and a category filter shown as a bare icon behind a hairline (default "All tracked"; the icon takes the accent color when one category is selected). *(Amended 2026-09-30, Route UI: the filter was a chip.)*
+- **Highlights:** LAST CHANCE is highlighted when it's above 0 (amber number and label, with a 2 px amber rule on top of that metric), and CLOSING is emphasized.
 - **Sheets:** tapping a number opens a sheet listing those tasks, grouped by home section. Rows are fully interactive (checkbox, how, ⋯).
 
 ### 5.6 Spoilers (layered reveal)
@@ -1075,13 +1075,14 @@ The parser is a separate entry point so the client doesn't bundle the YAML and M
 |---|---|---|
 | 0 | Section titles and overviews, task titles, categories, counts, metrics | Visible |
 | 1 | `how`, walkthroughs | Hidden until tapped or expanded |
-| 2 | `spoiler: true` task titles and `how` | Blurred until tapped or until the task is done |
-| 2 | `spoiler: true` section title and overview | Blurred while the section is locked. Normal once it's reached. |
+| 2 | `spoiler: true` task titles and `how` | Redacted until tapped or until the task is done |
+| 2 | `spoiler: true` section title and overview | Redacted while the section is locked. Normal once it's reached. |
 
-- Blurring applies everywhere the text appears: cards, sheets, the Clear dialog, Jump to section, and the diff preview's lists.
+- **Redaction** is a solid bar in the redaction token color, roughly as wide as the hidden text, followed by "tap to reveal" in muted text. The hidden text stays in the DOM, visually hidden and `aria-hidden`; the bar is a button labelled "Hidden spoiler task. Tap to reveal." (or "Hidden spoiler section."). There is no blur. *(Amended 2026-09-30, Route UI: v1 blurred the text.)*
+- Redaction applies everywhere the text appears: cards, sheets, the Clear dialog, Jump to section, and the diff preview's lists.
 - A tap reveals that single item for the rest of the session. Reveals aren't persisted.
 
-**Why:** immersion is the whole motivation. Blurred rows still show that *something* matters here (and in which category) without saying what.
+**Why:** immersion is the whole motivation. Redacted rows still show that *something* matters here (and in which category) without saying what.
 
 ### 5.7 Writes, resume, PWA
 
@@ -1113,13 +1114,17 @@ The parser is a separate entry point so the client doesn't bundle the YAML and M
 
 ### 5.9 Responsive rules and styling
 
-- **Phone portrait** is primary: one column, with touch targets of at least 44 px. The bottom bar is fixed, and sheets open from the bottom.
+*(Amended 2026-09-30 for the Route UI, `docs/design/2026-09-30-route/`. The v1 rules were a centered 720 px column on 4:3 with a slim bottom bar.)*
+
+- **Phone portrait** is primary: one column, with touch targets of at least 44 px. The run view is a vertical **route**: a 1.5 px rail on the left with one node per leaf (cleared dot, current lamp, ring for unlocked, dashed ring for locked); cleared leaves are one muted struck-through row each; the current leaf is a raised panel that bleeds to the right edge; group headings sit right of the rail with "n of m". The bottom bar is fixed (64 px, flat, hairline on top), and sheets open from the bottom with a hairline top border.
 - **4:3 landscape** must stay usable. It's targeted with `(orientation: landscape) and (max-height: 800px)`. Height is the scarce resource there:
-  - The content column is centered, 720 px at most.
-  - The bottom bar shrinks to one slim row.
-  - Sheets open as a right-side panel (480 px at most) instead of from the bottom.
+  - Two panes: the **route pane** (the same rail and rows) is 340 px wide on the left and scrolls on its own; the **detail pane** on the right shows the current leaf expanded, or the leaf the user last tapped in the route pane, with its categories in two columns.
+  - There is no bottom bar. The four metrics fold into the top bar as number-and-label pairs, with the category filter icon beside them. Tapping a metric opens its sheet as on phone.
+  - Sheets and the Clear dialog open as a right-side panel (480 px at most) instead of from the bottom.
 - No horizontal page scroll at any size. Keyboard focus order is sensible, but there's no controller or d-pad navigation.
-- **Styling:** Tailwind CSS 4. Design tokens are CSS custom properties in one tokens file, exposed to Tailwind through `@theme`: surface, text, accent, the status colors open/missed/last-chance/not-chosen, spacing and radius. Only dark tokens ship in v1, and components never use raw colors.
+- **Styling:** Tailwind CSS 4. Design tokens are CSS custom properties in one tokens file, exposed to Tailwind through `@theme`: surfaces, rule and border, text (fg, fg-soft, fg-muted, fg-cleared), lamp (the current marker and the primary button), accent, the status colors open/missed/last-chance/not-chosen, rail, redaction, the two font families, spacing and radius. Only dark tokens ship in v1, and components never use raw colors.
+- **Type:** Bricolage Grotesque for titles, metric numbers and the primary button; Atkinson Hyperlegible for body. Both are self-hosted (the service worker caches only the app shell, so a font CDN would break offline). Sentence case everywhere; no uppercase labels.
+- **Not Material:** no pills, floating action buttons, glows, elevated shadows, filled tonal chips or heavy radii. Radii are 4 px on controls and 6 px on panels. Status is shown with text color or a thin rule, never a filled pill.
 
 ---
 
