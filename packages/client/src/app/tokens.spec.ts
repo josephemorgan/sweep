@@ -1,7 +1,6 @@
-/// <reference types="node" />
-import { readFileSync } from 'node:fs';
+import { readClientSource } from '../testing/read-client-source';
 
-const tokens = readFileSync('src/styles/tokens.css', 'utf8');
+const tokens = readClientSource('styles/tokens.css');
 
 const required = [
   '--color-surface',

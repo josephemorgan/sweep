@@ -1,6 +1,25 @@
 @import 'tailwindcss';
 @import './styles/tokens.css';
 
+@font-face {
+  font-family: 'Bricolage Grotesque';
+  src: url('/fonts/BricolageGrotesque[opsz,wght].woff2') format('woff2');
+  font-weight: 500 700;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Atkinson Hyperlegible';
+  src: url('/fonts/AtkinsonHyperlegible-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Atkinson Hyperlegible';
+  src: url('/fonts/AtkinsonHyperlegible-Bold.woff2') format('woff2');
+  font-weight: 700;
+  font-display: swap;
+}
+
 /* Spec §5.9: the 4:3 handheld layout. */
 @custom-variant handheld (@media (orientation: landscape) and (max-height: 800px));
 
@@ -10,7 +29,7 @@
   }
 
   body {
-    @apply bg-surface text-fg antialiased;
+    @apply bg-surface text-fg font-body antialiased;
   }
 
   :focus-visible {
