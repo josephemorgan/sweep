@@ -1,10 +1,10 @@
 import { TestBed } from '@angular/core/testing';
 import type { TaskState } from '@sweep/core';
-import { ApiError } from '../api/api-error';
-import { FakeSender } from '../../testing/fake-sender';
-import { writeKey, type QueuedWrite } from './queued-write';
 import { createRunsApiFake } from '../../testing/fake-runs-api';
+import { FakeSender } from '../../testing/fake-sender';
+import { ApiError } from '../api/api-error';
 import type { RunsApi } from '../api/runs-api';
+import { writeKey, type QueuedWrite } from './queued-write';
 import { WRITE_SENDER, WriteQueue, backoffDelay, queueStorageKey, sendWrite } from './write-queue';
 
 const task = (taskId: string, state: TaskState | null, runId = 'r1'): QueuedWrite => ({
@@ -285,5 +285,103 @@ describe('WriteQueue (see "Retry queue semantics")', () => {
     expect(api.setTask).toHaveBeenCalledWith('r1', 't', 'done');
     expect(api.setCategory).toHaveBeenCalledWith('r', 'c', false);
     expect(api.renameRun).toHaveBeenCalledWith('r', 'n');
+  });
+  it('rule 3: after a failed send, a new write coalesces into the last duplicate', async () => {
+    const { queue, sender } = setup();
+    queue.enqueue(task('x', 'done')); // in flight
+    queue.enqueue(task('x', null)); // appended behind it
+    sender.sent[0]!.reject(new ApiError(0, 'network', 'offline'));
+    await settle();
+    queue.enqueue(task('x', 'done'));
+    expect(queue.pending()).toEqual([task('x', 'done'), task('x', 'done')]);
+    await vi.advanceTimersByTimeAsync(backoffDelay(1));
+    sender.sent[1]!.resolve();
+    await settle();
+    sender.sent[2]!.resolve();
+    await settle();
+    expect(sender.sent.at(-1)!.write).toEqual(task('x', 'done'));
+    expect(queue.size()).toBe(0);
+  });
+
+  it('rule 3: a same-key write during a send is appended and sent last', async () => {
+    const { queue, sender } = setup();
+    queue.enqueue(task('x', 'done')); // in flight
+    queue.enqueue(task('x', null));
+    queue.enqueue(task('x', 'dont-care')); // coalesces into the appended one
+    expect(queue.pending()).toEqual([task('x', 'done'), task('x', 'dont-care')]);
+    sender.sent[0]!.resolve();
+    await settle();
+    expect(sender.sent[1]!.write).toEqual(task('x', 'dont-care'));
+    sender.sent[1]!.resolve();
+    await settle();
+    expect(queue.size()).toBe(0);
+  });
+
+  it('rule 11: discardRun of the head waiting in backoff clears the stall and sends the rest', async () => {
+    const { queue, sender } = setup();
+    queue.enqueue(task('a', 'done', 'r1'));
+    queue.enqueue(task('b', 'done', 'r2'));
+    sender.sent[0]!.reject(new ApiError(503, 'x', 'x'));
+    await settle();
+    expect(queue.stalled()).toBe(true);
+    queue.discardRun('r1');
+    expect(queue.stalled()).toBe(false);
+    expect(sender.sent).toHaveLength(2);
+    expect(sender.sent[1]!.write).toEqual(task('b', 'done', 'r2'));
+  });
+
+  it('rule 5: retries at once when the page becomes visible, not when hidden', async () => {
+    const { queue, sender } = setup();
+    queue.enqueue(task('a', 'done'));
+    sender.sent[0]!.reject(new ApiError(0, 'network', 'x'));
+    await settle();
+    const state = vi.spyOn(document, 'visibilityState', 'get');
+    state.mockReturnValue('hidden');
+    document.dispatchEvent(new Event('visibilitychange'));
+    await settle();
+    expect(sender.sent).toHaveLength(1);
+    state.mockReturnValue('visible');
+    document.dispatchEvent(new Event('visibilitychange'));
+    await settle();
+    expect(sender.sent).toHaveLength(2);
+  });
+
+  it('rule 5: a success resets the backoff to 1 s', async () => {
+    const { queue, sender } = setup();
+    queue.enqueue(task('a', 'done'));
+    sender.sent[0]!.reject(new ApiError(503, 'x', 'x'));
+    await settle();
+    await vi.advanceTimersByTimeAsync(backoffDelay(1));
+    sender.sent[1]!.reject(new ApiError(503, 'x', 'x'));
+    await settle();
+    await vi.advanceTimersByTimeAsync(backoffDelay(2));
+    sender.sent[2]!.resolve();
+    await settle();
+    queue.enqueue(task('b', 'done'));
+    sender.sent[3]!.reject(new ApiError(503, 'x', 'x'));
+    await settle();
+    await vi.advanceTimersByTimeAsync(999);
+    expect(sender.sent).toHaveLength(4);
+    await vi.advanceTimersByTimeAsync(1);
+    expect(sender.sent).toHaveLength(5);
+  });
+
+  it('a sender that throws synchronously is treated as a failed send', async () => {
+    TestBed.configureTestingModule({
+      providers: [
+        {
+          provide: WRITE_SENDER,
+          useValue: () => {
+            throw new Error('boom');
+          },
+        },
+      ],
+    });
+    const queue = TestBed.inject(WriteQueue);
+    queue.setUser('u1');
+    queue.enqueue(task('a', 'done'));
+    await settle();
+    expect(queue.stalled()).toBe(true);
+    expect(queue.size()).toBe(1);
   });
 });

@@ -57,7 +57,6 @@ export interface WriteQueueListener {
 }
 
 interface Entry {
-  readonly seq: number;
   readonly write: QueuedWrite;
 }
 
@@ -70,7 +69,6 @@ export class WriteQueue {
   private readonly listeners = new Set<WriteQueueListener>();
   private readonly discarded = new Set<string>();
   private userId: string | null = null;
-  private seq = 0;
   private generation = 0;
   private inFlight: Entry | null = null;
   private attempt = 0;
@@ -121,6 +119,7 @@ export class WriteQueue {
       return;
     }
     this.generation += 1;
+    this.discarded.clear();
     this.stopTimer();
     this.inFlight = null;
     this.attempt = 0;
@@ -129,7 +128,7 @@ export class WriteQueue {
     this.userId = userId;
     const stored = userId === null ? null : this.storage.read<unknown>(queueStorageKey(userId));
     const writes = Array.isArray(stored) ? stored.filter(isQueuedWrite) : [];
-    this.entries.set(writes.map((write) => ({ seq: ++this.seq, write })));
+    this.entries.set(writes.map((write) => ({ write })));
     this.resolveIdle();
     this.pump();
   }
@@ -138,10 +137,13 @@ export class WriteQueue {
     if (this.userId === null) throw new Error('WriteQueue.enqueue: nobody is signed in');
     const key = writeKey(write);
     this.entries.update((list) => {
-      const i = list.findIndex((e) => e !== this.inFlight && writeKey(e.write) === key);
-      if (i === -1) return [...list, { seq: ++this.seq, write }];
+      // Coalesce into the LAST entry with this key (after a failed send an older duplicate can sit
+      // ahead of it), unless that entry is the one in flight.
+      let i = list.length - 1;
+      while (i >= 0 && writeKey(list[i]!.write) !== key) i -= 1;
+      if (i === -1 || list[i] === this.inFlight) return [...list, { write }];
       const next = [...list];
-      next[i] = { seq: list[i]!.seq, write };
+      next[i] = { write };
       return next;
     });
     this.persist();
@@ -165,7 +167,15 @@ export class WriteQueue {
   /** The run was deleted: forget its writes; ignore the outcome of one already in flight. */
   discardRun(runId: string): void {
     this.discarded.add(runId);
+    const head = this.entries()[0];
     this.removeWhere((e) => e !== this.inFlight && e.write.runId === runId);
+    if (this.timer !== null && head !== undefined && !this.entries().includes(head)) {
+      // The head waiting in backoff is gone: the backoff no longer applies to what's behind it.
+      this.stopTimer();
+      this.attempt = 0;
+      this.stalled.set(false);
+      this.pump();
+    }
   }
 
   private pump(): void {
@@ -177,7 +187,13 @@ export class WriteQueue {
     }
     this.inFlight = head;
     const generation = this.generation;
-    this.send(head.write).then(
+    let sending: Promise<void>;
+    try {
+      sending = this.send(head.write);
+    } catch (err) {
+      sending = Promise.reject(err);
+    }
+    sending.then(
       () => {
         if (generation === this.generation) this.succeeded(head);
       },
