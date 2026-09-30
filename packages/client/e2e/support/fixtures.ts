@@ -19,19 +19,27 @@ export const test = base.extend<{ runs: RunsHelper }>({
     const headers = { Origin: BASE_URL };
     await use({
       async create(name, file = LANTERN_KEEP) {
-        const res = await page.request.post('/api/runs', {
-          headers,
-          multipart: {
-            name,
-            file: {
-              name: path.basename(file),
-              mimeType: 'application/yaml',
-              buffer: readFileSync(file),
+        // The server checks one guide at a time per user (429), and this user's other
+        // parallel tests may be uploading too, so wait a moment and retry.
+        for (let attempt = 0; ; attempt++) {
+          const res = await page.request.post('/api/runs', {
+            headers,
+            multipart: {
+              name,
+              file: {
+                name: path.basename(file),
+                mimeType: 'application/yaml',
+                buffer: readFileSync(file),
+              },
             },
-          },
-        });
-        expect(res.status(), await res.text()).toBe(201);
-        return ((await res.json()) as { runId: string }).runId;
+          });
+          if (res.status() === 429 && attempt < 10) {
+            await page.waitForTimeout(500);
+            continue;
+          }
+          expect(res.status(), await res.text()).toBe(201);
+          return ((await res.json()) as { runId: string }).runId;
+        }
       },
       async clear(runId, sectionIds) {
         for (const id of sectionIds) {

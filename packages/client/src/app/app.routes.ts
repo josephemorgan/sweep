@@ -18,6 +18,11 @@ export const routes: Routes = [
         title: 'Runs · Sweep',
         loadComponent: () => import('./pages/runs/runs-page').then((m) => m.RunsPage),
       },
+      {
+        path: 'runs/new',
+        title: 'New run · Sweep',
+        loadComponent: () => import('./pages/new-run/new-run-page').then((m) => m.NewRunPage),
+      },
     ],
   },
   { path: '**', redirectTo: '' },
