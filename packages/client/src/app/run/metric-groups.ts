@@ -9,10 +9,10 @@ export const Metric = {
 export type Metric = (typeof Metric)[keyof typeof Metric];
 
 export const METRIC_LABEL: Record<Metric, string> = {
-  here: 'HERE',
-  now: 'NOW',
-  closing: 'CLOSING',
-  lastChance: 'LAST CHANCE',
+  here: 'Here',
+  now: 'Now',
+  closing: 'Closing',
+  lastChance: 'Last chance',
 };
 
 export function metricTaskIds(tasks: MetricTasks, metric: Metric): string[] {

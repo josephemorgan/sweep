@@ -55,57 +55,103 @@ describe('groupByHome stability (§5.3)', () => {
 });
 
 describe('BottomBar (§5.5)', () => {
-  it('shows the four metrics, emphasizing CLOSING and highlighting LAST CHANCE', async () => {
+  it('shows the four metrics, emphasizing Closing and highlighting Last chance', async () => {
     const { metric } = await renderBar();
     expect(
-      ['HERE', 'NOW', 'CLOSING', 'LAST CHANCE'].map((m) =>
+      ['Here', 'Now', 'Closing', 'Last chance'].map((m) =>
         metric(m).textContent?.replace(/\s+/g, ' ').trim(),
       ),
-    ).toEqual(['HERE 3', 'NOW 3', 'CLOSING 2', 'LAST CHANCE 1']);
-    expect(metric('CLOSING').classList).toContain('font-semibold');
-    expect(metric('LAST CHANCE').classList).toContain('text-last-chance');
+    ).toEqual(['Here 3', 'Now 3', 'Closing 2', 'Last chance 1']);
+    expect(metric('Closing').classList).toContain('font-semibold');
+    expect(metric('Last chance').classList).toContain('text-last-chance');
+    expect(metric('Last chance').classList).toContain('border-last-chance');
   });
 
-  it('keeps a space between label and number so the accessible name reads "HERE 3"', async () => {
-    const { metric } = await renderBar();
-    // Raw textContent, not whitespace-normalized: "HERE3" would be read as one word.
-    expect(metric('HERE').textContent).toContain('HERE 3');
-    expect(metric('LAST CHANCE').textContent).toContain('LAST CHANCE 1');
-  });
-
-  it('filters by one tracked category', async () => {
-    const { el, fixture, metric, store } = await renderBar({ tracked: { quests: false } });
-    const select = el.querySelector('select')!;
-    expect([...select.options].map((o) => o.text)).toEqual(['All tracked', 'Story', 'Loot']);
-    select.value = 'loot';
-    select.dispatchEvent(new Event('change'));
-    await fixture.whenStable();
-    expect(store.categoryFilter()).toBe('loot');
-    expect(metric('HERE').textContent).toContain('1');
-    expect(metric('LAST CHANCE').classList).not.toContain('text-last-chance');
-  });
-
-  it('marks the metrics as dialog openers and binds the chip value', async () => {
-    const { el, fixture, metric, store } = await renderBar({ tracked: { quests: false } });
-    expect(metric('HERE').getAttribute('aria-haspopup')).toBe('dialog');
-    const select = el.querySelector('select')!;
+  it('drops the amber treatment when Last chance is 0', async () => {
+    const { metric, store, fixture } = await renderBar({ tracked: { quests: false } });
     store.categoryFilter.set('loot');
     await fixture.whenStable();
-    expect(select.value).toBe('loot');
-    // Untracked while selected (stale filter): the chip falls back to "All tracked".
+    const b = metric('Last chance');
+    expect(b.textContent).toContain('0');
+    expect(b.classList).not.toContain('text-last-chance');
+    expect(b.classList).not.toContain('border-last-chance');
+  });
+
+  it('renders four 0 numbers with no tracked categories', async () => {
+    const { el, store, fixture } = await renderBar({
+      tracked: { story: false, quests: false, loot: false },
+    });
+    await fixture.whenStable();
+    expect(store.metrics()).toBeDefined();
+    const buttons = [...el.querySelectorAll('nav button')].slice(0, 4);
+    expect(buttons.length).toBe(4);
+    for (const b of buttons)
+      expect(b.querySelector('span:last-child')?.textContent?.trim()).toBe('0');
+  });
+
+  it('has a funnel filter button labelled by the selection, accent only when filtered', async () => {
+    const { el, fixture, store } = await renderBar({ tracked: { quests: false } });
+    const filter = (): HTMLButtonElement =>
+      el.querySelector('button[aria-label^="Filter categories"]')!;
+    expect(filter().getAttribute('aria-label')).toBe('Filter categories: all tracked');
+    expect(filter().classList).not.toContain('text-accent');
+    expect(filter().querySelector('svg')?.getAttribute('aria-hidden')).toBe('true');
+    store.categoryFilter.set('loot');
+    await fixture.whenStable();
+    expect(filter().getAttribute('aria-label')).toBe('Filter categories: Loot');
+    expect(filter().classList).toContain('text-accent');
+    expect(filter().classList).not.toContain('text-fg-muted');
+  });
+
+  it('uses no pill shapes', async () => {
+    const { el } = await renderBar();
+    expect(el.querySelector('.rounded-full')).toBeNull();
+  });
+
+  it('keeps a space between label and number so the accessible name reads "Here 3"', async () => {
+    const { metric } = await renderBar();
+    // Raw textContent, not whitespace-normalized: "HERE3" would be read as one word.
+    expect(metric('Here').textContent).toContain('Here 3');
+    expect(metric('Last chance').textContent).toContain('Last chance 1');
+  });
+
+  it('filters by one tracked category through the filter sheet', async () => {
+    const { el, fixture, metric, store } = await renderBar({ tracked: { quests: false } });
+    el.querySelector<HTMLButtonElement>('button[aria-label^="Filter categories"]')!.click();
+    await fixture.whenStable();
+    const options = [...el.querySelectorAll<HTMLButtonElement>('dialog[open] li button')];
+    expect(options.map((o) => o.textContent?.trim())).toEqual(['All tracked', 'Story', 'Loot']);
+    options[2]!.click();
+    await fixture.whenStable();
+    expect(store.categoryFilter()).toBe('loot');
+    expect(metric('Here').textContent).toContain('1');
+    expect(metric('Last chance').classList).not.toContain('text-last-chance');
+  });
+
+  it('marks the metrics and the filter as dialog openers', async () => {
+    const { el, metric } = await renderBar({ tracked: { quests: false } });
+    expect(metric('Here').getAttribute('aria-haspopup')).toBe('dialog');
+    const filter = el.querySelector('button[aria-label^="Filter categories"]')!;
+    expect(filter.getAttribute('aria-haspopup')).toBe('dialog');
+  });
+
+  it('falls back to all tracked when the selected category is untracked', async () => {
+    const { el, fixture, store } = await renderBar({ tracked: { quests: false } });
+    store.categoryFilter.set('loot');
     store.setTracked('loot', false);
     store.categoryFilter.set('loot');
     await fixture.whenStable();
-    expect(select.selectedIndex).toBe(0);
-    expect(select.selectedOptions[0]?.text.trim()).toBe('All tracked');
+    expect(
+      el.querySelector('button[aria-label^="Filter categories"]')!.getAttribute('aria-label'),
+    ).toBe('Filter categories: all tracked');
   });
 
   it('opens a sheet listing the metric tasks grouped by home section', async () => {
     const { el, fixture, metric } = await renderBar();
-    metric('NOW').click();
+    metric('Now').click();
     await fixture.whenStable();
     const sheet = el.querySelector('dialog[open]')!;
-    expect(sheet.querySelector('h2')?.textContent).toBe('NOW');
+    expect(sheet.querySelector('h2')?.textContent).toBe('Now');
     expect(sheet.querySelector('h3')?.textContent).toContain('Harrow Village');
     expect(sheet.textContent).toContain('Pay the ferryman');
   });
