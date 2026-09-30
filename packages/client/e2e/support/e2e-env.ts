@@ -26,7 +26,13 @@ export function e2eDatabaseUrl(): string {
     );
   }
   const url = new URL(base);
-  url.pathname = `/${process.env['SWEEP_E2E_DB'] ?? 'sweep_e2e'}`;
+  const name = process.env['SWEEP_E2E_DB'] ?? 'sweep_e2e';
+  if (!/^sweep_e2e[a-z0-9_]*$/.test(name)) {
+    throw new Error(
+      `e2e database "${name}" must be named sweep_e2e*; refusing to touch other databases.`,
+    );
+  }
+  url.pathname = `/${name}`;
   return url.toString();
 }
 

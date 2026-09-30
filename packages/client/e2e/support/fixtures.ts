@@ -39,7 +39,7 @@ export const test = base.extend<{ runs: RunsHelper }>({
             headers,
             data: { cleared: true },
           });
-          expect(res.status()).toBe(204);
+          expect(res.status(), await res.text()).toBe(204);
         }
       },
       async setTask(runId, taskId, state) {
@@ -47,7 +47,7 @@ export const test = base.extend<{ runs: RunsHelper }>({
           headers,
           data: { state },
         });
-        expect(res.status()).toBe(204);
+        expect(res.status(), await res.text()).toBe(204);
       },
     });
   },
