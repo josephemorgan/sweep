@@ -1,0 +1,2556 @@
+# yaml-language-server: $schema=../../schema/sweep-guide.v1.schema.json
+# Source: bover_87, "Final Fantasy VIII Guide and Walkthrough (PS)", v1.51 (2019-12-19),
+# https://gamefaqs.gamespot.com/ps/197343-final-fantasy-viii/faqs/72431
+# Used for facts only; every title, overview, walkthrough and how is written in our own words.
+sweep: 1
+game: Final Fantasy VIII
+title: Missables and side content
+
+categories:
+  gfs:
+    name: GFs
+    about: Guardian Forces to draw from bosses or earn from side content.
+  cards:
+    name: Cards
+    about: Rare Triple Triad cards, the CC Group and the Queen of Cards chain.
+  magazines:
+    name: Magazines
+    about: Timber Maniacs, Weapons Monthly, Occult Fan, Combat King and Pet Pals issues.
+  items:
+    name: Key and rare items
+    about: One-time items and limited pickups worth planning for.
+  quests:
+    name: Side quests
+    about: Optional quests and their timed steps.
+  limits:
+    name: Limit breaks
+    about: Items and events that teach limit breaks.
+  draws:
+    name: Rare draws
+    about: Draw points and enemy draws for magic that is rare or one-time.
+  entries:
+    name: Tutorial entries
+    about: Tutorial and Battle Meter entries that only appear if you act at the right time.
+    tracked: true
+
+sections:
+  # ================= Disc 1 =================
+  - id: disc-1
+    title: Disc 1
+    overview: From Balamb Garden through the first missions to Deling City.
+    sections:
+      - id: d1-balamb
+        title: Balamb Garden and the SeeD exam
+        overview: Settle into the Garden, take the field exam and prepare for the next mission.
+        sections:
+          - id: garden-intro
+            title: "Balamb Garden: first morning"
+            overview: Learn the basics of Junctioning and look around the Garden.
+            walkthrough: |
+              Run the tutorial at Squall's desk to receive your first two GFs, then set their ability order in the menu. Pick up Occult Fan I from the second bookshelf in the Library before heading to the front gate to meet Quistis.
+          - id: fire-cavern
+            title: Fire Cavern
+            overview: A short timed dungeon before the exam.
+            walkthrough: |
+              Pick a time limit at the entrance (ten minutes is plenty) and follow the linear path to the boss at the end. Afterward the boss joins you as a GF and leaves a card that is worth keeping unmodded.
+          - id: balamb-pre-exam
+            title: "Balamb: before the exam"
+            overview: Free time to explore Balamb Town, grow stronger and collect cards.
+            walkthrough: |
+              The world map opens here, and a detour through Balamb Town and the beach is optional. The Garden stays open for card games, and the students at the Cafeteria table have their pre-exam conversation. Once you change clothes in the Dormitory to start the exam, do not speak to anyone unless told to.
+          - id: dollet-comm-tower
+            title: "Dollet: the comm tower"
+            overview: Join the field exam mission and fight your way through town to the tower.
+            walkthrough: |
+              Set up your GFs and make sure someone has the Draw command equipped. In the boss fight at the top of the tower, Draw the GF from Elvoret: if you miss it, you cannot get it again until Disc 4, if at all. Elvoret also drops the Weapons Monthly March issue.
+          - id: dollet-escape
+            title: "Dollet: the escape"
+            overview: Race back to the beach against a timer.
+            walkthrough: |
+              The first fight with the robot on the road is unwinnable and forces an escape, but later encounters with it can be won. Destroying it before it reaches town earns a drop; in the town square you can also examine the dog to save it, then run for the beach within your 30-minute limit.
+          - id: garden-graduation
+            title: "Balamb Garden: results and the party"
+            overview: Learn your exam result and enjoy the graduation party.
+            walkthrough: |
+              With the exam over you can talk to anyone again: read one of the two Timber Maniacs issues in Balamb Town, win the Zell card from Ma Dincht, then follow the scenes in the Garden until Cid hands you the Battle Meter. The graduation party follows; the Battle Meter can only be collected until you leave the Garden for Timber.
+          - id: garden-timber-prep
+            title: "Balamb Garden: mission prep"
+            overview: Get ready for the next mission before you leave the Garden.
+            walkthrough: |
+              Grab the Weapons Monthly April issue from your bedside table, then meet Cid at the front gate for the Magical Lamp; his office also holds the Seifer card, and the Library has a Zell scene that can only be seen now. This is your last chance to get the Battle Meter and the Magical Lamp, to talk to the Cafeteria students before Timber, and to play Level 5 card players for quite some time.
+          - id: balamb-departure
+            title: "Balamb: catching the train"
+            overview: Last stop in Balamb before the train leaves.
+            walkthrough: |
+              In Balamb Town you can start the Queen of Cards quest by losing a particular card to her, taking care that she moves to Dollet rather than Galbadia. Buy a 3,000 Gil ticket at the station, board the train and speak to Zell in the cabin to receive Pet Pals Vol. 1.
+      - id: d1-timber
+        title: Timber and Galbadia
+        overview: Travel to Timber and on to Galbadia Garden, with optional side trips along the way.
+        sections:
+          - id: forest-owls
+            title: "Timber: the Forest Owls"
+            overview: Meet the local resistance and prepare for their mission.
+            walkthrough: |
+              After an interlude with a different party you arrive in Timber and follow a man on the stairs to the Forest Owls' train. Win the Angelo card from Watts before you start the mission, since he will not be available again for quite a long time, and pick up Pet Pals Vol. 2 from Rinoa's bench.
+          - id: timber-d1
+            title: Timber
+            overview: Explore the pub, the Timber Maniacs building and a few odd corners.
+            walkthrough: |
+              Timber is the only place the story forces you to visit, so pick up the Girl Next Door in the Timber Maniacs building and read the newsroom issue. In the pub you win a Buel card from two G-Soldiers, and the drunk inside gives you either a Tonberry card or a Forbidden card. The hotel has a magazine issue as well.
+          - id: dollet-d1
+            title: "Dollet: return trip"
+            overview: An optional side trip to Dollet with cards, magazines and a side quest.
+            requires: [timber-d1]
+            walkthrough: |
+              Ride the train on to Dollet instead of getting off for Galbadia Garden. The hotel and the pub upstairs each have a magazine issue, and the pub owner's secret room holds a rare card. Back in Timber, encourage the journalist outside the Timber Maniacs building; this can only be done until the end of the disc.
+          - id: laguna-excavation
+            title: "Laguna: the excavation site"
+            overview: Another interlude with a different party, in a maze of levers and panels.
+            requires: [timber-d1]
+            walkthrough: |
+              Work through the levers, panels and switches along the linear paths. The actions you take here have effects on Disc 3, so do all seven: the junk, the middle door's lever, the barricaded key, the large hatch, the right-hand panel, the detonator and the rock.
+          - id: galbadia-garden-d1
+            title: Galbadia Garden
+            overview: Report to Galbadia Garden and take your next orders.
+            walkthrough: |
+              After the excavation you arrive at Yaulny Canyon, where Grendels drop the Dragon Fangs needed for Squall's ultimate weapon if you want them. Galbadia Garden lies just west of the forest; a new party member joins there, and Quistis is forced out of your party if she was in it.
+      - id: d1-deling
+        title: Deling City
+        overview: Prepare in Deling City for the mission that closes out the disc.
+        sections:
+          - id: deling-arrival
+            title: "Deling City: arrival"
+            overview: Find your bearings and check the shops.
+            walkthrough: |
+              Buses run circuits from the central plaza. If you started the Queen of Cards quest, collect the Kiros card from the man in black in the Shopping Arcade, and buy the Location Displayer from the soldier outside Caraway's Mansion before you hand over the student's ID number.
+          - id: tomb-unknown-king
+            title: Tomb of the Unknown King
+            overview: Fetch a student's ID number, and explore the tomb if you like.
+            walkthrough: |
+              Take the world map to the tomb northeast of Deling City and read the ID number off the sword on the second screen; memorize it, because you must come back if you forget. Exploring the rest of the tomb is optional and earns a new GF.
+          - id: deling-parade-prep
+            title: "Deling City: before the parade"
+            overview: Get ready for the plan and finish any errands.
+            walkthrough: |
+              Before going to the mansion, finish any errands: a trip back to Dollet to lose the Sacred card to the Queen of Cards and win it back from her son, the shops, and the hotel's Timber Maniacs issue by the far bed. Buy the Location Displayer from the soldier outside Caraway's Mansion if you want it. Then give him the ID number to enter the mansion, which is the moment the Displayer stops being sold, and follow Caraway around the city to learn the plan.
+          - id: deling-parade
+            title: "Deling City: the parade"
+            overview: The disc's big set piece, played across several parties.
+            walkthrough: |
+              Rinoa's sewer detour has a magazine on the ground west of the manhole. Before the rooftop fight against the two Iguion, make sure someone has the Draw command, and Draw Carbuncle before finishing them off. Two boss fights follow immediately; this is the end of the disc.
+
+  # ================= Disc 2 =================
+  - id: disc-2
+    title: Disc 2
+    overview: The second disc, with story stretches and many optional stops.
+    sections:
+      - id: d2-prison
+        title: Winhill and the prison
+        overview: A quiet town, then a stay with plenty of small things to find.
+        sections:
+          - id: laguna-winhill
+            title: "Laguna: Winhill"
+            overview: An interlude in a quiet town with a different party.
+            walkthrough: |
+              After the opening scene, leave the house and go straight to the pub to talk to Kiros before doing anything else; ask about Julia there, because that chance does not come again once you move on. Then set up your Junctions, rest, and hunt the bugs south of the square, spending Laguna's 3,000 Gil at the shop on the way back.
+          - id: d-district-prison
+            title: D-District Prison
+            overview: A stretch with many small things to find in a single location.
+            walkthrough: |
+              You wake up in the prison, fight a solo battle as Zell and then Biggs and Wedge, and work through the cells floor by floor with the Torture Room at the top; going down first to gather the items is worth it. The Pet Nametag and the Character Report can only be had here.
+          - id: deling-d2
+            title: "Deling City: Selphie's team"
+            overview: An optional return to the city with a different party.
+            walkthrough: |
+              With Selphie's team you can return to Deling City before the Missile Base; the paths to Timber and Dollet are blocked for now. The visit is optional, and it is where you can win another rare card from Caraway.
+          - id: missile-base
+            title: Missile Base
+            requires: [d-district-prison]
+            overview: A short mission with a magazine to find along the way.
+            walkthrough: |
+              Selphie's team infiltrates the base, and choosing to fight when other options exist lowers your SeeD Rank, so follow the quiet options. A mandatory fight comes first, then an iron-clad boss under a time limit that you set at the console; ten minutes is plenty.
+      - id: d2-garden
+        title: Balamb Garden in crisis
+        overview: Return to the Garden and look into things that have changed.
+        spoiler: true
+        sections:
+          - id: garden-crisis
+            title: "Balamb Garden: the crisis"
+            overview: Back at the Garden, where things are not as you left them.
+            walkthrough: |
+              The Garden's elevator and directory board are out, so you circle the 1F ring clockwise, fighting a fixed encounter in each area for a small reward. You can step outside only to Balamb Town, which is your one chance for quite some time to change the Queen of Cards' trade rule.
+            spoiler: true
+          - id: garden-norg
+            title: "Balamb Garden: MD level and NORG"
+            overview: Explore the Garden's lower levels for a hidden encounter.
+            walkthrough: |
+              Deep below the Garden, a valve, ladders and a catwalk lead to the MD Level and a fight against two Oilboyle. Afterwards the CC Group quest can be started and the Novice SeeD students have new dialogue; the fight against NORG ends the stretch, so Draw Leviathan and Mug the Circlet before finishing him.
+            spoiler: true
+      - id: d2-fh
+        title: Fishermans Horizon
+        overview: A town on the water with several errands.
+        sections:
+          - id: fh-arrival
+            title: "Fishermans Horizon: arrival"
+            overview: Arrive in town and look around before heading upstairs anywhere.
+            walkthrough: |
+              The Garden reaches Fishermans Horizon, where a ladder on the left of the big water tank starts the Master Fisherman's quest, which has to be done before you go upstairs in the Mayor's house. The lower town also has an inn, an item shop, a junk shop and two Timber Maniacs issues.
+          - id: fh-mayor
+            title: "Fishermans Horizon: the mayor's house"
+            overview: Visit the mayor's house at the middle of the town.
+            walkthrough: |
+              Martine at the foot of the solar farm plays cards, and the Mayor's house at the middle of the array has a rare card holder upstairs plus an invisible Ultima Draw Point. The first part of the Master Fisherman's quest must be finished before you go upstairs in that house.
+          - id: fh-big-bridge
+            title: "Fishermans Horizon: the big bridge"
+            overview: A story stretch across the big bridge.
+            walkthrough: |
+              Follow the tracks to the abandoned station for a second fight with the iron-clad, and Mug the Adamantine before you destroy it. Afterwards finish the Master Fisherman's quest, since it must be completed before you return to the Garden.
+          - id: garden-festival
+            title: "Balamb Garden: the festival"
+            overview: Return to the Garden for the festival.
+            walkthrough: |
+              Choose the band's instruments for the concert, but run the Grease Monkey's house errands before you confirm Zell's instrument. The Library scene with the pig-tailed girl can only be seen while Irvine is on his own.
+      - id: d2-world
+        title: The Garden at sea
+        overview: A stretch of free roaming with many optional stops.
+        spoiler: true
+        sections:
+          - id: garden-at-sea
+            title: "Balamb Garden: at sea"
+            overview: The base for a stretch of free roaming.
+            walkthrough: |
+              Once the festival is over, you can move the Garden to most places in the world except much of the east, and Xu suggests Balamb. Plenty of optional stops are open first, including the CC Group quest, and the Novice SeeD conversations here are only available until the end of the disc.
+            spoiler: true
+            requires: [garden-festival]
+          - id: centra-ruins
+            title: Centra Ruins
+            overview: An old site with a couple of optional fights.
+            walkthrough: |
+              The lower ruins are the first five screens, where defeating around twenty Tonberries brings out the Tonberry King. The upper ruins hold Odin behind a puzzle with two statue eyes and a code, and are best left until Disc 4.
+            requires: [garden-festival]
+          - id: shumi-village
+            title: Shumi Village
+            overview: A village on an island with several requests.
+            walkthrough: |
+              Shumi Village is on the island north of the northern continent, and an elevator takes you down to it. It has a reusable Ultima Draw Point, an Artisan's House magazine and a two-part stone and statue quest; it cannot be entered on Disc 4, so everything here has to be finished by the end of Disc 3.
+            requires: [garden-festival]
+          - id: chocobo-forests
+            title: Chocobo Forests
+            overview: Forest puzzles and a sanctuary to solve at your own pace.
+            walkthrough: |
+              Six forests on the world map each hide treasure behind a Chicobo puzzle. Once all six are solved you can ride a chocobo to the Sanctuary for the Chicobo card.
+            requires: [garden-festival]
+          - id: winhill-d2
+            title: Winhill
+            overview: Return to a quiet town for a small side quest.
+            walkthrough: |
+              Winhill lies on the southeastern Galbadian continent; bring Irvine or Quistis. The man in the mansion wants four pieces of a vase, and a few people here play cards under Centra rules.
+            requires: [garden-festival]
+          - id: timber-d2
+            title: Timber
+            overview: Return to Timber for a follow-up errand.
+            walkthrough: |
+              If you encouraged the journalist on Disc 1, his reward is waiting outside the Timber Maniacs building. The girl playing on the tracks by the train station near the pub also has a scene.
+            requires: [garden-festival]
+          - id: dollet-d2
+            title: Dollet
+            overview: Return to Dollet for optional errands.
+            walkthrough: |
+              Dollet can be revisited for anything you missed earlier, including the bone quest and the Queen of Cards.
+            requires: [garden-festival]
+      - id: d2-balamb
+        title: Balamb and Trabia
+        overview: Two stops on the way back to the story.
+        sections:
+          - id: balamb-occupied
+            title: "Balamb: the occupation"
+            overview: Return to a familiar town in a changed state.
+            walkthrough: |
+              Balamb Town is under guard and you normally cannot leave until the story events are done, though an optional sequence with the Big Bad Rascal lets you slip out early. The visit ends with two boss fights: Draw Pandemona from Fujin, and Mug Raijin for Str Up.
+            spoiler: true
+            requires: [garden-festival]
+          - id: trabia-garden
+            title: Trabia Garden
+            overview: Visit another Garden and a few people in it.
+            walkthrough: |
+              Trabia Garden is in the northeast of the northern continent. Two magazines are here, one five steps south of the fountain Draw Point and one in the graveyard, and Selphie's friend hands over a rare card on a second trip after the beach scene.
+      - id: d2-battle
+        title: Battle of the Gardens
+        overview: The story builds to a large confrontation.
+        spoiler: true
+        sections:
+          - id: garden-battle
+            title: "Balamb Garden: the battle"
+            overview: A story stretch with a place to rest.
+            walkthrough: |
+              Give your orders for the defense, then run the 2F Hallway before the fighting starts. After that Zell's team and then Squall's team defend the Garden.
+            spoiler: true
+          - id: galbadia-garden-d2
+            title: "Galbadia Garden: revisited"
+            overview: The end of the disc, with a few last things to do.
+            walkthrough: |
+              Collect the card keys to cross Galbadia Garden and fight the optional creature in the main hall; Cerberus has to be beaten before the end of the disc. Seifer comes next, and then Seifer and Edea in a tag-team fight where you should Draw Alexander from Edea before it ends.
+
+  # ================= Disc 3 =================
+  - id: disc-3
+    title: Disc 3
+    overview: The third disc, with a long road east and a lot to wrap up.
+    sections:
+      - id: d3-aftermath
+        title: After the battle
+        overview: Regroup and continue with the story.
+        spoiler: true
+        sections:
+          - id: garden-aftermath
+            title: "Balamb Garden: after the battle"
+            overview: Pick up the pieces at the Garden and get ready to move on.
+            walkthrough: |
+              Your newest GF can start learning abilities now, and the left path in the Training Center has the July issue of Weapons Monthly. The Novice SeeD students' last conversation is available until the Trabia Canyon sequence, and the Dollet bone quest now pays out its better rewards.
+            spoiler: true
+          - id: edea-house-d3
+            title: "Edea's House"
+            overview: Visit a familiar house for some quiet time.
+            walkthrough: |
+              Take the Timber Maniacs issue lying near the doorway, then keep talking to Edea and to Cid until neither has a new line, which unlocks four tutorial entries. Both also play cards under Centra rules that favour them, so change the rules before you challenge Edea. Later visits only offer cards and rule changes.
+            spoiler: true
+          - id: laguna-trabia-canyon
+            title: "Laguna: Trabia Canyon"
+            overview: Another interlude with a different party.
+            walkthrough: |
+              Laguna's party fights a fixed Ruby Dragon after a sword-fighting mini-game, and you hand out Junction sets to Kiros and Ward first. High-level dragons carry Meteor and Flare, so raise its level with Tonberry's commands if you want to Draw them. The Novice SeeD students' final conversation has to happen before this sequence.
+          - id: white-seed-ship
+            title: White SeeD Ship
+            overview: Step aboard a ship and look around.
+            walkthrough: |
+              Drive the Garden into the ship for scenes. Upstairs are a Timber Maniacs issue and Zone, who wants the Girl Next Door for the Shiva card, and downstairs Watts plays the Angelo card and a Holy Draw Point sits after the cabin scene. The ship's Timber Maniacs issue is missable, so collect everything before you leave.
+            spoiler: true
+      - id: d3-esthar
+        title: The road to Esthar
+        overview: A long journey east, with a few places to stop.
+        sections:
+          - id: great-salt-lake
+            title: Great Salt Lake
+            overview: Cross a vast salt flat on the way east.
+            walkthrough: |
+              Climb the skull and spine to find a hidden Meteor Draw Point on the next screen, with a Thundaga Draw Point further on. The dungeon ends with Abadon, whose Power Wrist you can mug, so equip Mug before the fight.
+          - id: laguna-esthar
+            title: "Laguna: the resistance"
+            overview: Another interlude with a different party in a new land.
+            walkthrough: |
+              Laguna's party fights through an Esthar building. The first issue of Weapons Monthly lies on the ground inside, and the later Elastoid fight can give a Laser Cannon if it is level 30 or higher.
+          - id: esthar-city
+            title: Esthar City
+            overview: A large city with shops, cards and a few errands to run.
+            walkthrough: |
+              Win Ward's card from Odine in the Presidential Palace, talk to the Presidential Aide and then the Secretary for Occult Fan IV, talk to the soldier at the Combat King spot, and visit every Mall shop. Odine can be played again after you leave the Palace, but only before the plot moves on, and Occult Fan IV has a brief time frame, so finish the errands before the Lunar Gate. The shops themselves stay open until the final mission.
+          - id: tears-point
+            title: "Tears' Point"
+            overview: A quiet spot at the edge of the map to visit at your leisure.
+            walkthrough: |
+              At the foot of the large statue lies the Solomon Ring, the first step toward Doomtrain. Tears' Point stays reachable for the rest of the game.
+          - id: lunar-gate
+            title: Lunar Gate
+            overview: A place to pass through on the way to the next stretch.
+            walkthrough: |
+              Scenes here split the party: Rinoa and a third member go in the pod, and Zell and Edea head out with another partner. The Queen of Cards' Lunar spot is the hallway here.
+            spoiler: true
+            requires: [esthar-city]
+          - id: lunatic-pandora-chase
+            title: "Esthar: catching the Lunatic Pandora"
+            overview: A timed stretch through the city.
+            walkthrough: |
+              Once you return to Esthar, a 15-minute timer starts and you must catch the Lunatic Pandora: at the first contact point (15:00 to 12:00 left) you can board with time to explore, but the later spots leave you little time inside. The soldier at the Combat King spot hands over Combat King 004 if you spoke to him first. Inside, the treasures from your Disc 1 excavation actions are waiting, along with a once-only Ultima Draw Point.
+            spoiler: true
+          - id: lunar-base
+            title: Lunar Base
+            overview: A high place to visit at a crucial moment.
+            walkthrough: |
+              Play Piet for the Alexander card after abolishing a rule, and win the Laguna card from Ellone before you speak to her, since she cannot be played again afterwards. If you miss Piet's card, he plays it again at the Crash Site. Scenes, a space suit and a space mini-game follow.
+            spoiler: true
+      - id: d3-ragnarok
+        title: Back on Earth
+        overview: A stretch of free roaming with many late-game stops.
+        spoiler: true
+        sections:
+          - id: sorceress-memorial
+            title: Sorceress Memorial
+            overview: A story stop after which the party is free again.
+            walkthrough: |
+              Scenes bring Rinoa back once you go inside, after which you can pick any party as long as Squall is in it. Before going in, you can return to Shumi Village for another Ultima Draw.
+            spoiler: true
+          - id: esthar-d3b
+            title: "Esthar: the return"
+            overview: Return to the city with new options.
+            walkthrough: |
+              With the Ragnarok you can revisit Esthar: the Presidential Assistant holds the last card of the Queen chain, and the soldier at the Combat King spot starts the repeatable Elnoyle fight. You have until the final mission to move the Queen of Cards or change her trade rule.
+            spoiler: true
+            requires: [lunar-base]
+          - id: cactuar-island
+            title: Cactuar Island
+            overview: A remote island with something to find.
+            walkthrough: |
+              Touch the cactus that pops out of the sand for a fight against Jumbo Cactuar, and defeat it before it escapes. Cactuars here can also be fought for AP.
+            spoiler: true
+            requires: [lunar-base]
+          - id: deep-sea-research-center
+            title: Deep Sea Research Center
+            overview: A remote facility that needs special transport.
+            walkthrough: |
+              The Ragnarok is needed to enter. The laboratory holds Bahamut, and the steamworks lead to the Deep Sea Deposit and Ultima Weapon; once Ultima Weapon is beaten there are no encounters of any kind in the whole facility.
+            spoiler: true
+            requires: [lunar-base]
+          - id: obel-lake
+            title: Obel Lake
+            overview: A quiet lake with a long errand attached.
+            walkthrough: |
+              Hum at the tip of the peninsula until a monkey talks to you, which starts a long errand across the world map. It pays out Three Stars at Mordred Plains and a Luck-J Scroll on Minde Island.
+            spoiler: true
+            requires: [lunar-base]
+          - id: ufo-pupu
+            title: UFO sightings and PuPu
+            overview: Odd sightings and an encounter to chase.
+            walkthrough: |
+              Watch for UFO fly-bys at four places, then hunt the UFO enemy near the Chocobo Sanctuary for a rare item. PuPu waits around the crater near Balamb, where five Elixirs get you a one-of-a-kind card.
+            spoiler: true
+            requires: [lunar-base]
+          - id: crash-site
+            title: Crash Site
+            overview: A remote site to visit.
+            walkthrough: |
+              Piet plays the Alexander card here if you missed it at the Lunar Base.
+            spoiler: true
+            requires: [lunar-base]
+          - id: edea-house-promise
+            title: "Edea's House: the promise"
+            overview: A story stop at a familiar house.
+            walkthrough: |
+              Follow Angelo around Edea's House for a scene with Rinoa, then return to the Ragnarok. Nothing new is offered here.
+            spoiler: true
+            requires: [sorceress-memorial]
+      - id: d3-final
+        title: The final mission
+        overview: The story heads toward the end of the game.
+        spoiler: true
+        sections:
+          - id: esthar-briefing
+            title: "Esthar: the briefing"
+            overview: Gather for the plan.
+            walkthrough: |
+              Go to the President's office in the Presidential Palace for the briefing, then return to the cabin and challenge the President for the Squall card. You can still do the earlier explorations until you fly the Ragnarok into the Lunatic Pandora.
+            spoiler: true
+          - id: lunatic-pandora-storm
+            title: "Lunatic Pandora: the storm"
+            overview: Prepare carefully before you continue.
+            walkthrough: |
+              Fly the Ragnarok into the Lunatic Pandora, fight Fujin and Raijin, then the guardian robot Mobile Type 8 and its probes. Going past Mobile Type 8's room closes every town, Balamb Garden and the shops for good, along with Timber Maniacs, the Queen of Cards' moves, the CC Group quest, the Dollet bones, Shumi Village, the Esthar Elnoyle fight and the chance to swap Odin for Gilgamesh. You can still go back to the second elevator and the Ragnarok before that.
+            spoiler: true
+          - id: lunatic-pandora-seifer
+            title: "Lunatic Pandora: the last stand"
+            overview: A confrontation at the end of the disc.
+            walkthrough: |
+              Fight Seifer in the last stand of the disc, and Draw Aura from him if your level is high enough. If Odin is with you, a scene opens the fight and Gilgamesh replaces him afterwards.
+            spoiler: true
+
+  # ================= Disc 4 =================
+  - id: disc-4
+    title: Disc 4
+    overview: The final disc, with a few areas still open and one big place to explore.
+    sections:
+      - id: d4-awakening
+        title: The awakening
+        overview: The final disc opens with a fight for survival.
+        sections:
+          - id: lunatic-pandora-adel
+            title: "Lunatic Pandora: Adel"
+            overview: The opening stretch of the final disc.
+            walkthrough: |
+              Return to Type 8's room, climb the crane-like structure and follow it around for a scene; other parts of the Lunatic Pandora can still be visited, but you cannot leave. Equip Mug, raise your stats and defend Earth and Holy in Elem-Def, then follow the walkway to fight Adel. If Rinoa dies in any way, the game is over.
+            spoiler: true
+          - id: commencement-room
+            title: Commencement Room
+            overview: A short gauntlet of fights before the final area.
+            walkthrough: |
+              After the scenes you arrive in a room with a Save Point; the extra ones it spawns are all fakes. Set your Elem-Def as broadly as you can, then fight eleven "Sorceress" enemies one at a time, the last being the hardest. They drop Flare, Holy, Meteor and Ultima Stones, and Mug gets a Meteor or Ultima Stone.
+            spoiler: true
+          - id: castle-approach
+            title: "Edea's House: the path to the castle"
+            overview: A stop on the way to the final area.
+            walkthrough: |
+              Run through the door on the right and out the back door for a scene; you cannot exit to the World Map from that path. A Triple Draw Point sits along the linear path if you want it, and it ends at a Save Point and the steps up into the castle. The portals to the left of the large chain do lead to the World Map, but using them before you have Eden is not recommended.
+            spoiler: true
+      - id: d4-castle
+        title: Ultimecia Castle
+        overview: The final area, with several parts to tackle in any order.
+        spoiler: true
+        sections:
+          - id: castle-entrance
+            title: "Ultimecia Castle: entrance hall"
+            overview: The entrance to the final area, where the way splits.
+            walkthrough: |
+              Most of your abilities are sealed as soon as you enter, though they work normally outside, and each boss you defeat inside lets you unseal one. Beat the two guards up the steps first, then unseal Draw if you still lack any Guardian Force, because this is the last chance to Draw them and only the later bosses carry them; if you lack Eden, heading straight for the clock tower boss first is the recommended route. It is a two-party dungeon, and the portals one screen south of the entrance take you out to the World Map whenever you want to leave.
+            spoiler: true
+          - id: castle-tri-point
+            title: "Ultimecia Castle: Tri-Point"
+            overview: One of several areas to tackle in any order.
+            walkthrough: |
+              Go through the door the guards were blocking, step on the chandelier to drop it and open the hatch nearby to reach the cellar. Draw Siren from Tri-Point here if you never got her from Elvoret. Afterwards unseal Draw or Magic, whichever you still lack, or Item if you have both.
+            spoiler: true
+            requires: [castle-entrance]
+          - id: castle-trauma
+            title: "Ultimecia Castle: art gallery"
+            overview: One of several areas to tackle in any order.
+            walkthrough: |
+              From the entrance hall take the right door to the art gallery, examine every painting, then solve the puzzle: after examining the big painting on the left, enter VIVIDARIUM, INTERVIGILIUM, VIATOR. If you missed Leviathan at NORG, Draw him from Trauma here. Afterwards unseal Item, or Limit Break if you already have Item.
+            spoiler: true
+            requires: [castle-entrance]
+          - id: castle-red-giant
+            title: "Ultimecia Castle: dungeon"
+            overview: One of several areas to tackle in any order.
+            walkthrough: |
+              Take the north door past the art gallery, go down to the basement and through the open door into the dungeon, grabbing the Prison Key before you approach Red Giant. Draw Pandemona from it here if you missed him from Fujin; this is his last chance. Afterwards unseal Limit Break, or GF if you already have Limit Break.
+            spoiler: true
+            requires: [castle-entrance]
+          - id: castle-krysta
+            title: "Ultimecia Castle: Krysta"
+            overview: One of several areas to tackle in any order.
+            walkthrough: |
+              The Floodgate Key lies in the Elevator Room and takes both parties to reach, with the party of more women riding down the left-hand elevator. Then drop the chandelier, use the lever near the green light and cross to Krysta from the main balcony door with the other party. Draw Carbuncle from it if you missed Iguion, since this is his last chance, and unseal GF afterwards, or Command if you already have GF.
+            spoiler: true
+            requires: [castle-entrance]
+          - id: castle-gargantua
+            title: "Ultimecia Castle: armory"
+            overview: One of several areas to tackle in any order.
+            walkthrough: |
+              Get the Armory Key from the rickety bridge above the chapel (walk, don't run), drain the basement waterway by examining the lever twice with the Floodgate Key, then open the right-most door with the Armory Key. Draw Cerberus from Gargantua if you never fought him. Afterwards unseal Command, or anything you like if you already have it.
+            spoiler: true
+            requires: [castle-entrance]
+          - id: castle-catoblepas
+            title: "Ultimecia Castle: treasure vault"
+            overview: One of several areas to tackle in any order.
+            walkthrough: |
+              Take the Treasure Vault Key from beside the fountain near the chapel, then examine the left wall behind the pillar nearest the camera in the hallway south of the elevator room to open a hidden door. Inside, open every box at once (each toggles its neighbours, and leaving and re-entering resets the puzzle) to bring out Catoblepas. Draw Alexander from it if you missed him from Edea, and unseal whatever you like afterwards.
+            spoiler: true
+            requires: [castle-entrance]
+          - id: castle-tiamat
+            title: "Ultimecia Castle: clock tower"
+            overview: One of several areas to tackle in any order.
+            walkthrough: |
+              Go through the door the guards were blocking, drop the chandelier, follow the path north to the chapel, up the stairs and across the bridge (walk, don't run), then climb the clock tower to the pendulum and mash X to ride it to a hidden balcony. Equip Draw and Draw Eden from Tiamat if you lack him; if nobody has Draw, reload and come back. Afterwards unseal Magic, or anything you like if you already have it.
+            spoiler: true
+            requires: [castle-entrance]
+          - id: castle-organ
+            title: "Ultimecia Castle: the chapel organ"
+            overview: One of several areas to tackle in any order.
+            walkthrough: |
+              At the back of the chapel, play the organ by holding every button except Select, Start and the D-pad until the sound stops; if the tone changes after you let go, you did it wrong. Then go to the Courtyard, exit northeast and follow the path southeast; if any bars remain, return and try again. The box at the end of the path holds the Rosetta Stone, and the door nearby unlocks as a shortcut to the dungeon.
+            spoiler: true
+            requires: [castle-entrance]
+          - id: castle-omega
+            title: "Ultimecia Castle: Omega Weapon"
+            overview: One of several areas to tackle in any order.
+            walkthrough: |
+              This is the strongest monster in the game, and any seals still in place stay in place for the fight, so unseal everything and save first. Put your main party on the green light in the Courtyard, take the other party to the entrance hall balcony, exit right and examine the rope to ring a bell, then switch back and approach the monster in the chapel. Defeating it gives the Proof of Omega entry and a Three Stars.
+            spoiler: true
+            requires: [castle-entrance]
+      - id: d4-prep
+        title: Final preparations
+        overview: Get ready for the last battle.
+        sections:
+          - id: ragnarok-d4
+            title: "Kashkabald Desert: the Ragnarok"
+            overview: A place to prepare before the last battle.
+            walkthrough: |
+              Take the middle portal outside the castle to the island north of Centra, get past the Forest of Solitude, cross the shallows to the Centra Continent and head to Kashkabald Desert to find the Ragnarok; the portal there adds a way back into the castle. Joker aboard runs an Item Shop and a Junk Shop, and the CC Group is aboard too if you finished their quest. Towns and most field areas are blocked, but Fire Cavern, the Tomb of the Unknown King, Centra Ruins, the Chocobo Forests, the Deep Sea Research Center, Trabia Canyon, the Crash Site and Tears' Point stay open, and Odin can be fetched now if you held off.
+            spoiler: true
+            requires: [castle-entrance]
+          - id: castle-final
+            title: "Ultimecia Castle: the final battle"
+            overview: The last battle of the game.
+            walkthrough: |
+              From the pendulum room in the clock tower, climb the rest of the way up, run across the clock hands, climb down the ladder and cross the bridge to a Save Point before the final door. There is no saving after the final door, so finish everything first. You can go in with seals still in place, but they stay in place for the whole fight, and Mug and rare-item slots are wasted.
+            spoiler: true
+            requires: [ragnarok-d4]
+
+tasks:
+  # --- Disc 1 ---
+  # ----- Balamb Garden and the SeeD exam -----
+  - id: mag-of-1
+    title: Occult Fan I
+    category: magazines
+    how: |
+      Examine the second bookshelf in the Balamb Garden Library, the part nearest the aisle.
+    windows:
+      - from: garden-intro
+        until: lunatic-pandora-storm
+
+  - id: quest-seed-window-1
+    title: "Novice SeeD candidates: before the exam"
+    category: quests
+    how: |
+      Talk to the three students at the Cafeteria table until they start repeating the same line. Their dialogue changes at five points in the game and the only reward is scenes; if you skip any of the five, they disappear for the rest of the game.
+    windows:
+      - from: balamb-pre-exam
+
+  - id: card-quistis
+    title: Quistis card
+    category: cards
+    how: |
+      The Trepe Groupies play it, in the 2F classroom and in the Cafeteria. It is a strong playing card, so it makes a good first priority. On Disc 4 the CC Group aboard the Ragnarok can play it, but only if the CC Group quest was finished.
+    windows:
+      - from: balamb-pre-exam
+        until: lunatic-pandora-storm
+      - from: ragnarok-d4
+        until: end
+
+  - id: card-minimog
+    title: MiniMog card
+    category: cards
+    how: |
+      The young boy running around the lower-level hallway of the Garden plays it. Do not mod it, because you need it for the Queen of Cards quest. On Disc 4 the CC Group aboard the Ragnarok can play it, but only if the CC Group quest was finished.
+    windows:
+      - from: balamb-pre-exam
+        until: lunatic-pandora-storm
+      - from: ragnarok-d4
+        until: end
+
+  - id: gf-siren
+    title: Draw Siren from Elvoret
+    category: gfs
+    spoiler: true
+    how: |
+      Elvoret is the boss at the top of the Dollet comm tower. Make sure someone has the Draw command equipped and Draw Siren during the fight; once drawn, she disappears from the Draw list. If you miss her, you cannot get her again until Disc 4, if at all.
+    windows:
+      - from: dollet-comm-tower
+      - from: castle-tri-point
+
+  - id: mag-wm-mar
+    title: Weapons Monthly, March issue
+    category: magazines
+    how: |
+      The boss at the top of the Dollet comm tower drops it when defeated. If you missed it, the Esthar Book Store sells Weapons Monthly and Combat King issues, the high-end ones once you have Familiar.
+    windows:
+      - from: dollet-comm-tower
+      - from: esthar-city
+        until: lunatic-pandora-storm
+  - id: item-xatm092
+    title: Destroy X-ATM092
+    category: items
+    spoiler: true
+    how: |
+      The first encounter cannot be won, so escape. Later encounters can be won: to destroy it you must reduce its HP to zero twice, knocking it down both times, and then once more; simply dropping it to zero HP does not count. Destroying it gives one of Power Wrist, Orihalcon, Hypno Crown or Force Armlet, and it has to happen before it reaches the town screen with the store. For a perfect game you must also save the dog in the square, by examining it or by destroying the robot before it gets there.
+    windows:
+      - from: dollet-escape
+
+  - id: card-zell
+    title: Zell card
+    category: cards
+    how: |
+      Challenge Ma Dincht in the Dincht house in Balamb Town, the one nearest the central intersection. You may need to leave the room and come back before she lets you play. On Disc 4 the CC Group aboard the Ragnarok can play it, but only if the CC Group quest was finished.
+    windows:
+      - from: garden-graduation
+        until: lunatic-pandora-storm
+      - from: ragnarok-d4
+        until: end
+
+  - id: mag-tm-balamb-hotel
+    title: Timber Maniacs, Balamb hotel issue
+    category: magazines
+    exclusive: balamb-maniacs
+    how: |
+      Stay the night at the Balamb hotel to get this issue. Only one of the two Balamb issues can be read in a playthrough, and which one you read has a minor effect on a scene later.
+    windows:
+      - from: garden-graduation
+        until: lunatic-pandora-storm
+
+  - id: mag-tm-balamb-station
+    title: Timber Maniacs, Balamb station issue
+    category: magazines
+    exclusive: balamb-maniacs
+    how: |
+      Pick this issue up at the Balamb train station. Only one of the two Balamb issues can be read in a playthrough, and which one you read has a minor effect on a scene later.
+    windows:
+      - from: garden-graduation
+        until: lunatic-pandora-storm
+
+  - id: item-battle-meter
+    title: Battle Meter
+    category: items
+    how: |
+      Cid hands it over after the scenes in the Garden's 2F hallway. If you forgot, speak to him in his 3F office; that is your last chance, and it ends when you leave the Garden for the Timber mission.
+    windows:
+      - from: garden-graduation
+        until: garden-timber-prep
+
+  - id: mag-wm-apr
+    title: Weapons Monthly, April issue
+    category: magazines
+    how: |
+      It is on the bedside table in your dormitory when the mission preparations begin.
+    windows:
+      - from: garden-timber-prep
+        until: lunatic-pandora-storm
+
+  - id: item-magical-lamp
+    title: Magical Lamp
+    category: items
+    how: |
+      Cid gives it to you at the front gate after the mission briefing, or in his 3F office if you missed him. This is your last chance to get it, and using it later starts a side quest for a new GF.
+    windows:
+      - from: garden-timber-prep
+
+  - id: gf-diablos
+    title: Diablos from the Magical Lamp
+    category: gfs
+    spoiler: true
+    how: |
+      Use the Magical Lamp from the item menu to fight Diablos; the Lamp is used up in the process. You can do it at any point in the game as long as you still have the Lamp, but doing it before you set out is recommended.
+    windows:
+      - from: garden-timber-prep
+        until: end
+
+  - id: card-diablos
+    title: Diablos card
+    category: cards
+    spoiler: true
+    how: |
+      The Magical Lamp fight always drops it.
+    windows:
+      - from: garden-timber-prep
+        until: end
+
+  - id: card-seifer
+    title: Seifer card
+    category: cards
+    how: |
+      Play Cid in his office on 3F. He still has it later, so it is not urgent, but there is no reason to wait. On Disc 3 Cid plays it at Edea's House, under Centra rules. On Disc 4 the CC Group aboard the Ragnarok can play it, but only if the CC Group quest was finished.
+    windows:
+      - from: garden-timber-prep
+        until: garden-at-sea
+      - from: edea-house-d3
+        until: lunatic-pandora-storm
+      - from: ragnarok-d4
+        until: end
+
+  - id: quest-zell-scene-3
+    title: Library scene with the girl in pigtails
+    category: quests
+    how: |
+      Visit the pig-tailed girl in the Balamb Garden Library for a scene in the Zell love quest. This scene can only be seen now.
+    windows:
+      - from: garden-timber-prep
+
+  - id: quest-seed-window-2
+    title: "Novice SeeD candidates: after the exam"
+    category: quests
+    how: |
+      Before you leave for Timber, talk to the three students at the Cafeteria table again until they repeat the same line. Miss any of the five conversations and they disappear for the rest of the game.
+    windows:
+      - from: garden-graduation
+        until: garden-timber-prep
+        home: garden-timber-prep
+
+  - id: quest-queen-minimog
+    title: Lose the MiniMog card to the Queen of Cards
+    category: quests
+    how: |
+      Play the Queen of Cards in Balamb Town, in the white dress by the train station, and lose the MiniMog card to her. Save first and make sure she moves to Dollet, not Galbadia; if she heads for Galbadia, reload. Her father delivers the card to her son in Dollet, and a new card appears in Deling City.
+    windows:
+      - from: balamb-departure
+        until: lunatic-pandora-storm
+
+  - id: mag-pp-1
+    title: Pet Pals, Vol. 1
+    category: magazines
+    how: |
+      Speak to Zell in the train cabin to receive it.
+    windows:
+      - from: balamb-departure
+
+  # ----- Timber and Galbadia -----
+  - id: card-angelo
+    title: Angelo card
+    category: cards
+    how: |
+      Watts plays it on the Forest Owls' train. Win it before you start the mission: if you don't, he won't be available to play again for quite a long time. It mods well, but you may want to hold off for a while. On Disc 3 Watts plays it on the White SeeD Ship, still under Galbadia rules. On Disc 4 the CC Group aboard the Ragnarok can play it, but only if the CC Group quest was finished.
+    windows:
+      - from: forest-owls
+      - from: white-seed-ship
+      - from: ragnarok-d4
+        until: end
+
+  - id: mag-pp-2
+    title: Pet Pals, Vol. 2
+    category: magazines
+    how: |
+      Take it from Rinoa's bed, which is a bench by then, on the Forest Owls' train. Reading it is safe, but for a perfect game do not set Rinoa to learn Angelo Recover or Angelo Reverse in the menu. The Timber Pet Shop also sells Pet Pals magazines.
+    windows:
+      - from: forest-owls
+
+  - id: item-girl-next-door
+    title: Girl Next Door
+    category: items
+    how: |
+      Examine the magazine piles in the Timber Maniacs building. It is a unique item used in an optional event later. It stays available for quite some time, but this is the only visit Timber forces on you, so it is easy to forget. For a perfect game, hold on to it: a character you meet later trades for it, but what he offers can be obtained other ways.
+    windows:
+      - from: timber-d1
+        until: lunatic-pandora-storm
+
+  - id: mag-tm-timber-newsroom
+    title: Timber Maniacs, Timber newsroom issue
+    category: magazines
+    how: |
+      In the Timber Maniacs building, take the door at the end of the hall to the main newsroom; an issue lies there.
+    windows:
+      - from: timber-d1
+        until: lunatic-pandora-storm
+
+  - id: mag-tm-timber-hotel
+    title: Timber Maniacs, Timber hotel issue
+    category: magazines
+    how: |
+      The Timber hotel has an issue too.
+    windows:
+      - from: timber-d1
+        until: lunatic-pandora-storm
+
+  # ----- Dollet return trip -----
+  - id: quest-journalist
+    title: Encourage the Timber Maniacs journalist
+    category: quests
+    how: |
+      Return to Timber, following the road to avoid encounters, and speak to the man outside the Timber Maniacs building. Encourage him to become a journalist by choosing "No way". This can only be done until the end of the disc, and skipping it costs you a copy of a strictly limited item.
+    windows:
+      - from: dollet-d1
+        until: deling-parade-prep
+
+  - id: mag-tm-dollet-hotel
+    title: Timber Maniacs, Dollet hotel issue
+    category: magazines
+    how: |
+      Rent a room at the Dollet hotel to get it.
+    windows:
+      - from: dollet-d1
+        until: lunatic-pandora-storm
+
+  - id: mag-tm-dollet-pub
+    title: Timber Maniacs, Dollet pub issue
+    category: magazines
+    how: |
+      Upstairs in the Dollet pub, where the Queen of Cards is, there is another issue.
+    windows:
+      - from: dollet-d1
+        until: lunatic-pandora-storm
+
+  - id: mag-of-2
+    title: Occult Fan II
+    category: magazines
+    how: |
+      Upstairs in the Dollet pub, examine the magazine pile nearest the door. Each time you may receive some items, and you must leave and re-enter after every three items; you cannot get more than one copy.
+    windows:
+      - from: dollet-d1
+        until: lunatic-pandora-storm
+
+  - id: card-siren
+    title: Siren card
+    category: cards
+    how: |
+      Upstairs in the pub, beat the owner on the left side of the screen at Triple Triad to gain access to his secret room, follow him there and win the card from him. He also hands over several common cards when you speak to him there. On Disc 4 the CC Group aboard the Ragnarok can play it, but only if the CC Group quest was finished.
+    windows:
+      - from: dollet-d1
+        until: lunatic-pandora-storm
+      - from: ragnarok-d4
+        until: end
+
+  - id: quest-queen-minimog-back
+    title: Win the MiniMog card back from the Queen's son
+    category: quests
+    how: |
+      If you lost MiniMog to the Queen of Cards, win it back from the boy in the Artist's House, south of the Dollet pub. Once it is back, it is safe to mod it.
+    windows:
+      - from: dollet-d1
+        until: lunatic-pandora-storm
+
+  - id: quest-dollet-bones
+    title: Dollet bone quest
+    category: quests
+    how: |
+      It starts at the painting in the Artist's House, south of the Dollet pub. The rewards are better if you finish each part on Disc 3 (Potion, Phoenix Down and Soft on Disc 1 or 2, versus X-Potion, Mega-Potion and Elixir on Disc 3), so waiting is worth it.
+    windows:
+      - from: dollet-d1
+        until: lunatic-pandora-storm
+
+  - id: limit-whisper
+    title: Whisper from Adamantoise
+    category: limits
+    how: |
+      Fight Adamantoise on the beach and mug a Whisper. It teaches Quistis her White Wind limit and cannot be made through Card Mod. Their defence is very high and they like to inflict Darkness, so expect a long fight.
+    windows:
+      - from: dollet-d1
+        until: end
+
+  # ----- Laguna: the excavation site -----
+  - id: item-exc-junk
+    title: Pick up the junk
+    category: items
+    how: |
+      Take the right fork and follow it down to a blue area at a junction. Walk around until a dialog box appears near the junk on the ground, then choose to pick it up. This unlocks a LuvLuv G later.
+    windows:
+      - from: laguna-excavation
+
+  - id: item-exc-lever
+    title: Pull the middle door's lever
+    category: items
+    how: |
+      In the room with three door-like panels, fiddle with the lever on the middle door, then leave for a scene. This opens access to a Silence Draw Point later.
+    windows:
+      - from: laguna-excavation
+
+  - id: item-exc-old-key
+    title: Take the Old Key behind the barricade
+    category: items
+    how: |
+      Down the ladder in the middle of the three-way fork, look left in the blue area behind the broken barricade and pick up another Old Key. This unlocks an Ultima Draw Point later.
+    windows:
+      - from: laguna-excavation
+
+  - id: item-exc-hatch
+    title: Open the large hatch
+    category: items
+    how: |
+      Continue down the hall past the barricade and mess with the large hatch. This unlocks a Phoenix Pinion late in the game.
+    windows:
+      - from: laguna-excavation
+
+  - id: item-exc-panel
+    title: Open the right-hand panel
+    category: items
+    how: |
+      Go back to where you opened the middle panel, but this time tamper with the right-hand one. This opens access to a Power Generator later, one of the rarest items in the game.
+    windows:
+      - from: laguna-excavation
+
+  - id: item-exc-detonator
+    title: Press the detonator's switches
+    category: items
+    how: |
+      Head north to the detonator and press the red switch first, which opens the left panel, then the blue one, which opens the right side. The blue switch also opens access to Combat King 005 on Disc 3.
+    windows:
+      - from: laguna-excavation
+
+  - id: item-exc-rock
+    title: Push the rock out of the way
+    category: items
+    how: |
+      After the detonator, head upward to a large rock sticking out of the wall on the left and examine it to push it aside. Later this gives access to a Spd-J Scroll.
+    windows:
+      - from: laguna-excavation
+
+  - id: limit-laser-cannon
+    title: Laser Cannon from Elastoid
+    category: limits
+    how: |
+      Level 30+ Elastoids carry one that can be mugged. It teaches Quistis Homing Laser, but you should not be levelled that high this early. Elastoids show up again in the Esthar resistance sequence, described there as the last time you will see one, and Mobile Type 8 later drops Laser Cannons too.
+    windows:
+      - from: laguna-excavation
+      - from: laguna-esthar
+      - from: lunatic-pandora-storm
+
+  - id: item-dragon-fang-lion-heart
+    title: Dragon Fangs for Lion Heart
+    category: items
+    how: |
+      Grendels in Yaulny Canyon drop them, and you need four for Squall's ultimate weapon. Fight in the forest while touching the cliffs or you will not meet any Grendels. Keep your levels low, since only Grendels under level 30 drop them, and do not mug them: their mug is Dragon Fin, which stops the fangs from dropping.
+    windows:
+      - from: galbadia-garden-d1
+        until: end
+
+  # ----- Deling City -----
+  - id: card-kiros
+    title: Kiros card
+    category: cards
+    how: |
+      It is the reward for losing the MiniMog card to the Queen of Cards with her heading to Dollet. Play the man in black in the Shopping Arcade, across from the Junk Shop, not on the hotel screen. On Disc 4 it comes from Left Diamond of the CC Group (if that quest was finished) or from the Queen of Cards at the Crash Site, once.
+    windows:
+      - from: deling-arrival
+        until: lunatic-pandora-storm
+      - from: ragnarok-d4
+        until: end
+
+  - id: item-location-displayer
+    title: Location Displayer
+    category: items
+    how: |
+      The soldier outside Caraway's Mansion sells it for 5,000 Gil, and it is a unique item. It stops being sold once you give the guard the student's ID number.
+    windows:
+      - from: deling-arrival
+        until: deling-parade-prep
+
+  - id: gf-brothers
+    title: Brothers, from the Tomb's final fight
+    category: gfs
+    spoiler: true
+    how: |
+      Win the two-boss fight on the tomb's centre bridge; afterwards you are asked to name the new GF.
+    windows:
+      - from: tomb-unknown-king
+        until: end
+
+  - id: card-minotaur
+    title: Minotaur card
+    category: cards
+    spoiler: true
+    how: |
+      You receive it in a scene after the tomb's final fight.
+    windows:
+      - from: tomb-unknown-king
+        until: end
+
+  - id: card-sacred
+    title: Sacred card
+    category: cards
+    spoiler: true
+    how: |
+      The Minotaur in the tomb always drops it. Leave it unmodded because the Queen of Cards quest needs it, unless you already lost it to her and won it back.
+    windows:
+      - from: tomb-unknown-king
+        until: end
+
+  - id: quest-queen-sacred
+    title: Lose the Sacred card to the Queen of Cards
+    category: quests
+    spoiler: true
+    how: |
+      Return to Dollet, where she should be, save, and lose the Sacred card to her. If she goes back to Balamb, good; otherwise reset and try again.
+    windows:
+      - from: deling-parade-prep
+        until: lunatic-pandora-storm
+
+  - id: quest-queen-sacred-back
+    title: Win the Sacred card back from the Queen's son
+    category: quests
+    spoiler: true
+    how: |
+      Win it back from her son in Dollet before you leave. After that you can keep it as a playing card or mod it.
+    windows:
+      - from: deling-parade-prep
+        until: lunatic-pandora-storm
+
+  - id: mag-tm-deling
+    title: Timber Maniacs, Deling hotel issue
+    category: magazines
+    how: |
+      Stay at the Deling City hotel (100 Gil) and take the issue near the far bed.
+    windows:
+      - from: deling-parade-prep
+        until: lunatic-pandora-storm
+
+  - id: mag-wm-may
+    title: Weapons Monthly, May issue
+    category: magazines
+    how: |
+      In Rinoa's section, examine the manhole cover to enter the sewers and keep running west until you see a magazine on the ground. If you missed it, the Esthar Book Store sells Weapons Monthly and Combat King issues, the high-end ones once you have Familiar.
+    windows:
+      - from: deling-parade
+      - from: esthar-city
+        until: lunatic-pandora-storm
+  - id: gf-carbuncle
+    title: Draw Carbuncle from the Iguion
+    category: gfs
+    spoiler: true
+    how: |
+      Make sure at least one character has the Draw command, then Draw Carbuncle from one of the two Iguion; doing so also removes their Reflect. Be sure to have it before you finish them off.
+    windows:
+      - from: deling-parade
+      - from: castle-krysta
+
+  # --- Disc 2 ---
+  # ----- Laguna: Winhill -----
+  - id: entry-eyes-on-me
+    title: Eyes On Me
+    category: entries
+    how: |
+      In the Winhill pub, keep talking with Kiros until you have asked about Julia, and only then choose "Let's talk later". This is the only way to get the Eyes On Me entry, and it does not come around again.
+    windows:
+      - from: laguna-winhill
+
+  - id: draw-reflect
+    title: Draw Reflect
+    category: draws
+    how: |
+      There is a hidden Draw Point on the lower path south of the Winhill square, near a truck, though it will not give you enough to Junction. In the prison you can Draw Reflect from Wedge in the second fight, and at the Missile Base you can Draw it from the Base Leader once the two Base Soldiers are down. Reflect turns up on later enemies too, so these are the early sources rather than the only ones.
+    windows:
+      - from: laguna-winhill
+      - from: d-district-prison
+      - from: missile-base
+        until: end
+  # ----- D-District Prison -----
+  - id: item-pet-nametag-1
+    title: Pet Nametag
+    category: items
+    how: |
+      Take it from the left cell on Floor 2. It is one of only two copies available (Chocobo World and the Remaster aside), and both copies can be missed.
+    windows:
+      - from: d-district-prison
+
+  - id: entry-character-report
+    title: Character Report
+    category: entries
+    how: |
+      On Floor 10 the card player in the right cell charges 300 Gil a game; beat him once to receive it. It is an upgrade to the Battle Meter, so it is not available if you never got the Battle Meter, and it can only be obtained here.
+    windows:
+      - from: d-district-prison
+
+  - id: item-pet-house
+    title: Pet House
+    category: items
+    how: |
+      It is in the right cell on Floor 3.
+    windows:
+      - from: d-district-prison
+
+  - id: mag-ck-001
+    title: Combat King 001
+    category: magazines
+    how: |
+      It is in the right cell on Floor 1. If you missed it, the Esthar Book Store sells Weapons Monthly and Combat King issues, the high-end ones once you have Familiar.
+    windows:
+      - from: d-district-prison
+      - from: esthar-city
+        until: lunatic-pandora-storm
+  - id: item-regen-ring
+    title: Regen Ring
+    category: items
+    how: |
+      Mug Biggs in the fight with him and Wedge, and keep trying until it succeeds. His drop (3 Elixirs) is much worse, so do not just knock him out.
+    windows:
+      - from: d-district-prison
+
+  - id: item-strength-love
+    title: Strength Love
+    category: items
+    how: |
+      Mug Wedge in the fight with him and Biggs, and keep trying until it succeeds. His drop (8 Remedies) is much worse, so do not just knock him out.
+    windows:
+      - from: d-district-prison
+
+  - id: item-hp-up
+    title: HP Up from the Floor 11 card player
+    category: items
+    how: |
+      The 200 Gil card player on Floor 11 also carries an HP Up, which can be won only once. Save at the Floor 10 Save Point with Enc-None on, challenge and decline 64 times, then play and win.
+    windows:
+      - from: d-district-prison
+
+  - id: item-luck-up
+    title: Luck Up from the Floor 5 card player
+    category: items
+    how: |
+      The card player on Floor 5 charges 500 Gil and has a 1 in 64 chance of giving you a Luck Up if you beat him. You can only do this once.
+    windows:
+      - from: d-district-prison
+
+  - id: item-rosetta-stone-farm
+    title: Rosetta Stones from the Floor 11 card player
+    category: items
+    how: |
+      The 200 Gil card player on Floor 11 can give a Rosetta Stone, but the chance is extremely low, so it is only worth it if you intend to manipulate the RNG. With Enc-None on and the Floor 10 Save Point, challenge and refuse 54 times and then play and win, which takes about five minutes per stone; it assumes the Queen of Cards is not in Deling City.
+    windows:
+      - from: d-district-prison
+
+  - id: item-cottage-prison
+    title: Cottage from the Moomba
+    category: items
+    how: |
+      Once you are playing Squall again, speak to the Moomba nearest the stairs.
+    windows:
+      - from: d-district-prison
+
+  - id: item-rename-card
+    title: Rename Card
+    category: items
+    how: |
+      Once you are playing Squall again, speak to the Moomba that is farther from the stairs.
+    windows:
+      - from: d-district-prison
+
+  - id: limit-micro-missiles
+    title: Micro Missiles from the GIM52A
+    category: limits
+    how: |
+      After the Elite Soldier outside the prison exit is down, try to Mug a Missile from at least one of the two GIM52As before you knock them out. It teaches Quistis Micro Missiles.
+    windows:
+      - from: d-district-prison
+
+  # ----- Deling City: Selphie's team -----
+  - id: card-rinoa
+    title: Rinoa card
+    category: cards
+    how: |
+      In Caraway's Mansion, lose the Ifrit card to him. Talk to him again: he says he lost it to Martine (in Fishermans Horizon) and plays the Rinoa card. On Disc 4 the CC Group aboard the Ragnarok can play it, but only if the CC Group quest was finished.
+    windows:
+      - from: deling-d2
+        until: lunatic-pandora-storm
+      - from: ragnarok-d4
+        until: end
+
+  # ----- Missile Base -----
+  - id: mag-wm-jun
+    title: Weapons Monthly, June issue
+    category: magazines
+    how: |
+      It is among the pickups in the Missile Base. If you missed it, the Esthar Book Store sells Weapons Monthly and Combat King issues, the high-end ones once you have Familiar.
+    windows:
+      - from: missile-base
+      - from: esthar-city
+        until: lunatic-pandora-storm
+  # ----- Balamb Garden: the crisis -----
+  - id: quest-queen-trade-rule
+    title: Set the Queen of Cards' trade rule
+    category: quests
+    how: |
+      Balamb Town is the only place outside the Garden you can reach during the crisis. If you sent the Queen of Cards back to Balamb, change her trade rule there and make sure it is All before you start in the Garden; this is your only chance for quite some time to do it.
+    windows:
+      - from: garden-crisis
+        until: lunatic-pandora-storm
+
+  # ----- Balamb Garden: MD level and NORG -----
+  - id: gf-leviathan
+    title: Draw Leviathan from NORG
+    category: gfs
+    spoiler: true
+    how: |
+      Make sure someone has Draw equipped. Once the Pod is gone and NORG has joined the fight, Draw Leviathan from him before you finish him off; doing so also stops him casting Water. If you miss it you won't get another shot until Disc 4.
+    windows:
+      - from: garden-norg
+      - from: castle-trauma
+
+  - id: item-norg-circlet
+    title: Circlet
+    category: items
+    spoiler: true
+    how: |
+      Once NORG has joined the fight, Mug a Circlet from him before you finish him off; it is far better than the Wizard Stones he drops.
+    windows:
+      - from: garden-norg
+
+  - id: quest-seed-window-3
+    title: "Novice SeeD candidates: after the MD Level"
+    category: quests
+    how: |
+      After you have been down to the MD Level, and before you leave for Fishermans Horizon, talk to the three students at the Cafeteria table until they repeat the same line. If you skip any of the five conversations, they disappear for the rest of the game.
+    windows:
+      - from: garden-norg
+
+  # ----- CC Group quest -----
+  - id: quest-cc-jack
+    title: "CC Group: Jack"
+    category: quests
+    how: |
+      First win at least 15 Triple Triad games in the Garden, not counting games in the Cafeteria, Library or 2F Classroom. Then challenge Jack, the male student (not the little boy) in the main hall; talking to him tells you whether you have enough wins. The quest can only be done on Disc 2 or 3.
+    windows:
+      - from: garden-norg
+        until: lunatic-pandora-storm
+        home: garden-at-sea
+
+  - id: quest-cc-joker
+    title: "CC Group: Joker"
+    category: quests
+    how: |
+      Joker turns up at random on the bridge to the right of the Training Center's first screen, so keep leaving and re-entering until he appears. He can be played any time after you challenge Jack, and King will not challenge you until Joker is beaten.
+    windows:
+      - from: garden-norg
+        until: lunatic-pandora-storm
+        home: garden-at-sea
+
+  - id: quest-cc-club
+    title: "CC Group: Club"
+    category: quests
+    how: |
+      Club is the SeeD walking around the back of the 1F circle, where the Dormitory exit is. The members have to be beaten in order (Joker aside), so beat Jack first.
+    windows:
+      - from: garden-norg
+        until: lunatic-pandora-storm
+        home: garden-at-sea
+
+  - id: quest-cc-diamond
+    title: "CC Group: Diamond"
+    category: quests
+    how: |
+      Diamond is the pair of twin girls in the main hall. Wait until they stop walking, then challenge either one; beat Club first.
+    windows:
+      - from: garden-norg
+        until: lunatic-pandora-storm
+        home: garden-at-sea
+
+  - id: quest-cc-spade
+    title: "CC Group: Spade"
+    category: quests
+    how: |
+      Spade sits near the elevator in the 2F Hallway (if he is not there, ride the elevator down and come back), and cannot be challenged until you have been down to B1F. Beat Diamond first.
+    windows:
+      - from: garden-norg
+        until: lunatic-pandora-storm
+        home: garden-at-sea
+
+  - id: quest-cc-heart
+    title: "CC Group: Heart"
+    category: quests
+    how: |
+      Challenge the female SeeD on the Garden's bridge; she cannot be challenged until you have left Fishermans Horizon. Beat Spade first.
+    windows:
+      - from: garden-at-sea
+        until: lunatic-pandora-storm
+        home: garden-at-sea
+
+  - id: quest-cc-king
+    title: "CC Group: King"
+    category: quests
+    how: |
+      Once you have beaten all the others, Joker included, play Kadowaki at cards, then keep resting in the Dormitory until King challenges you; you do not need to dismiss your other party members. He is on the bridge afterwards, and beating him completes the quest, though every member can still be played.
+    windows:
+      - from: garden-at-sea
+        until: lunatic-pandora-storm
+        home: garden-at-sea
+
+  - id: card-leviathan
+    title: Leviathan card
+    category: cards
+    how: |
+      Joker carries it, though he tends not to play it much. On Disc 4 the CC Group aboard the Ragnarok can play it if the quest was finished, and Joker still plays it if you missed it here.
+    windows:
+      - from: garden-norg
+        until: lunatic-pandora-storm
+        home: garden-at-sea
+      - from: ragnarok-d4
+        until: end
+
+  - id: card-carbuncle
+    title: Carbuncle card
+    category: cards
+    how: |
+      Heart, the female SeeD on the Garden's bridge, carries it. On Disc 4 the CC Group aboard the Ragnarok can play it, but only if the CC Group quest was finished.
+    windows:
+      - from: garden-at-sea
+        until: lunatic-pandora-storm
+        home: garden-at-sea
+      - from: ragnarok-d4
+        until: end
+
+  - id: card-gilgamesh
+    title: Gilgamesh card
+    category: cards
+    how: |
+      King, on the Garden's bridge once he has challenged you, carries it. On Disc 4 the CC Group aboard the Ragnarok can play it, but only if the CC Group quest was finished.
+    windows:
+      - from: garden-at-sea
+        until: lunatic-pandora-storm
+        home: garden-at-sea
+      - from: ragnarok-d4
+        until: end
+
+  - id: entry-gf-report
+    title: GF Report
+    category: entries
+    how: |
+      Beating Joker earns you the GF Report, an upgrade to the Battle Meter that shows stats on your GFs.
+    windows:
+      - from: garden-norg
+        until: lunatic-pandora-storm
+        home: garden-at-sea
+
+  # ----- Fishermans Horizon: arrival -----
+  - id: quest-fisherman-1
+    title: "Master Fisherman's quest: part 1"
+    category: quests
+    how: |
+      Take the semi-hidden ladder on the left of the big water tank down to the Master Fisherman, then check on his pupil on the southernmost dock: answer "Sort of", "I saw him" and "I was...kind of...impressed", and keep talking until he stops casting. This must be finished before you go upstairs in the Mayor's house, or you can't complete the quest at all.
+    windows:
+      - from: fh-arrival
+
+  - id: mag-of-3
+    title: Occult Fan III
+    category: magazines
+    how: |
+      The Master Fisherman hands it over at the start of his quest. It is unique and there is no other way to get one.
+    windows:
+      - from: fh-arrival
+
+  - id: mag-tm-fh-1
+    title: Timber Maniacs, Fishermans Horizon item shop issue
+    category: magazines
+    how: |
+      Upstairs in the item shop, in the building near the tracks that also has the inn.
+    windows:
+      - from: fh-arrival
+        until: lunatic-pandora-storm
+
+  - id: mag-tm-fh-2
+    title: Timber Maniacs, Fishermans Horizon shack issue
+    category: magazines
+    how: |
+      Past the abandoned train station, go into the small shack in the upper-right corner of the screen. Examine the Moomba doll for a scene and grab the magazine there.
+    windows:
+      - from: fh-arrival
+        until: lunatic-pandora-storm
+
+  # ----- Fishermans Horizon: the mayor's house -----
+  - id: card-quezacotl
+    title: Quezacotl card
+    category: cards
+    how: |
+      Mayor Dobe plays it, upstairs in his house. On Disc 4 the CC Group aboard the Ragnarok can play it, but only if the CC Group quest was finished.
+    windows:
+      - from: fh-mayor
+        until: lunatic-pandora-storm
+      - from: ragnarok-d4
+        until: end
+
+  - id: card-irvine
+    title: Irvine card
+    category: cards
+    how: |
+      Flo, the Mayor's wife, plays it upstairs in his house, but only if you lost the Sacred card to the Queen of Cards. On Disc 4 it comes from Left Diamond of the CC Group (if that quest was finished) or from the Queen of Cards at the Crash Site, once.
+    windows:
+      - from: fh-mayor
+        until: lunatic-pandora-storm
+      - from: ragnarok-d4
+        until: end
+
+  - id: draw-ultima-fh
+    title: Invisible Ultima Draw Point
+    category: draws
+    how: |
+      It is upstairs in the Mayor's house, and is your first chance at the spell.
+    windows:
+      - from: fh-mayor
+        until: lunatic-pandora-storm
+
+  # ----- Fishermans Horizon: the big bridge -----
+  - id: quest-fisherman-2
+    title: "Master Fisherman's quest: part 2"
+    category: quests
+    how: |
+      After you have seen the Mayor, and with Squall alone in town, speak to the pupil, then the Master Fisherman, and meet him upstairs at the inn. Finish the scenes at the dock and with the shopkeeper before you return to the Garden; he rewards you with a Megalixir and 20 SeeD Experience.
+    windows:
+      - from: fh-big-bridge
+
+  - id: item-adamantine
+    title: Adamantine
+    category: items
+    how: |
+      Mug it from the iron-clad in its second fight at the abandoned station, before you wreck it. It is fairly difficult to get any other way.
+    windows:
+      - from: fh-big-bridge
+
+  # ----- Balamb Garden: the festival -----
+  - id: quest-zell-scene-6
+    title: Library scene while Irvine is alone
+    category: quests
+    how: |
+      While preparing for the concert, speak to the pig-tailed girl herself in the Library; the other Library Committee members do not count. This is only possible while you are Irvine on your own.
+    windows:
+      - from: garden-festival
+
+  # ----- Balamb Garden: at sea -----
+  - id: quest-seed-window-4
+    title: "Novice SeeD candidates: after Fishermans Horizon"
+    category: quests
+    how: |
+      Any time after your visit to Fishermans Horizon, talk to the three students at the Cafeteria table until they repeat the same line. This is only available until the end of Disc 2.
+    windows:
+      - from: garden-at-sea
+        until: galbadia-garden-d2
+        home: garden-at-sea
+
+  # ----- Centra Ruins -----
+  - id: gf-tonberry
+    title: Tonberry from the Tonberry King
+    category: gfs
+    spoiler: true
+    how: |
+      In the lower ruins (the first five screens), defeat around 20 Tonberries (the number varies from 18 to 24, and the count is kept if you leave and re-enter) to bring out the Tonberry King, then beat him. Their counterattack is nasty, so save often; until you have beaten Odin there is a 20-minute limit, which resets if you leave and come back.
+    windows:
+      - from: centra-ruins
+        until: end
+
+  - id: gf-odin
+    title: Odin from the upper ruins
+    category: gfs
+    spoiler: true
+    how: |
+      Ride the elevator up from the lower ruins, work through the statue eyes and the code to open the door, and beat him before the timer hits zero. Mug him for a Luck-J Scroll and Draw Triple from him. If you still hold Odin at the end of Disc 3 he is replaced by the far weaker Gilgamesh, so it is best left for Disc 4.
+    windows:
+      - from: centra-ruins
+        until: end
+
+  - id: card-odin
+    title: Odin card
+    category: cards
+    spoiler: true
+    how: |
+      Odin leaves it when you win. If you already have the Odin card when you fight him on Disc 4, you will not receive another.
+    windows:
+      - from: centra-ruins
+        until: end
+
+  - id: draw-full-life
+    title: Draw Full-Life from the Tonberry King
+    category: draws
+    spoiler: true
+    how: |
+      If the Tonberry King is level 30 or higher you can Draw Full-Life from him, which is the easiest way to get it until well into Disc 3. The Garden's MD level and the Missile Base also have Full-Life Draw Points.
+    windows:
+      - from: centra-ruins
+        until: end
+
+  # ----- Shumi Village -----
+  - id: draw-ultima-shumi
+    title: Ultima Draw Point (reusable)
+    category: draws
+    how: |
+      It is on the upper level and one of the only reusable ones in the game, but the Shumi charge 5,000 Gil per Draw. Save outside first, skip it if the sphere looks like moving dust (empty), and come back after other errands, since your steps refill it. The village cannot be entered on Disc 4.
+    windows:
+      - from: shumi-village
+        until: lunatic-pandora-storm
+
+  - id: mag-tm-shumi
+    title: Timber Maniacs, Shumi Village artisan's house issue
+    category: magazines
+    how: |
+      It is in the Artisan's House, the second-to-last building underground. If you have not yet been through the Trabia Canyon events on Disc 3, leave it alone: picking it up first means Ward is missing from them.
+    windows:
+      - from: shumi-village
+        until: lunatic-pandora-storm
+
+  - id: quest-shumi-stones
+    title: "Shumi Village quest, part 1: the colored stones"
+    category: quests
+    how: |
+      Run to the back of the village for a scene, talk to the Elder, and then agree to the Sculptor's request for five stones. The Blue is the block rock by Laguna's statue, the Wind the large gray boulder next to the hotel, the Life the roots on the Elder's house screen, the Shadow the dark areas near the stairs to the elevator on the Ultima Draw Point screen, and the Water is the sink in the Artisan's house (hit X where Squall comments at the pond first). Return to the Elder for the reward, then exit to the world map and re-enter to unlock part 2. The Elder rewards you with a Phoenix Pinion and 50 SeeD experience.
+    windows:
+      - from: shumi-village
+        until: lunatic-pandora-storm
+
+  - id: quest-shumi-statue
+    title: "Shumi Village quest, part 2: the statue"
+    category: quests
+    how: |
+      It needs part 1 finished and a trip out to the world map and back. Speak to the Attendant in the Sculptor's workshop, the Elder, and the Moomba outside, then see the statue scene and report to the Elder, talk to the Attendant twice and then the Artisan. Go to Fishermans Horizon and speak to the Grease Monkey, then return to the Artisan and the Elder. The Elder rewards you with a Status Guard.
+    windows:
+      - from: shumi-village
+        until: lunatic-pandora-storm
+
+  # ----- Chocobo Forests -----
+  - id: item-forest-beginner
+    title: "Beginner's Forest: Aura Stone"
+    category: items
+    how: |
+      The easiest forest, with a single spot to find. Use the ChocoSonar to find where the Chicobos are and the ChocoZiner to call one, and speak to it once it is the only one on the ground to summon a large chocobo; then find the treasure with the ChocoSonar and dig it up with the ChocoZiner. Blowing the ChocoZiner where no Chicobo is present gets it stolen, and 700 Gil buys another.
+    windows:
+      - from: chocobo-forests
+        until: end
+
+  - id: item-forest-basics
+    title: "Basics Snowfield: Flare Stone"
+    category: items
+    how: |
+      Another straightforward forest, with two spots to find. It is solved the same way as any forest: get exactly one Chicobo on the ground, ride the large chocobo it summons, then dig up the treasure.
+    windows:
+      - from: chocobo-forests
+        until: end
+
+  - id: item-forest-roaming
+    title: "Roaming Forest: Shell Stone and Holy Stone"
+    category: items
+    how: |
+      A step up in difficulty, and the only forest that starts with Chicobos already placed. Be careful hunting for the fourth spot not to leave the forest by accident, since that resets the puzzle.
+    windows:
+      - from: chocobo-forests
+        until: end
+
+  - id: item-forest-solitude
+    title: "Forest of Solitude: Protect Stone and Meteor Stone"
+    category: items
+    how: |
+      The spot where the Chicobo appears is extremely small, so you have to stand in exactly the right place. The ChocoBoy covers the treasure spot; challenge him to cards, then ask him to move.
+    windows:
+      - from: chocobo-forests
+        until: end
+
+  - id: item-forest-fun
+    title: "Forest of Fun: Meteor Stone, Flare Stone and Ultima Stone"
+    category: items
+    how: |
+      This forest is on the southwestern end of the main Centra continent. It has four spots to find before the treasure.
+    windows:
+      - from: chocobo-forests
+        until: end
+
+  - id: item-forest-enclosed
+    title: "Enclosed Forest: Meteor Stone, Holy Stone and Ultima Stone"
+    category: items
+    how: |
+      Arguably the hardest forest: you must do five steps in order, and the forest itself is hard to find, south-southwest of where you fight the Cactuars.
+    windows:
+      - from: chocobo-forests
+        until: end
+
+  - id: card-chicobo
+    title: Chicobo card from the Sanctuary
+    category: cards
+    how: |
+      Once all six forests are solved, ride a chocobo out of the Roaming Forest, head south past the crater and east past the lagoon-like formation into the Grandidi Forest, then work northeast to the Sanctuary and speak to the Chicobo. Do not Card Mod it, since the Queen of Cards quest needs it.
+    windows:
+      - from: chocobo-forests
+        until: end
+
+  # ----- Winhill -----
+  - id: quest-winhill-vase
+    title: Winhill vase pieces
+    category: quests
+    how: |
+      Take Irvine or Quistis to Winhill, enter from the north and speak to the man on the mansion stairs. The four pieces are in the mansion (examine the suit of armor, then try to walk away), Raine's house (flowers on the table, the woman at the bar, then the cat), the flower shop (examine the flowers lower-right twice) and from the Chicobo crossing the road, which you kick. Kick that Chicobo two more times for Gysahl Greens and a Phoenix Pinion.
+    windows:
+      - from: winhill-d2
+        until: lunatic-pandora-storm
+
+  # ----- Timber -----
+  - id: item-pet-nametag-2
+    title: Pet Nametag, the journalist's reward
+    category: items
+    how: |
+      Speak to the man outside the Timber Maniacs building; it is only waiting for you if you encouraged him to become a journalist earlier.
+    windows:
+      - from: timber-d2
+        until: lunatic-pandora-storm
+
+  # ----- Balamb: the occupation -----
+  - id: gf-pandemona
+    title: Draw Pandemona from Fujin
+    category: gfs
+    spoiler: true
+    how: |
+      Make sure someone has Draw, and Draw Pandemona from Fujin right away in the second fight; it also stops her Aero and Tornado. You have to beat both her and Raijin to win.
+    windows:
+      - from: balamb-occupied
+      - from: castle-red-giant
+
+  - id: mag-ck-002
+    title: Combat King 002
+    category: magazines
+    spoiler: true
+    how: |
+      Fujin always drops it for Zell, whether or not you Mugged her. If you missed it, the Esthar Book Store sells Weapons Monthly and Combat King issues, the high-end ones once you have Familiar.
+    windows:
+      - from: balamb-occupied
+      - from: esthar-city
+        until: lunatic-pandora-storm
+  - id: item-spd-up
+    title: Spd Up
+    category: items
+    how: |
+      In Balamb Town, find the Big Bad Rascal behind the barrels on the right-hand side of the port (you may need Zell in your party) and speak to him. Then grab the Spd Up from Zell's bed; it is quite a rare item.
+    windows:
+      - from: balamb-occupied
+        until: lunatic-pandora-storm
+
+  - id: card-pandemona
+    title: Pandemona card
+    category: cards
+    how: |
+      The Balamb hotel owner plays it. If you did the optional sequence with the Big Bad Rascal to leave town early, his daughter next door to Zell's house has it instead. On Disc 4 the CC Group aboard the Ragnarok can play it, but only if the CC Group quest was finished.
+    windows:
+      - from: balamb-occupied
+        until: lunatic-pandora-storm
+      - from: ragnarok-d4
+        until: end
+
+  - id: quest-queen-chicobo
+    title: Lose the Chicobo card to the Queen of Cards
+    category: quests
+    how: |
+      If you have the Chicobo card, lose it to the Queen of Cards and be sure to send her to Dollet. Save first: a lost card is only delivered to her father if she is going to Dollet or you lost it to her there, so reload if she heads elsewhere.
+    windows:
+      - from: balamb-occupied
+        until: lunatic-pandora-storm
+
+  - id: card-chubby-chocobo
+    title: Chubby Chocobo card
+    category: cards
+    how: |
+      The student on the bench next to the Library in the Garden plays it, but only if you lost the Chicobo card to the Queen of Cards. On Disc 4 it comes from Left Diamond of the CC Group (if that quest was finished) or from the Queen of Cards at the Crash Site, once.
+    windows:
+      - from: balamb-occupied
+        until: lunatic-pandora-storm
+      - from: ragnarok-d4
+        until: end
+
+  - id: quest-zell-love-finale
+    title: "Zell's love quest: the Balamb finale"
+    category: quests
+    how: |
+      Once you have found the Captain in Balamb, and with Zell in your party, speak to the girl in the red skirt at the town entrance and go to Zell's house for a scene. Then speak to the girl in a Garden uniform at the station (optional, but needed for the full scene) and rest at the hotel.
+    windows:
+      - from: balamb-occupied
+        until: lunatic-pandora-storm
+
+  - id: mag-ck-003
+    title: Combat King 003
+    category: magazines
+    how: |
+      You receive it after the scene at the Balamb hotel that ends Zell's love quest.
+    windows:
+      - from: balamb-occupied
+        until: lunatic-pandora-storm
+
+  # ----- Trabia Garden -----
+  - id: mag-wm-aug
+    title: Weapons Monthly, August issue
+    category: magazines
+    how: |
+      Stand in front of the Thundaga Draw Point by the fountain, hold Triangle to walk, take five steps south and press X.
+    windows:
+      - from: trabia-garden
+        until: lunatic-pandora-storm
+
+  - id: mag-tm-trabia
+    title: Timber Maniacs, Trabia Garden issue
+    category: magazines
+    how: |
+      Take the exit on the right in the northern area to reach the graveyard; the issue is camouflaged at the back.
+    windows:
+      - from: trabia-garden
+        until: lunatic-pandora-storm
+
+  - id: card-selphie
+    title: Selphie card
+    category: cards
+    how: |
+      After the story scenes here, return to Trabia Garden and challenge Selphie's friend, the one she was talking to earlier. On Disc 4 the CC Group aboard the Ragnarok can play it, but only if the CC Group quest was finished.
+    windows:
+      - from: trabia-garden
+        until: lunatic-pandora-storm
+      - from: ragnarok-d4
+        until: end
+
+  # ----- Balamb Garden: the battle -----
+  - id: item-cottage-garden
+    title: Cottage from the Junior Classman
+    category: items
+    how: |
+      In the 2F Hallway, speak to everyone and then to the Junior Classman walking towards the Classroom; if he goes into the Classroom, step in and back out and he will reappear.
+    windows:
+      - from: garden-battle
+
+  # ----- Galbadia Garden: revisited -----
+  - id: gf-cerberus
+    title: Cerberus from the main hall
+    category: gfs
+    spoiler: true
+    how: |
+      Talk to the enormous creature in the main hall to fight it; it is optional but well worth it. Defeat Cerberus before the end of Disc 2. Give everyone Draw and protection against Wind, Earth and Lightning, and have someone ready to cast Dispel.
+    windows:
+      - from: galbadia-garden-d2
+      - from: castle-gargantua
+
+  - id: card-cerberus
+    title: Cerberus card
+    category: cards
+    spoiler: true
+    how: |
+      You earn it by defeating the creature in the main hall. On Disc 4 the CC Group aboard the Ragnarok can play it, but only if the CC Group quest was finished.
+    windows:
+      - from: galbadia-garden-d2
+      - from: ragnarok-d4
+        until: end
+
+  - id: draw-triple-cerberus
+    title: Draw Triple from Cerberus
+    category: draws
+    spoiler: true
+    how: |
+      Cerberus casts Triple on itself, so Dispel it when it does and Draw meanwhile. This is one of the only chances to Draw it in the game, since regular enemies never carry it. Odin also carries it.
+    windows:
+      - from: galbadia-garden-d2
+
+  - id: item-spd-j-scroll
+    title: Spd-J Scroll
+    category: items
+    spoiler: true
+    how: |
+      Mug it from Cerberus after you have finished Drawing; it is far better than his drop.
+    windows:
+      - from: galbadia-garden-d2
+
+  - id: item-royal-crown
+    title: Royal Crown
+    category: items
+    spoiler: true
+    how: |
+      Mug it from Edea in the Seifer and Edea fight; it is better than her drop. The Tonberry King also drops one.
+    windows:
+      - from: galbadia-garden-d2
+
+  - id: gf-alexander
+    title: Draw Alexander from Edea
+    category: gfs
+    spoiler: true
+    how: |
+      Give someone the Draw command and Draw Alexander from Edea in the Seifer and Edea fight, on Disc 2. Once Seifer is gone, Edea takes over the fight.
+    windows:
+      - from: galbadia-garden-d2
+      - from: castle-catoblepas
+
+  # --- Disc 3 ---
+  # ----- Balamb Garden: after the battle -----
+  - id: mag-wm-jul
+    title: Weapons Monthly, July issue
+    category: magazines
+    how: |
+      In the Training Center, take the path going left.
+    windows:
+      - from: garden-aftermath
+        until: lunatic-pandora-storm
+
+  - id: quest-seed-window-5
+    title: "Novice SeeD candidates: before Trabia Canyon"
+    category: quests
+    how: |
+      Talk to the three students at the Cafeteria table until they repeat the same line, before the Trabia Canyon sequence. If you heard all five conversations, they become full-fledged SeeDs afterwards and you can view their reward in the Cafeteria; otherwise they disappear for the rest of the game.
+    windows:
+      - from: garden-aftermath
+        until: edea-house-d3
+        home: garden-aftermath
+
+  # ----- Edea's House -----
+  - id: card-edea
+    title: Edea card
+    category: cards
+    spoiler: true
+    how: |
+      Edea plays it in her house. She is an excellent player and the Centra rules there are very unfavourable (Random, Plus and Same), so spread Open or abolish Random or Plus before you challenge her. On Disc 4 the CC Group aboard the Ragnarok can play it, but only if the CC Group quest was finished.
+    windows:
+      - from: edea-house-d3
+        until: lunatic-pandora-storm
+      - from: ragnarok-d4
+        until: end
+
+  - id: mag-tm-edea
+    title: Timber Maniacs, Edea's House issue
+    category: magazines
+    spoiler: true
+    how: |
+      It lies on the ground near the doorway, just inside the house.
+    windows:
+      - from: edea-house-d3
+        until: lunatic-pandora-storm
+
+  - id: entry-esthar-1
+    title: Esthar (1)
+    category: entries
+    spoiler: true
+    how: |
+      Keep talking to Edea until she has no new lines and Adel's name shows in yellow. That unlocks this entry and Esthar (2).
+    windows:
+      - from: edea-house-d3
+
+  - id: entry-esthar-2
+    title: Esthar (2)
+    category: entries
+    spoiler: true
+    how: |
+      Keep talking to Edea until she has no new lines and Adel's name shows in yellow. That unlocks this entry and Esthar (1).
+    windows:
+      - from: edea-house-d3
+
+  - id: entry-time-compression
+    title: Time Compression
+    category: entries
+    spoiler: true
+    how: |
+      Keep talking to Cid until he stops giving new lines. That unlocks this entry and The Great Hyne.
+    windows:
+      - from: edea-house-d3
+
+  - id: entry-great-hyne
+    title: The Great Hyne
+    category: entries
+    spoiler: true
+    how: |
+      Keep talking to Cid until he stops giving new lines. That unlocks this entry and Time Compression.
+    windows:
+      - from: edea-house-d3
+
+  # ----- Laguna: Trabia Canyon -----
+  - id: draw-meteor-ruby-dragon
+    title: Draw Meteor from the Ruby Dragon
+    category: draws
+    how: |
+      The fixed Ruby Dragon fight is the best source of Meteor, but only a level 45 or higher dragon carries it, so raise its level with Tonberry's LV Up. With Ward in the party the high-level dragon's Breath is very dangerous, and KOing a character to stop it is not possible in a perfect game. Meteor is slow to Draw without a good Magic stat, so you may prefer to Draw it later.
+    windows:
+      - from: laguna-trabia-canyon
+        until: end
+
+  # ----- White SeeD Ship -----
+  - id: mag-tm-whiteseed
+    title: Timber Maniacs, White SeeD Ship issue
+    category: magazines
+    spoiler: true
+    how: |
+      Go up the stairs and look on the left-hand side of the room. It is only available while the ship itself is, so it is easy to lose.
+    windows:
+      - from: white-seed-ship
+
+  - id: card-shiva
+    title: Shiva card
+    category: cards
+    how: |
+      Zone hands it over with a Rename Card if you give him the Girl Next Door, which is a unique item; nothing he offers is unique, so for a perfect game leave him alone. On Disc 4 the CC Group aboard the Ragnarok can play it, but only if the CC Group quest was finished.
+    windows:
+      - from: white-seed-ship
+      - from: ragnarok-d4
+        until: end
+
+  - id: draw-holy-ship
+    title: Draw Holy from the ship's Draw Point
+    category: draws
+    spoiler: true
+    how: |
+      After the scene in the cabin downstairs, Draw from the Holy Draw Point with whichever character has the highest Magic stat, then speak to the leader.
+    windows:
+      - from: white-seed-ship
+
+  # ----- Great Salt Lake -----
+  - id: draw-meteor-lake
+    title: Hidden Meteor Draw Point
+    category: draws
+    how: |
+      Climb to the upper ledge using the skull and spine, and on the next screen look to the right of where you entered.
+    windows:
+      - from: great-salt-lake
+        until: lunatic-pandora-storm
+
+  - id: item-power-wrist-abadon
+    title: Power Wrist from Abadon
+    category: items
+    spoiler: true
+    how: |
+      Equip Mug for the boss fight at the end of the lake and take the Power Wrist before you finish it off. Its normal drop is Flare Stones instead.
+    windows:
+      - from: great-salt-lake
+
+  # ----- Laguna: the resistance -----
+  - id: mag-wm-1st
+    title: Weapons Monthly, 1st issue
+    category: magazines
+    how: |
+      After the scene with Odine, go back inside the building and take the issue lying on the ground before you ride the elevator down. The Esthar Book Store also sells Weapons Monthly issues, though the high-end ones need Familiar. If you missed it, the Esthar Book Store sells Weapons Monthly and Combat King issues, the high-end ones once you have Familiar.
+    windows:
+      - from: laguna-esthar
+      - from: esthar-city
+        until: lunatic-pandora-storm
+  # ----- Esthar City -----
+  - id: card-ward
+    title: Ward card
+    category: cards
+    how: |
+      Odine plays it in the Presidential Palace when you arrive; save first if you mix Centra rules. If you leave, he can still be played there, but only before you advance the plot further. On Disc 4 the CC Group aboard the Ragnarok can play it, but only if the CC Group quest was finished.
+    windows:
+      - from: esthar-city
+      - from: ragnarok-d4
+        until: end
+
+  - id: mag-of-4
+    title: Occult Fan IV
+    category: magazines
+    how: |
+      Before you go to the Lunar Gate, leave the Palace and speak to the Presidential Aide outside the Airstation (left twice from the Palace, then the bottom-left path). Then go back to the Palace and speak to the Presidential Secretary in the waiting room, and he drops it on the ground. It can only be obtained during a brief time frame, which is this visit.
+    windows:
+      - from: esthar-city
+
+  - id: mag-ck-004
+    title: Combat King 004
+    category: magazines
+    how: |
+      Speak to the soldier at the spot where the paths to Odine's Lab and the outer spur meet (from the Palace, left twice and right twice) before you visit the Lunar Gate. He says nothing interesting, but if you skip him he will not hand the magazine over later, during the timed hunt for the Lunatic Pandora.
+    windows:
+      - from: esthar-city
+
+  - id: item-rosetta-stone
+    title: Rosetta Stone from Cheryl's Store
+    category: items
+    how: |
+      Cheryl's Store is never open as a shop; its purpose is the gift it can give. Each Mall shop has a chance of being closed, and a closed shop may give a gift instead, so the Rosetta Stone can take many attempts. Each gift can only be received once.
+    windows:
+      - from: esthar-city
+        until: lunatic-pandora-storm
+
+  - id: item-call-shop
+    title: Visit every Esthar shop for Call Shop
+    category: items
+    how: |
+      Visit every Mall shop at least once, except Don Juan's (a Junk Shop) and Cheryl's (never open), so that they appear in Call Shop; a shop that is closed or gives you a free item does not count as a visit. If you skip this, several items become unattainable on the last disc, and all shops in the game except the Man from Garden shop are out of reach once the final mission continues.
+    windows:
+      - from: esthar-city
+        until: lunatic-pandora-storm
+
+  - id: mag-pp-5
+    title: Pet Pals, Vol. 5
+    category: magazines
+    how: |
+      The Esthar Pet Shop sells it. It teaches Angelo Search, which you should set to learn as soon as you get it.
+    windows:
+      - from: esthar-city
+        until: lunatic-pandora-storm
+
+  - id: mag-pp-6
+    title: Pet Pals, Vol. 6
+    category: magazines
+    how: |
+      The Esthar Pet Shop sells it. It teaches Rinoa's ultimate Combine skill.
+    windows:
+      - from: esthar-city
+        until: lunatic-pandora-storm
+
+  # ----- Tears' Point -----
+  - id: gf-doomtrain
+    title: Doomtrain from the Solomon Ring
+    category: gfs
+    spoiler: true
+    how: |
+      The Solomon Ring lies at the foot of the large statue at Tears' Point, and the quest cannot be finished until you have reached Esthar. Bring 6 each of Steel Pipe (mug Wendigos, or Card Mod Elastoid cards), Remedy+ (buy 60 Remedies and use Med LV Up) and Malboro Tentacle (Malboros, mostly in Grandidi Forest near the Chocobo Sanctuary). Then use the ring from the Item menu, which uses up the items and lets you name the new GF.
+    windows:
+      - from: tears-point
+        until: end
+
+  # ----- Esthar: catching the Lunatic Pandora -----
+  - id: quest-pandora-boarding
+    title: Board the Lunatic Pandora at the first contact point
+    category: quests
+    spoiler: true
+    how: |
+      Once the timer starts, reach Yellow Spot 1 while 15:00 to 12:00 remain and win the fight to board with time to explore. At Yellow Spot 2 (10:00 to 5:00) or 3 (3:00 to 0:00) you are evicted before you can do much, and if the timer hits zero before you board, the whole section is skipped.
+    windows:
+      - from: lunatic-pandora-chase
+
+  - id: mag-ck-005
+    title: Combat King 005
+    category: magazines
+    spoiler: true
+    how: |
+      Take Elevator 3, go down through the treasure rooms and pick it up off the floor on the last screen there. It is only there if you pressed the blue switch at the detonator as Laguna on Disc 1, and if you miss it here you can try again on the final visit.
+    windows:
+      - from: lunatic-pandora-chase
+      - from: lunatic-pandora-storm
+
+  - id: item-luvluv-g
+    title: LuvLuv G from the Lunatic Pandora
+    category: items
+    spoiler: true
+    how: |
+      Take Elevator 3, go down the stairs and the ladder, and enter the door beside the Confuse Draw Point. It is only open if you picked up the junk (the first Old Key) as Laguna on Disc 1, and you can try again on the final visit.
+    windows:
+      - from: lunatic-pandora-chase
+      - from: lunatic-pandora-storm
+
+  - id: limit-power-generator
+    title: Power Generator from the Lunatic Pandora
+    category: limits
+    spoiler: true
+    how: |
+      It is in the right-hand panel on the screen after the embedded rock, past the treasure elevator, and it teaches Quistis Ray-Bomb. It is only there if you tampered with the right-hand panel as Laguna on Disc 1, and you can try again on the final visit.
+    windows:
+      - from: lunatic-pandora-chase
+      - from: lunatic-pandora-storm
+
+  - id: item-spd-j-scroll-pandora
+    title: Spd-J Scroll from the Lunatic Pandora
+    category: items
+    spoiler: true
+    how: |
+      Take Elevator 1 and follow the path; on the screen with the elevator close to the exit, look in the cavity in the tunnel wall. It is only there if you pushed the rock out of the tunnel wall as Laguna on Disc 1, and you can try again on the final visit.
+    windows:
+      - from: lunatic-pandora-chase
+      - from: lunatic-pandora-storm
+
+  - id: draw-ultima-pandora
+    title: Ultima Draw Point in the Lunatic Pandora
+    category: draws
+    spoiler: true
+    how: |
+      The door at the end of the hall on the Combat King 005 screen hides it, and it is open only if you took the Old Key behind the barricade as Laguna on Disc 1. It can be used just once and you are unlikely to get more than 8 Ultima, so consider Drawing on the final visit to squeeze out the most.
+    windows:
+      - from: lunatic-pandora-chase
+      - from: lunatic-pandora-storm
+
+  # ----- Lunar Base -----
+  - id: card-alexander
+    title: Alexander card
+    category: cards
+    spoiler: true
+    how: |
+      Piet plays it: keep starting games with him and quitting until Random or Plus is abolished (reload if any other rule goes), save, then play for real. If you miss it, Piet plays it again at the Crash Site, and you can win it later once more rules are gone. Do not Card Mod it, because the Queen of Cards chain needs it.
+    windows:
+      - from: lunar-base
+      - from: crash-site
+        until: end
+
+  - id: card-laguna
+    title: Laguna card
+    category: cards
+    spoiler: true
+    how: |
+      Ellone plays it. Challenge her before you speak to her, because once you have spoken you cannot play her again; reload if you have to. On Disc 4 the CC Group aboard the Ragnarok can play it, if you finished their quest.
+    windows:
+      - from: lunar-base
+      - from: ragnarok-d4
+        until: end
+  # ----- Esthar: the return -----
+  - id: quest-queen-alexander
+    title: Lose the Alexander card to the Queen of Cards
+    category: quests
+    spoiler: true
+    how: |
+      Save first, lose the Alexander card to the Queen, then speak to her to see where she went: a card is only delivered if you lost it to her in Dollet or she is heading there, so reload if she goes elsewhere. If you missed it at the Lunar Base, win it from Piet at the Crash Site first.
+    windows:
+      - from: esthar-d3b
+        until: lunatic-pandora-storm
+
+  - id: quest-queen-alexander-back
+    title: Win the Alexander card back from the Queen's son
+    category: quests
+    spoiler: true
+    how: |
+      Win it back from the boy in the Artist's House in Dollet. The Doomtrain card then appears in the hand of the Timber pub owner.
+    windows:
+      - from: esthar-d3b
+        until: lunatic-pandora-storm
+
+  - id: card-doomtrain
+    title: Doomtrain card
+    category: cards
+    spoiler: true
+    how: |
+      The Timber pub owner, standing near the back wall of the pub, holds it once the Queen's father has made it, though he rarely plays it. Do not Card Mod it: lose it to the Queen first. On Disc 4 it comes from Left Diamond of the CC Group (if that quest was finished) or from the Queen of Cards at the Crash Site, once.
+    windows:
+      - from: esthar-d3b
+        until: lunatic-pandora-storm
+      - from: ragnarok-d4
+        until: end
+
+  - id: quest-queen-doomtrain
+    title: Lose the Doomtrain card to the Queen of Cards
+    category: quests
+    spoiler: true
+    how: |
+      Go straight back to the Queen and lose the new card to her, saving first in case she goes to the wrong place. If she is in Dollet, sending her to Galbadia instead of Balamb makes the last disc's cards much easier.
+    windows:
+      - from: esthar-d3b
+        until: lunatic-pandora-storm
+
+  - id: quest-queen-doomtrain-back
+    title: Win the Doomtrain card back from the Queen's son
+    category: quests
+    spoiler: true
+    how: |
+      Win it back from the boy in the Artist's House in Dollet as usual. The Presidential Assistant in Esthar then holds the Phoenix card.
+    windows:
+      - from: esthar-d3b
+        until: lunatic-pandora-storm
+
+  - id: card-phoenix
+    title: Phoenix card
+    category: cards
+    how: |
+      The Presidential Assistant, in blue, plays it in the Presidential Palace, and it finishes the Queen of Cards chain; every card from the chain is then safe to Card Mod. On Disc 4 it comes from Left Diamond of the CC Group (if that quest was finished) or from the Queen of Cards at the Crash Site, once.
+    windows:
+      - from: esthar-d3b
+        until: lunatic-pandora-storm
+      - from: ragnarok-d4
+        until: end
+
+  - id: quest-queen-positioning
+    title: Park the Queen of Cards at Lunar with All
+    category: quests
+    spoiler: true
+    how: |
+      Move her to the Lunar region without leaving a Rare card in her hand (the fastest route is Balamb or Dollet, then Galbadia, FH, Esthar and Lunar). In the Lunar Gate hallway, keep playing her until she uses All as her trade rule, then do not speak to her again; also get Trabia's and Lunar's rules down to Open. This is the last time you can move her or change her personal trade rule.
+    windows:
+      - from: esthar-d3b
+        until: lunatic-pandora-storm
+
+  - id: item-energy-crystals
+    title: Energy Crystals from the Elnoyle fight
+    category: items
+    how: |
+      Talk to the soldier at the Combat King spot in Esthar to start a fixed Elnoyle fight, which you can repeat by leaving the screen and coming back. Elnoyle only drops Energy Crystals if its level is high enough, and you cannot change it; a Ruby Dragon with Rare Item equipped is another fairly reliable source.
+    windows:
+      - from: esthar-d3b
+        until: lunatic-pandora-storm
+
+  - id: quest-shumi-workshop
+    title: Shumi Village workshop scene
+    category: quests
+    how: |
+      Only if you finished both Shumi Village quests on Disc 2, go back to the workshop for a scene, with no items. It also makes a Full-Life Draw Point appear in Fishermans Horizon where the Master Fisherman used to sit.
+    windows:
+      - from: esthar-d3b
+        until: lunatic-pandora-storm
+
+  # ----- Cactuar Island -----
+  - id: gf-cactuar
+    title: Cactuar from Jumbo Cactuar
+    category: gfs
+    spoiler: true
+    how: |
+      Touch the cactus that randomly pops out of the sand to start the fight, with no one holding Mug and Water Junctioned to Elem-Atk. Jumbo Cactuar counters with the KO move 10000 Needles and tries to flee below 2 percent HP once it has shown the hesitating message, so win fast with big Limits.
+    windows:
+      - from: cactuar-island
+        until: end
+
+  # ----- Deep Sea Research Center -----
+  - id: gf-bahamut
+    title: Bahamut from the Deep Sea Research Center
+    category: gfs
+    spoiler: true
+    how: |
+      In the laboratory you only get battles by moving while the core is glowing. Answer "It's not our will to fight" for one Ruby Dragon, "Never" for another, and pick the hidden bottom option to face Bahamut, then Draw Full-Life from him until everyone has 100. The Ragnarok is needed to get in, and Bahamut is safe to take now even in a perfect game.
+    windows:
+      - from: deep-sea-research-center
+        until: end
+
+  - id: card-bahamut
+    title: Bahamut card
+    category: cards
+    spoiler: true
+    how: |
+      Bahamut always drops it. If you already hold one by other means you will not get another.
+    windows:
+      - from: deep-sea-research-center
+        until: end
+
+  - id: item-hyper-wrist
+    title: Hyper Wrist from Bahamut
+    category: items
+    spoiler: true
+    how: |
+      Bahamut drops it, and its mug is the same item, so Mug makes no difference.
+    windows:
+      - from: deep-sea-research-center
+        until: end
+
+  - id: gf-eden
+    title: Eden from Ultima Weapon
+    category: gfs
+    spoiler: true
+    how: |
+      Draw Eden from Ultima Weapon, who wakes at the bottom of the Deep Sea Deposit when you use 10 steam units at the terminal. For a perfect game do not defeat it: the fixed encounters in the Deposit (the route that puts Zell in the party in the steamworks) are needed, and there are no encounters at all afterwards. Eden can instead be Drawn from Tiamat in Ultimecia Castle, which is the preferred way.
+    windows:
+      - from: deep-sea-research-center
+        until: end
+
+  - id: card-eden
+    title: Eden card
+    category: cards
+    spoiler: true
+    how: |
+      Ultima Weapon drops it when defeated, unless you already hold one from the CC Group on Disc 4. For a perfect game do not defeat Ultima Weapon: on Disc 4 the CC Group aboard the Ragnarok can play it, if the CC Group quest was finished.
+    windows:
+      - from: deep-sea-research-center
+        until: end
+
+  # ----- Obel Lake -----
+  - id: quest-obel-lake
+    title: Obel Lake quest
+    category: quests
+    spoiler: true
+    how: |
+      Hum at the tip of the peninsula in Obel Lake until a monkey asks you to find Mr. Monkey in the forest nearest Dollet, then collect the four clue rocks (Eldbeak Peninsula, the island beach east of Timber, Balamb Beach and the nest on Monterose Plateau) and the fourth rock, which sends you to Mordred Plains. Three Stars is at Mordred Plains, where you do the opposite of what the red rocks say, and the Luck-J Scroll is on Minde Island, southwest of Esthar. Equip Enc-None, since there is a lot of running around.
+    windows:
+      - from: obel-lake
+        until: end
+
+  # ----- UFO sightings and PuPu -----
+  - id: quest-ufo-sightings
+    title: See the four UFO fly-bys
+    category: quests
+    spoiler: true
+    how: |
+      A UFO flies by at Winhill Bluffs, Mandy Beach, Heath Peninsula and Kashkabald Desert, even with Enc-None equipped, and you may already have seen some of them earlier in the game. You need all four before the UFO fight.
+    windows:
+      - from: ufo-pupu
+        until: end
+
+  - id: item-aegis-amulet
+    title: Aegis Amulet from the UFO
+    category: items
+    spoiler: true
+    how: |
+      After all four fly-bys, land on the top of the canyon near the Chocobo Sanctuary in Grandidi Forest and run around until you meet the UFO enemy, then attack it until it falls.
+    windows:
+      - from: ufo-pupu
+        until: end
+
+  - id: card-pupu
+    title: PuPu card
+    category: cards
+    spoiler: true
+    exclusive: pupu-reward
+    how: |
+      With at least five Elixirs, run around the edge of the crater near Balamb until you meet PuPu, then give him the Elixirs for the one-of-a-kind card. Do not Card Mod it, because you can never get another; the other rewards are not unique.
+    windows:
+      - from: ufo-pupu
+        until: end
+
+  - id: item-pupu-accelerator
+    title: Accelerator from PuPu
+    category: items
+    spoiler: true
+    exclusive: pupu-reward
+    how: |
+      Kill PuPu at the crater instead of feeding him. It is not unique, and the card is the reward that can be missed.
+    windows:
+      - from: ufo-pupu
+        until: end
+
+  - id: item-pupu-devour
+    title: Speed +1 from Devouring PuPu
+    category: items
+    spoiler: true
+    exclusive: pupu-reward
+    how: |
+      Devour PuPu at the crater for Speed +1 to the Devourer. It is not unique, and the card is the reward that can be missed.
+    windows:
+      - from: ufo-pupu
+        until: end
+
+  # ----- Esthar: the briefing -----
+  - id: card-squall
+    title: Squall card
+    category: cards
+    spoiler: true
+    how: |
+      After the briefing, return to the cabin and challenge the President to Triple Triad. On Disc 4 the CC Group aboard the Ragnarok can play it, if you finished their quest.
+    windows:
+      - from: esthar-briefing
+        until: lunatic-pandora-storm
+      - from: ragnarok-d4
+        until: end
+
+  # ----- Lunatic Pandora: the storm -----
+  - id: draw-full-life-fujin
+    title: Draw Full-Life from Fujin
+    category: draws
+    spoiler: true
+    how: |
+      Only the high-level Fujin (level 30 and up) carries it, so Draw it in the fight if you lack it.
+    windows:
+      - from: lunatic-pandora-storm
+
+  - id: draw-tornado-fujin
+    title: Draw Tornado from Fujin
+    category: draws
+    spoiler: true
+    how: |
+      Only the high-level Fujin (level 30 and up) carries it, so Draw it in the fight if you lack it.
+    windows:
+      - from: lunatic-pandora-storm
+
+  - id: item-probe-vit-up
+    title: Vit Up from the Left Probe
+    category: items
+    spoiler: true
+    how: |
+      Equip Mug at the save point before the Mobile Type 8 fight and mug the Left Probe for 2 Vit Up (sometimes 4) before you finish it.
+    windows:
+      - from: lunatic-pandora-storm
+
+  - id: item-probe-str-up
+    title: Str Up from the Right Probe
+    category: items
+    spoiler: true
+    how: |
+      Equip Mug at the save point before the Mobile Type 8 fight and mug the Right Probe for 2 Str Up (sometimes 4) before you finish it.
+    windows:
+      - from: lunatic-pandora-storm
+
+  - id: gf-gilgamesh
+    title: Gilgamesh in place of Odin
+    category: gfs
+    spoiler: true
+    how: |
+      If you still hold Odin when the last fight of the disc ends, Gilgamesh replaces him, and you must have Odin before you go past Mobile Type 8's room. Gilgamesh is a serious downgrade, so it is best to skip this and get Odin on Disc 4 instead.
+    windows:
+      - from: esthar-briefing
+        until: lunatic-pandora-storm
+        home: lunatic-pandora-storm
+
+  # ----- Lunatic Pandora: the last stand -----
+  - id: draw-aura-seifer
+    title: Draw Aura from Seifer
+    category: draws
+    spoiler: true
+    how: |
+      At a high enough level, Draw Aura from Seifer in the last fight of the disc; he is the only enemy in the game who carries it.
+    windows:
+      - from: lunatic-pandora-seifer
+
+  # --- Disc 4 ---
+  # ----- Lunatic Pandora: Adel -----
+  - id: item-samantha-soul
+    title: Samantha Soul from Adel
+    category: items
+    spoiler: true
+    how: |
+      Give someone Mug before the fight and keep trying: the chance is only 1 in 16 per try, so it may take a while. Stick to single-target attacks so Rinoa is not caught in them.
+    windows:
+      - from: lunatic-pandora-adel
+
+  # ----- Ultimecia Castle: entrance hall -----
+  - id: item-elixir-sphinxaur
+    title: Elixir from Sphinxaur
+    category: items
+    spoiler: true
+    how: |
+      Sphinxaur, the guard on the steps inside the entrance, gives an Elixir to a successful Mug about a quarter of the time. Most of your abilities are sealed at this point and you likely only have Attack, so this is a long shot.
+    windows:
+      - from: castle-entrance
+
+  # ----- Ultimecia Castle: Tri-Point -----
+  - id: quest-castle-tri-point
+    title: Defeat Tri-Point and lift a seal
+    category: quests
+    spoiler: true
+    how: |
+      Tri-Point answers any hit that is not its weakness (Fire or Ice) with a heavy Lightning attack, so nullify Lightning in Elem-Def or alternate those two elements; if it uses Scan on someone, Protect them or finish it before its next turn. Afterwards lift Draw or Magic, whichever you still lack, or Item if you have both. Tri-Point drops a Rocket Engine.
+    windows:
+      - from: castle-tri-point
+        until: end
+
+  # ----- Ultimecia Castle: art gallery -----
+  - id: quest-castle-trauma
+    title: Defeat Trauma and lift a seal
+    category: quests
+    spoiler: true
+    how: |
+      Trauma barely takes damage until you Draw Meltdown from it and cast it on it, and its Mega Pulse Cannon is triggered by multi-target attacks, so keep to single-target ones. Afterwards lift Item, or Limit Break if you already have Item. Trauma leaves an Elem Atk behind.
+    windows:
+      - from: castle-trauma
+        until: end
+
+  # ----- Ultimecia Castle: dungeon -----
+  - id: quest-castle-red-giant
+    title: Defeat Red Giant and lift a seal
+    category: quests
+    spoiler: true
+    how: |
+      Its defenses are maxed out, so inflict Vit0 with Meltdown or Doomtrain's summon, or use Gravity attacks until its HP is very low; Diablos and Cactuar summons also work. Afterwards lift Limit Break, or GF if you already have Limit Break. Red Giant drops the Diamond Armor it wears.
+    windows:
+      - from: castle-red-giant
+        until: end
+
+  # ----- Ultimecia Castle: Krysta -----
+  - id: quest-castle-krysta
+    title: Defeat Krysta and lift a seal
+    category: quests
+    spoiler: true
+    how: |
+      Krysta counters any damage with a very heavy physical hit and ends with Ultima, but its Spirit is zero, so Magic, Meteor and Gravity do far more than physical attacks; Shell helps. Afterwards lift GF, or Command if you already have GF. Krysta leaves an Elem Guard behind.
+    windows:
+      - from: castle-krysta
+        until: end
+
+  # ----- Ultimecia Castle: armory -----
+  - id: quest-castle-gargantua
+    title: Defeat Gargantua and lift a seal
+    category: quests
+    spoiler: true
+    how: |
+      Once Vysage, Lefty and Righty are gone, Gargantua answers every non-fatal hit with a heavy counter, so set Zombie (and heal with Revive or Recover) or Death on it instead of just attacking. Afterwards lift Command, or anything you like if you already have it. Gargantua drops a Magic Armlet.
+    windows:
+      - from: castle-gargantua
+        until: end
+
+  # ----- Ultimecia Castle: treasure vault -----
+  - id: quest-castle-catoblepas
+    title: Defeat Catoblepas and lift a seal
+    category: quests
+    spoiler: true
+    how: |
+      Inflict Darkness and attack: it has no counter to non-fatal hits, but it casts Meteor as its last attack, so keep HP up when it is close to dying. Afterwards lift whichever seal you like. Catoblepas drops a Status Atk.
+    windows:
+      - from: castle-catoblepas
+        until: end
+
+  # ----- Ultimecia Castle: clock tower -----
+  - id: quest-castle-tiamat
+    title: Defeat Tiamat and lift a seal
+    category: quests
+    spoiler: true
+    how: |
+      Tiamat's only attack is the Fire-elemental Dark Flare, so at least nullify Fire in Elem-Def (Firaga alone gives 150 percent resistance) and it cannot hurt you. Afterwards lift Magic, or anything you like if you already have Magic. Tiamat drops a Status Guard.
+    windows:
+      - from: castle-tiamat
+        until: end
+
+  # ----- Ultimecia Castle: the chapel organ -----
+  - id: item-rosetta-stone-organ
+    title: Rosetta Stone from the organ puzzle
+    category: items
+    how: |
+      Press all the buttons except Select, Start and the D-pad together on the chapel organ and hold them until the sound stops, then check the bars on the path southeast of the Courtyard. The box at the end of that path holds the castle's grand treasure.
+    windows:
+      - from: castle-organ
+
+  # ----- Ultimecia Castle: Omega Weapon -----
+  - id: quest-omega
+    title: Defeat Omega Weapon
+    category: quests
+    spoiler: true
+    how: |
+      Save before the fight. The reward is a Three Stars, which is easy to get by now, and the Proof of Omega entry. If you are going for a perfect game, do not save after defeating it, in case you want to fight it again.
+    windows:
+      - from: castle-omega
+        until: end
+
+  - id: entry-proof-of-omega
+    title: Proof of Omega
+    category: entries
+    spoiler: true
+    how: |
+      Defeating Omega Weapon adds this entry to the Tutorial menu. In a perfect game do not save after the fight, in case you want to fight it again.
+    windows:
+      - from: castle-omega
+        until: end
+
+  # ----- Kashkabald Desert: the Ragnarok -----
+  - id: quest-cc-farm
+    title: Farm rare cards from the CC Group aboard the Ragnarok
+    category: quests
+    spoiler: true
+    how: |
+      This only works if you finished the CC Group quest on Disc 2 or 3, and each member is in a different room. They play any rare card that the Queen of Cards chain does not create, even ones you missed or Card Modded, and Left Diamond usually plays the first rare card missing from your list. Card Mod a rare card and win it back to farm it endlessly, though you can only carry one of each at a time.
+    windows:
+      - from: ragnarok-d4
+        until: end
+
+  - id: quest-queen-crash-site
+    title: Play the Queen of Cards at the Crash Site
+    category: quests
+    spoiler: true
+    how: |
+      She stands at the Crash Site and plays her quest's cards that you have not won yet, once each, along with Common Cards, but no other rare cards. If you finished the CC Group quest there is no point in playing her, since her rules are random. Her region and trade rule stay as they were at the end of Disc 3.
+    windows:
+      - from: ragnarok-d4
+        until: end
+        home: ragnarok-d4
+
+  # ----- Ultimecia Castle: the final battle -----
+  - id: draw-apocalypse-ultimecia
+    title: Draw Apocalypse from Ultimecia
+    category: draws
+    spoiler: true
+    how: |
+      Draw has to be unsealed. When the lower half of Ultimecia appears in the last phase, Draw the spell from her, then destroy that half quickly, because Apocalypse hits harder than Ultima. Cast on her, it damages both her and her magic core, but you cannot Junction it in a normal game, so do not bother going for 100.
+    windows:
+      - from: castle-final

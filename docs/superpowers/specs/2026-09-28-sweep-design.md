@@ -1260,6 +1260,16 @@ Write endpoints check that the ID exists and has the right kind in the **current
 | Stored guide source per user (all versions) | 100 MiB | `409 quota-storage` |
 | Guide content limits | §3.7 | `422` |
 
+### 6.6 Demo sign-in
+
+A guest (a friend of the operator) can try Sweep without an account. With `DEMO_ENABLED=true` (default off) the sign-in page shows "Try the demo". Nothing a guest does is saved. See ADR 0015.
+
+- **Account.** One shared demo account, `demo@sweep.demo` (`DEMO_USER_EMAIL` in core), ensured at server start-up. Its password is derived from `BETTER_AUTH_SECRET` (HMAC) and never stored in plain text; if the stored credential no longer matches, the account is recreated. It never owns rows in `runs`.
+- **Routes.** `GET /api/demo` (public) → `{enabled}`. `POST /api/demo/sign-in` (public, shares the auth rate limit) signs the guest in as the demo account through Better Auth and returns `{user}` with an ordinary session cookie. `404` when the demo is off.
+- **Sandbox.** Every `/api/runs*` request from the demo account is served by a demo router against an in-memory sandbox keyed by the session id. A new sandbox is seeded from templates: guide files plus `runs.json` (seeded progress, name, "created N days ago", "played N hours ago") in `packages/server/demo/`, parsed and validated at start-up. The demo router mirrors §6.2 exactly (paths, validation, `404`/`409`/`422` rules), applies the core setters, parses uploads in the worker and updates guides with `diffGuides` + `migrateProgress`, and writes nothing to Postgres.
+- **Bounds.** A sandbox is dropped after 6 idle hours, at most 500 live sandboxes (least recently touched dropped first), 10 runs per sandbox, 5 guide versions per run, 4 MiB of uploaded source per sandbox and 64 MiB across sandboxes (`409` with the §6.5 quota codes). Guests share the demo account's rate limits. Sandboxes don't survive a restart.
+- **Client.** A demo session is recognized by the user's email; a banner says nothing is saved. Sign-out, guards, the 401 interceptor and the write queue are unchanged.
+
 ---
 
 ## 7. Architecture and repo layout

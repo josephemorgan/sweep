@@ -1,5 +1,6 @@
 import { HttpClient } from '@angular/common/http';
 import { Service, inject } from '@angular/core';
+import type { DemoSignInResponseDto, DemoStatusDto } from '@sweep/core';
 import { apiCall } from './api-call';
 
 export interface SessionUser {
@@ -32,6 +33,21 @@ export class AuthApi {
     const body = await apiCall(
       this.http.post<UserBody>(`${AUTH}/sign-in/email`, { email, password }),
     );
+    return pick(body.user);
+  }
+
+  /** Whether demo sign-in is offered. Any failure means no: the sign-in page must still work. */
+  async demoStatus(): Promise<boolean> {
+    try {
+      const body = await apiCall(this.http.get<DemoStatusDto>('/api/demo'));
+      return body.enabled === true;
+    } catch {
+      return false;
+    }
+  }
+
+  async signInDemo(): Promise<SessionUser> {
+    const body = await apiCall(this.http.post<DemoSignInResponseDto>('/api/demo/sign-in', {}));
     return pick(body.user);
   }
 

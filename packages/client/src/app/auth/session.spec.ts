@@ -9,6 +9,7 @@ import {
 } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { ApiError } from '../api/api-error';
+import { DEMO_USER_EMAIL } from '@sweep/core';
 import { AuthApi, type SessionUser } from '../api/auth-api';
 import { Reveals } from '../run/reveals';
 import { signedInGuard } from './guards';
@@ -22,16 +23,28 @@ describe('Session', () => {
     getSession: ReturnType<typeof vi.fn>;
     signIn: ReturnType<typeof vi.fn>;
     signOut: ReturnType<typeof vi.fn>;
+    signInDemo: ReturnType<typeof vi.fn>;
   };
   let navigate: ReturnType<typeof vi.spyOn>;
 
   beforeEach(() => {
     localStorage.clear();
-    auth = { getSession: vi.fn(), signIn: vi.fn(), signOut: vi.fn() };
+    auth = { getSession: vi.fn(), signIn: vi.fn(), signOut: vi.fn(), signInDemo: vi.fn() };
     TestBed.configureTestingModule({
       providers: [provideRouter([]), { provide: AuthApi, useValue: auth }],
     });
     navigate = vi.spyOn(TestBed.inject(Router), 'navigateByUrl').mockResolvedValue(true);
+  });
+
+  it('flags a demo session only after demo sign-in', async () => {
+    auth.signIn.mockResolvedValue(ANA);
+    auth.signInDemo.mockResolvedValue({ id: 'd1', email: DEMO_USER_EMAIL, name: 'demo' });
+    const session = TestBed.inject(Session);
+    await session.signIn('ana@sweep.test', 'pw');
+    expect(session.isDemo()).toBe(false);
+    await session.signInDemo();
+    expect(session.user()?.email).toBe(DEMO_USER_EMAIL);
+    expect(session.isDemo()).toBe(true);
   });
 
   it('asks the server when no user is cached', async () => {

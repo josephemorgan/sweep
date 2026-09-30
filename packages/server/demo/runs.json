@@ -1,0 +1,88 @@
+[
+  {
+    "name": "FF8 — disc 2 run",
+    "file": "final-fantasy-viii.yaml",
+    "createdDaysAgo": 18,
+    "playedHoursAgo": 2,
+    "pin": "garden-at-sea",
+    "cleared": [
+      "garden-intro",
+      "fire-cavern",
+      "balamb-pre-exam",
+      "dollet-comm-tower",
+      "dollet-escape",
+      "garden-graduation",
+      "garden-timber-prep",
+      "balamb-departure",
+      "forest-owls",
+      "timber-d1",
+      "dollet-d1",
+      "laguna-excavation",
+      "galbadia-garden-d1",
+      "deling-arrival",
+      "tomb-unknown-king",
+      "deling-parade-prep",
+      "deling-parade",
+      "laguna-winhill",
+      "d-district-prison",
+      "deling-d2",
+      "missile-base",
+      "garden-crisis",
+      "garden-norg",
+      "fh-arrival",
+      "fh-mayor",
+      "fh-big-bridge",
+      "garden-festival"
+    ],
+    "tasks": {
+      "mag-of-1": "done",
+      "card-quistis": "done",
+      "gf-siren": "done",
+      "item-battle-meter": "done",
+      "gf-diablos": "done",
+      "card-diablos": "done",
+      "quest-zell-scene-3": "done",
+      "mag-pp-1": "done",
+      "card-angelo": "done",
+      "entry-eyes-on-me": "done",
+      "item-adamantine": "done",
+      "mag-pp-2": "dont-care",
+      "item-exc-junk": "dont-care"
+    },
+    "tracked": { "draws": false }
+  },
+  {
+    "name": "Lantern Keep — completionist",
+    "file": "lantern-keep.yaml",
+    "createdDaysAgo": 30,
+    "playedHoursAgo": 50,
+    "pin": "epilogue",
+    "cleared": ["village", "marsh", "keep-gate", "east-tower", "west-tower", "throne-room"],
+    "tasks": {
+      "ferry-passage": "done",
+      "marsh-herbs": "done",
+      "sunblade": "done"
+    },
+    "tracked": {}
+  },
+  {
+    "name": "Breath of the Wild — first steps",
+    "file": "botw-open-world.yaml",
+    "createdDaysAgo": 1,
+    "playedHoursAgo": 0.5,
+    "pin": "paraglider",
+    "cleared": ["plateau-shrines"],
+    "tasks": { "oman-au-shrine": "done" },
+    "tracked": {}
+  },
+  {
+    "name": "FF6 — relic choice",
+    "file": "ff6-exclusive-relic.yaml",
+    "createdDaysAgo": 5,
+    "playedHoursAgo": 20,
+    "pin": "returner-hideout",
+    "cleared": ["south-figaro"],
+    "tasks": { "genji-glove": "done" },
+    "tracked": {}
+  }
+]

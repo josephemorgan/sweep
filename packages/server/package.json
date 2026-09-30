@@ -5,7 +5,8 @@
   "type": "module",
   "files": [
     "dist",
-    "drizzle"
+    "drizzle",
+    "demo"
   ],
   "scripts": {
     "dev": "tsx watch src/index.ts",

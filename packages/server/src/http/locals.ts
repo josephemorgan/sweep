@@ -6,6 +6,8 @@ export interface SessionUser {
   id: string;
   email: string;
   name: string;
+  /** The Better Auth session row's id; the demo keys its sandbox by it. */
+  sessionId: string;
 }
 
 const USER_KEY = 'sweepUser';

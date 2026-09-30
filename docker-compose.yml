@@ -24,6 +24,7 @@ services:
       # Not BETTER_AUTH_URL: compose would read the dev value (:4200) from the root .env.
       BETTER_AUTH_URL: ${SWEEP_APP_URL:-http://localhost:3000}
       SIGNUP_ENABLED: ${SIGNUP_ENABLED:-false}
+      DEMO_ENABLED: ${DEMO_ENABLED:-false}
       TRUST_PROXY: ${TRUST_PROXY:-}
       PARSE_TIMEOUT_MS: ${PARSE_TIMEOUT_MS:-}
       PORT: '3000'

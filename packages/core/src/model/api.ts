@@ -68,3 +68,11 @@ export interface SetTaskBody {
 export interface SetCategoryBody {
   tracked: boolean | null;
 }
+/** GET /api/demo (public). */
+export interface DemoStatusDto {
+  enabled: boolean;
+}
+/** POST /api/demo/sign-in: the same shape as Better Auth's sign-in body, so the client reuses it. */
+export interface DemoSignInResponseDto {
+  user: { id: string; email: string; name: string };
+}

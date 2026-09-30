@@ -106,6 +106,7 @@ Per package: `pnpm --filter @sweep/<core|server|client> <script>`.
 - **Stale core build:** server and client import `packages/core/dist`. After editing core, run `pnpm build:core` (or keep `pnpm dev` running). See ADR 0014.
 - `.env` lives at the repo root. Server code loads it regardless of cwd; drizzle-kit loads it through the `db:*` scripts (which run in `packages/server`).
 - The compose `BETTER_AUTH_SECRET` default is dev-only. Override it anywhere else.
+- **Demo sign-in** (`DEMO_ENABLED=true`, spec §6.6, ADR 0015): a shared demo account whose `/api/runs*` requests go to an in-memory, per-session sandbox in `packages/server/src/demo/`, never to Postgres. A new runs endpoint must be added to both `routes/runs.ts` and `demo/router.ts`. Seeded runs live in `packages/server/demo/`.
 - The Prettier PostToolUse hook needs `jq`. Markdown, `guides/` and `packages/core/test/fixtures/` are never auto-formatted (line numbers matter).
 
 ## Docs

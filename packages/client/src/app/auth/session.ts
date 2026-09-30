@@ -1,5 +1,6 @@
-import { Service, inject, signal } from '@angular/core';
+import { Service, computed, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
+import { DEMO_USER_EMAIL } from '@sweep/core';
 import { isRetryable, toApiError, type ApiError } from '../api/api-error';
 import { AuthApi, type SessionUser } from '../api/auth-api';
 import { Reveals } from '../run/reveals';
@@ -35,6 +36,8 @@ export class Session {
 
   readonly user = signal<SessionUser | null | undefined>(undefined);
 
+  readonly isDemo = computed(() => this.user()?.email === DEMO_USER_EMAIL);
+
   ensure(): Promise<SessionUser | null> {
     const known = this.user();
     if (known !== undefined) return Promise.resolve(known);
@@ -49,6 +52,10 @@ export class Session {
 
   async signIn(email: string, password: string): Promise<void> {
     this.remember(await this.auth.signIn(email, password));
+  }
+
+  async signInDemo(): Promise<void> {
+    this.remember(await this.auth.signInDemo());
   }
 
   async signOut(): Promise<void> {

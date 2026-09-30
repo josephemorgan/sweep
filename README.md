@@ -49,6 +49,8 @@ pnpm dev                   # client on http://localhost:4200, API on :3000
 
 To run the full production image instead: `docker compose up -d --build`, then open http://localhost:3000.
 
+**Showing it to someone.** Set `DEMO_ENABLED=true` and the sign-in page gains a "Try the demo" button. A guest signs in as a shared demo account and gets a few sample playthroughs at different stages, held in server memory for their session only. Nothing a guest does is saved (spec §6.6, ADR 0015).
+
 ## Common commands
 
 | Command | What |
