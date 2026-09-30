@@ -57,6 +57,14 @@ function setup(
 describe('UpdatePrompt (§5.7 PWA)', () => {
   afterEach(() => vi.useRealTimers());
 
+  it('sits in normal flow so it never covers the run top bar (§5.9)', async () => {
+    const { fixture, el, ready } = setup();
+    ready();
+    await fixture.whenStable();
+    const banner = el.querySelector('button')!.parentElement!;
+    expect(banner.classList.contains('fixed')).toBe(false);
+  });
+
   it('offers a reload once a new version is ready', async () => {
     const { fixture, el, versionUpdates, reload, ready } = setup();
     versionUpdates.next({ type: 'VERSION_DETECTED', version: { hash: 'b' } });

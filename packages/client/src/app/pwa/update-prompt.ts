@@ -19,13 +19,14 @@ export const NOTE_MS = 1_500;
 
 @Component({
   selector: 'app-update-prompt',
-  // The banner sits outside any open modal sheet, so it is inert until the sheet closes. It
+  // In normal flow above the app (never fixed: it must not cover the sticky run top bar). It sits
+  // outside any open modal sheet, so it is inert until the sheet closes. It
   // persists, so the user still sees it afterwards.
   template: `
     <div role="status">
       @if (message(); as text) {
         <div
-          class="fixed inset-x-0 top-0 z-50 flex flex-wrap items-center justify-center gap-3 border-b border-border bg-surface-raised px-4 py-1 text-sm"
+          class="flex flex-wrap items-center justify-center gap-3 border-b border-border bg-surface-raised px-4 py-1 text-sm"
         >
           <span>{{ text }}</span>
           <button
