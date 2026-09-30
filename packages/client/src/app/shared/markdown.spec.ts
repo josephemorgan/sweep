@@ -42,10 +42,53 @@ describe('renderMarkdown (spec §3.4, §6.4)', () => {
       'https://sweep.test',
       'mailto:a@b.test',
     ]);
-    expect(links[0]!.getAttribute('target')).toBe('_blank');
-    expect(links[0]!.getAttribute('rel')).toBe('noopener noreferrer');
+    for (const a of links) {
+      expect(a.getAttribute('target')).toBe('_blank');
+      expect(a.getAttribute('rel')).toBe('noopener noreferrer');
+    }
     expect(div.textContent).toContain('bad');
     expect(div.textContent).toContain('rel');
+  });
+
+  it('keeps GFM table alignment', () => {
+    const div = dom(renderMarkdown('| a | b |\n|:-:|--:|\n| 1 | 2 |'));
+    expect([...div.querySelectorAll('th')].map((c) => c.getAttribute('align'))).toEqual([
+      'center',
+      'right',
+    ]);
+    expect([...div.querySelectorAll('td')].map((c) => c.getAttribute('align'))).toEqual([
+      'center',
+      'right',
+    ]);
+  });
+
+  it('does not double-escape character references in link hrefs', () => {
+    const a = dom(
+      renderMarkdown('[t](https://x.test/?a=1&amp;b=2) [u](https://x.test/?c=1&d=2)'),
+    ).querySelectorAll('a');
+    expect(a[0]!.getAttribute('href')).toBe('https://x.test/?a=1&b=2');
+    expect(a[1]!.getAttribute('href')).toBe('https://x.test/?c=1&d=2');
+  });
+
+  it('keeps GFM task list state as text', () => {
+    const div = dom(renderMarkdown('- [ ] a\n- [x] b'));
+    expect(div.querySelector('input')).toBeNull();
+    const items = [...div.querySelectorAll('li')].map((li) => li.textContent?.trim());
+    expect(items).toEqual(['[ ] a', '[x] b']);
+  });
+
+  it('renders autolinks with the same target and rel', () => {
+    const div = dom(renderMarkdown('<https://x.test> www.x.test a@b.test'));
+    const links = [...div.querySelectorAll('a')];
+    expect(links.map((a) => a.getAttribute('href'))).toEqual([
+      'https://x.test',
+      'http://www.x.test',
+      'mailto:a@b.test',
+    ]);
+    for (const a of links) {
+      expect(a.getAttribute('target')).toBe('_blank');
+      expect(a.getAttribute('rel')).toBe('noopener noreferrer');
+    }
   });
 
   describe('hostile input', () => {

@@ -9,7 +9,8 @@ const ESCAPES: Record<string, string> = {
   '"': '&quot;',
   "'": '&#39;',
 };
-const escapeHtml = (text: string): string => text.replace(/[&<>"']/g, (c) => ESCAPES[c]!);
+const escapeHtml = (text: string): string =>
+  text.replace(/[<>"']|&(?!#?\w+;)/g, (c) => ESCAPES[c]!);
 
 const ALLOWED_TAGS = [
   'p',
@@ -46,6 +47,9 @@ const marked = new Marked({
     html(token: Tokens.HTML | Tokens.Tag): string {
       return escapeHtml(token.text);
     },
+    checkbox(token: Tokens.Checkbox): string {
+      return token.checked ? '[x] ' : '[ ] ';
+    },
     image(token: Tokens.Image): string {
       return escapeHtml(token.text);
     },
@@ -64,7 +68,7 @@ export function renderMarkdown(source: string): string {
     ALLOWED_TAGS,
     ALLOWED_ATTR: ['href', 'target', 'rel', 'align'],
     ALLOWED_URI_REGEXP: SAFE_LINK,
-    // target and rel values are not URIs; without this the URI regexp strips them.
-    ADD_URI_SAFE_ATTR: ['target', 'rel'],
+    // target, rel and align values are not URIs; without this the URI regexp strips them.
+    ADD_URI_SAFE_ATTR: ['target', 'rel', 'align'],
   });
 }
