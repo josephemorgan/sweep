@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { clearImpact } from '../../src/engine/clear-impact.js';
 import { deriveRun } from '../../src/engine/derive.js';
-import { deriveMetrics, type Metrics } from '../../src/engine/metrics.js';
+import { deriveMetricTasks, deriveMetrics, type Metrics } from '../../src/engine/metrics.js';
 import { loadGuide, progress } from '../helpers.js';
 
 const lk = loadGuide('lantern-keep');
@@ -124,5 +124,53 @@ describe('metrics on botw-style (§3.9.1)', () => {
   it('counts HERE at a pinned leaf', () => {
     const m = metrics(botw, { cleared: ['plateau-shrines', 'paraglider'], pin: 'hateno' });
     expect(m.here).toBe(1);
+  });
+});
+
+describe('deriveMetricTasks', () => {
+  function tasks(guide: typeof lk, p: P, category?: string | null) {
+    const prog = progress(p);
+    return deriveMetricTasks(guide, prog, deriveRun(guide, prog), category);
+  }
+
+  it('lists the tasks behind each metric, in task file order', () => {
+    expect(tasks(lk, {})).toEqual({
+      here: ['ferry-passage', 'village-chest', 'lost-cat'],
+      now: ['ferry-passage', 'village-chest', 'lost-cat'],
+      closing: [
+        { taskId: 'ferry-passage', nextChance: null },
+        { taskId: 'lost-cat', nextChance: 'epilogue' },
+      ],
+      lastChance: [{ taskId: 'ferry-passage', nextChance: null }],
+    });
+  });
+
+  it('applies the category filter', () => {
+    expect(tasks(lk, {}, 'loot')).toEqual({
+      here: ['village-chest'],
+      now: ['village-chest'],
+      closing: [],
+      lastChance: [],
+    });
+  });
+
+  it('agrees with deriveMetrics everywhere', () => {
+    const cases: [typeof lk, P][] = [
+      [lk, {}],
+      [lk, { cleared: ['village'] }],
+      [lk, { cleared: ['village', 'marsh', 'keep-gate'], pin: 'west-tower' }],
+      [ff6, {}],
+      [ff8, {}],
+      [botw, {}],
+    ];
+    for (const [guide, p] of cases) {
+      const t = tasks(guide, p);
+      expect(metrics(guide, p)).toEqual({
+        here: t.here.length,
+        now: t.now.length,
+        closing: t.closing.length,
+        lastChance: t.lastChance.length,
+      });
+    }
   });
 });
