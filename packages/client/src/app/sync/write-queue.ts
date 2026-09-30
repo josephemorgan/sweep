@@ -134,7 +134,9 @@ export class WriteQueue {
   }
 
   enqueue(write: QueuedWrite): void {
-    if (this.userId === null) throw new Error('WriteQueue.enqueue: nobody is signed in');
+    // Signed out (the session just expired and the UI is leaving the run): a throw would only be
+    // an uncaught error from a tap, and nothing may be persisted under no user. Ignore the write.
+    if (this.userId === null) return;
     const key = writeKey(write);
     this.entries.update((list) => {
       // Coalesce into the LAST entry with this key (after a failed send an older duplicate can sit

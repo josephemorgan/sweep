@@ -382,10 +382,11 @@ describe('RunStore', () => {
     const show = vi.spyOn(TestBed.inject(Toasts), 'show');
     api.getRun.mockClear();
     store.setTaskState('lost-cat', 'done');
-    sender.sent[0]!.reject(new ApiError(422, 'unknown-id', 'No such task in the current guide.'));
+    sender.sent[0]!.reject(new ApiError(422, 'unknown-id', 'No such task: lost-cat.'));
     await settle();
     expect(api.getRun).toHaveBeenCalledWith(RUN_ID);
-    expect(show.mock.calls[0]![0]).toContain('No such task in the current guide.');
+    expect(show.mock.calls[0]![0]).not.toContain('lost-cat');
+    expect(show.mock.calls[0]![0]).toContain('the guide changed');
     expect(store.view()?.tasks.get('lost-cat')?.kind).not.toBe('done');
   });
 

@@ -4,8 +4,12 @@ import { provideRouter } from '@angular/router';
 import { ApiError } from '../api/api-error';
 import type { SessionUser } from '../api/auth-api';
 import { Session } from '../auth/session';
+import { RunsApi } from '../api/runs-api';
+import { ResumeCache, resumeKey } from '../run/resume-cache';
+import { RunStore } from '../run/run-store';
+import { createRunsApiFake } from '../../testing/fake-runs-api';
 import { FakeSender } from '../../testing/fake-sender';
-import { TEST_USER } from '../../testing/lantern-keep';
+import { RUN_ID, TEST_USER, lanternKeepPayload } from '../../testing/lantern-keep';
 import { provideQueueSession } from './queue-session';
 import type { QueuedWrite } from './queued-write';
 import { WRITE_SENDER, WriteQueue, queueStorageKey } from './write-queue';
@@ -13,7 +17,11 @@ import { WRITE_SENDER, WriteQueue, queueStorageKey } from './write-queue';
 const write: QueuedWrite = { kind: 'task', runId: 'r1', taskId: 'lost-cat', state: 'done' };
 const OTHER: SessionUser = { id: 'u2', email: 'bo@sweep.test', name: 'bo' };
 
-function setup(): { session: Session; queue: WriteQueue; sender: FakeSender } {
+function setup(providers: unknown[] = []): {
+  session: Session;
+  queue: WriteQueue;
+  sender: FakeSender;
+} {
   localStorage.clear();
   const sender = new FakeSender();
   TestBed.configureTestingModule({
@@ -21,6 +29,7 @@ function setup(): { session: Session; queue: WriteQueue; sender: FakeSender } {
       provideRouter([]),
       provideHttpClient(),
       provideQueueSession(),
+      ...(providers as never[]),
       { provide: WRITE_SENDER, useValue: sender.send },
     ],
   });
@@ -80,5 +89,31 @@ describe('provideQueueSession (retry queue rules 6, 12, 13)', () => {
     TestBed.tick();
     expect(setUser).not.toHaveBeenCalled();
     expect(sender.sent).toHaveLength(1);
+  });
+
+  it('closes the open run when the user changes, and never caches it under the next user', async () => {
+    const api = createRunsApiFake();
+    api.getRun.mockResolvedValue(lanternKeepPayload());
+    const { session } = setup([{ provide: RunsApi, useValue: api }]);
+    session.user.set(TEST_USER);
+    TestBed.tick();
+    const store = TestBed.inject(RunStore);
+    await store.open(RUN_ID);
+    expect(store.view()).not.toBeNull();
+
+    // A refetch left a debounced cache write pending for the old user.
+    await store.refetch();
+    session.user.set(OTHER);
+    TestBed.tick();
+    expect(store.runId()).toBeNull();
+    expect(store.view()).toBeNull();
+    expect(localStorage.getItem(resumeKey(OTHER.id))).toBeNull();
+    expect(TestBed.inject(ResumeCache).read(RUN_ID)).toBeNull();
+
+    await store.open(RUN_ID);
+    session.user.set(null);
+    TestBed.tick();
+    expect(store.view()).toBeNull();
+    expect(store.runId()).toBeNull();
   });
 });

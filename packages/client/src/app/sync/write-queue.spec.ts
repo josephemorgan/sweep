@@ -81,10 +81,15 @@ describe('WriteQueue (see "Retry queue semantics")', () => {
     queue.enqueue(task('b', null));
     queue.enqueue(task('a', null));
     queue.enqueue(task('b', 'dont-care'));
-    for (let i = 0; i < 4; i += 1) {
-      sender.sent[i]?.resolve();
+    for (let i = 0; i < sender.sent.length; i += 1) {
+      sender.sent[i]!.resolve();
       await settle();
     }
+    expect(sender.sent.map((s) => s.write)).toEqual([
+      task('a', 'done'),
+      task('b', 'dont-care'),
+      task('a', null),
+    ]);
     const last = new Map<string, unknown>();
     for (const s of sender.sent) {
       if (s.write.kind === 'task') last.set(s.write.taskId, s.write.state);
@@ -92,6 +97,14 @@ describe('WriteQueue (see "Retry queue semantics")', () => {
     expect(last.get('a')).toBeNull();
     expect(last.get('b')).toBe('dont-care');
     expect(queue.size()).toBe(0);
+  });
+
+  it('ignores a write when nobody is signed in instead of throwing', () => {
+    const { queue, sender } = setup();
+    queue.setUser(null);
+    expect(() => queue.enqueue(task('a', 'done'))).not.toThrow();
+    expect(queue.size()).toBe(0);
+    expect(sender.sent).toHaveLength(0);
   });
 
   it('rule 3: ten offline toggles of one checkbox leave one write (Review Focus 2)', async () => {

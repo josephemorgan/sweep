@@ -119,6 +119,18 @@ describe('UpdatePrompt (§5.7 PWA)', () => {
     expect(reload).toHaveBeenCalledTimes(1);
   });
 
+  it('does not wait forever for activateUpdate', async () => {
+    const { fixture, el, reload, activateUpdate, ready } = setup();
+    activateUpdate.mockReturnValueOnce(new Promise<boolean>(() => undefined));
+    ready();
+    await fixture.whenStable();
+    vi.useFakeTimers();
+    el.querySelector('button')!.click();
+    await vi.advanceTimersByTimeAsync(10_000);
+    expect(activateUpdate).toHaveBeenCalled();
+    expect(reload).toHaveBeenCalledTimes(1);
+  });
+
   it('reloads once on a double tap', async () => {
     const { fixture, el, reload, ready } = setup();
     ready();

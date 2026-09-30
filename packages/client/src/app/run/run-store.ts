@@ -226,6 +226,16 @@ export class RunStore {
     return done;
   }
 
+  /**
+   * The signed-in user changed (or signed out): drop the open run and its pending cache write. The
+   * cache key follows the live session, so flushing now would write the old user's payload under
+   * the new user's key.
+   */
+  closeForUserChange(): void {
+    this.dropCache();
+    this.close();
+  }
+
   close(): void {
     this.flushCache();
     this.resetFetches();
@@ -341,17 +351,16 @@ export class RunStore {
   private onDropped(write: QueuedWrite, error: ApiError): void {
     if (write.runId !== this.runId()) {
       if (error.status === 404) this.cache.forget(write.runId);
-      this.toasts.show(`A change to another run couldn't be saved. ${error.message}`, {
-        key: 'dropped',
-      });
+      this.toasts.show("A change to another run couldn't be saved.", { key: 'dropped' });
       return;
     }
     if (error.status === 404) {
       this.gone(write.runId);
       return;
     }
+    // Never repeat the server message: it can carry a task or section ID, which can spoil (§5.6).
     this.toasts.show(
-      `A change couldn't be saved. ${error.message} Showing the latest saved state.`,
+      "A change couldn't be saved because the guide changed. Showing the latest version.",
       { key: 'dropped' },
     );
     void this.refetch();

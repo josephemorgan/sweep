@@ -90,7 +90,15 @@ export class UpdatePrompt {
       await new Promise<void>((resolve) => setTimeout(resolve, NOTE_MS));
     }
     // Activate the downloaded version so the reload boots the new shell, not the old one.
-    if (this.versionReady) await this.updates.activateUpdate().catch(() => false);
+    // Capped like the flush: a stuck service worker must not leave the button on "Reloading…".
+    if (this.versionReady) {
+      let activateTimer: ReturnType<typeof setTimeout> | undefined;
+      const activateGiveUp = new Promise<void>((resolve) => {
+        activateTimer = setTimeout(resolve, FLUSH_WAIT_MS);
+      });
+      await Promise.race([this.updates.activateUpdate().catch(() => false), activateGiveUp]);
+      clearTimeout(activateTimer);
+    }
     this.reloadPage();
   }
 }
