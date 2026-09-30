@@ -28,7 +28,7 @@ let nextId = 0;
     '(focusout)': 'onFocusOut($event)',
   },
   template: `
-    <div class="flex items-start gap-1" [class.opacity-60]="notChosen()">
+    <div class="flex items-start gap-1">
       <label class="flex min-h-11 min-w-11 shrink-0 items-center justify-center">
         <input
           type="checkbox"

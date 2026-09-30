@@ -24,6 +24,10 @@ export const routes: Routes = [
         title: 'New run · Sweep',
         loadComponent: () => import('./pages/new-run/new-run-page').then((m) => m.NewRunPage),
       },
+      {
+        path: 'runs/:runId',
+        loadComponent: () => import('./pages/run/run-page').then((m) => m.RunPage),
+      },
     ],
   },
   { path: '**', redirectTo: '' },

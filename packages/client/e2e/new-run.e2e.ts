@@ -30,12 +30,10 @@ test('uploads Lantern Keep, shows the report and creates a run', async ({
   await expect(name).toHaveValue('Completionist checklist');
   const runName = `Upload ${testInfo.project.name}`;
   await name.fill(runName);
-  const created = page.waitForResponse(
-    (r) => r.url().endsWith('/api/runs') && r.request().method() === 'POST',
-  );
   await page.getByRole('button', { name: 'Create' }).click();
-  expect((await created).status()).toBe(201);
-
+  await expect(page).toHaveURL(/\/runs\/[0-9a-f-]{36}$/);
+  await expect(page.getByRole('heading', { level: 1, name: runName })).toBeVisible();
+  await expect(page.getByRole('region', { name: 'Harrow Village' })).toBeVisible();
   await page.goto('/runs');
   await expect(page.getByRole('link', { name: new RegExp(runName) })).toContainText(
     '0/7 sections cleared',
