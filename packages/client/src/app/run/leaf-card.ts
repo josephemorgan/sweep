@@ -107,7 +107,7 @@ interface CardSource {
           <p class="m-0 px-3 pb-2 text-sm">{{ text }}</p>
         }
       }
-      @if (variant() === 'panel' && expanded() && !detailPane()) {
+      @if (variant() === 'panel' && expanded()) {
         <div [id]="bodyId()" class="flex flex-col gap-2 px-3 pb-3">
           <p class="m-0 text-sm text-fg-muted">
             <app-spoiler-text
@@ -209,12 +209,6 @@ export class LeafCard {
   protected readonly cardClasses = computed(() => {
     const state = this.state();
     if (this.variant() === 'row') return this.compact() ? 'rounded-l-panel bg-surface-raised' : '';
-    if (this.detailPane()) {
-      if (this.selected()) return 'border rounded-l-panel border-transparent bg-surface-raised';
-      return state === 'locked'
-        ? 'border rounded-panel border-transparent bg-surface text-fg-muted'
-        : 'border rounded-panel border-transparent bg-surface';
-    }
     const colors =
       state === 'current'
         ? 'border-accent bg-surface-raised'
@@ -225,7 +219,7 @@ export class LeafCard {
   });
   protected readonly buttonClasses = computed(() => {
     if (this.variant() === 'panel') return 'min-h-11';
-    if (this.compact()) return 'h-11';
+    if (this.compact()) return 'min-h-11';
     switch (this.state()) {
       case 'cleared':
         return 'h-9 text-fg-cleared';
@@ -236,8 +230,7 @@ export class LeafCard {
     }
   });
   protected readonly titleClasses = computed(() => {
-    if (this.compact() || (this.variant() === 'panel' && this.selected()))
-      return 'font-display font-semibold text-[15px] text-lamp truncate';
+    if (this.compact()) return 'font-display font-semibold text-[15px] text-lamp truncate';
     if (this.variant() === 'panel')
       return this.state() === 'cleared'
         ? 'text-sm font-medium line-through'

@@ -329,7 +329,8 @@ describe('LeafCard rows (route)', () => {
     fixture.componentRef.setInput('detailPane', true);
     fixture.componentRef.setInput('selected', true);
     await fixture.whenStable();
-    expect(row(el).className).toContain('h-11');
+    expect(row(el).classList.contains('min-h-11')).toBe(true);
+    expect(row(el).classList.contains('h-11')).toBe(false);
     expect(node(el).className).toContain('border-rail-ring');
     expect(node(el).className).not.toContain('bg-lamp');
     const title = el.querySelector('.font-display')!;
