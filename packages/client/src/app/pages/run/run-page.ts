@@ -18,6 +18,7 @@ import { ConfirmSheet } from '../../shared/confirm-sheet';
 import { Sheet } from '../../shared/sheet';
 import { Toasts } from '../../shared/toasts';
 import { UnsavedBadge } from '../../shared/unsaved-badge';
+import { BottomBar } from '../../run/bottom-bar';
 import { ClearDialog } from '../../run/clear-dialog';
 import { lockReason } from '../../run/lock-reason';
 import { Reveals } from '../../run/reveals';
@@ -29,7 +30,7 @@ import { sectionLabel } from '../../run/spoiler';
 
 @Component({
   selector: 'app-run-page',
-  imports: [RouterLink, SectionList, UnsavedBadge, ClearDialog, ConfirmSheet, Sheet],
+  imports: [RouterLink, SectionList, UnsavedBadge, BottomBar, ClearDialog, ConfirmSheet, Sheet],
   providers: [RunLayout, { provide: RunActions, useExisting: forwardRef(() => RunPage) }],
   template: `
     <div class="flex min-h-dvh flex-col">
@@ -63,6 +64,7 @@ import { sectionLabel } from '../../run/spoiler';
           @if (store.guide(); as guide) {
             <app-section-list [sections]="guide.sections" [depth]="0" />
           }
+          <app-bottom-bar />
         } @else {
           @switch (store.status()) {
             @case ('not-found') {
