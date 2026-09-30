@@ -13,6 +13,7 @@ import { Sheet } from './sheet';
           <button
             type="button"
             [class]="danger() ? 'btn-danger' : 'btn-primary'"
+            [disabled]="busy()"
             (click)="confirm()"
           >
             {{ confirmLabel() }}
@@ -27,6 +28,8 @@ export class ConfirmSheet {
   readonly message = input.required<string>();
   readonly confirmLabel = input.required<string>();
   readonly danger = input(false);
+  /** An action started by `confirmed` is still running: the confirm button is disabled. */
+  readonly busy = input(false);
   readonly open = model(false);
   readonly confirmed = output<void>();
 

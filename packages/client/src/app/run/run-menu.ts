@@ -12,7 +12,7 @@ import {
   FormField,
   FormRoot,
   form,
-  maxLength,
+  maxLengthError,
   requiredError,
   validate,
 } from '@angular/forms/signals';
@@ -119,6 +119,7 @@ const MAX_NAME = 100;
       [message]="deleteMessage()"
       confirmLabel="Delete run"
       [danger]="true"
+      [busy]="deleting()"
       [open]="sheet() === 'delete'"
       (openChange)="closed($event, 'delete')"
       (confirmed)="deleteRun()"
@@ -137,14 +138,18 @@ export class RunMenu {
   private readonly doc = inject(DOCUMENT);
   private readonly injector = inject(Injector);
   protected readonly sheet = signal<MenuSheet | null>(null);
+  protected readonly deleting = signal(false);
   private readonly renameModel = signal({ name: '' });
   protected readonly renameForm = form(
     this.renameModel,
     (p) => {
-      validate(p.name, ({ value }) =>
-        value().trim() === '' ? requiredError({ message: 'Name the run.' }) : undefined,
-      );
-      maxLength(p.name, MAX_NAME, { message: `Use ${MAX_NAME} characters or fewer.` });
+      validate(p.name, ({ value }) => {
+        const name = value().trim();
+        if (name === '') return requiredError({ message: 'Name the run.' });
+        return name.length > MAX_NAME
+          ? maxLengthError(MAX_NAME, { message: `Use ${MAX_NAME} characters or fewer.` })
+          : undefined;
+      });
     },
     { submission: { action: async () => this.rename() } },
   );
@@ -191,21 +196,24 @@ export class RunMenu {
 
   protected async deleteRun(): Promise<void> {
     const run = this.store.run();
-    if (!run) return;
+    if (!run || this.deleting()) return;
+    this.deleting.set(true);
     try {
       await this.api.deleteRun(run.id);
     } catch (err) {
       const e = toApiError(err);
       if (e.status !== 404) {
         this.toasts.show(`Couldn't delete the run. ${e.message}`);
+        this.deleting.set(false);
         return;
       }
     }
     this.queue.discardRun(run.id);
-    // close() flushes the pending cache write, so forget only after it.
+    this.toasts.show(`Deleted ${run.name}.`);
+    // Leave first, so the page never shows an empty "Run". close() flushes the pending cache write, so forget only after it.
+    await this.router.navigateByUrl('/runs');
     this.store.close();
     this.cache.forget(run.id);
-    this.toasts.show(`Deleted ${run.name}.`);
-    await this.router.navigateByUrl('/runs');
+    this.deleting.set(false);
   }
 }

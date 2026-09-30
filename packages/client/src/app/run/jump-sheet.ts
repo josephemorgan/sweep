@@ -1,3 +1,4 @@
+import { NgTemplateOutlet } from '@angular/common';
 import { Component, computed, inject, output } from '@angular/core';
 import type { Section } from '@sweep/core';
 import { Reveals } from './reveals';
@@ -5,38 +6,51 @@ import { RunLayout } from './run-layout';
 import { RunStore } from './run-store';
 import { sectionBlurred, sectionRevealKey } from './spoiler';
 
-interface JumpItem {
-  section: Section;
-  depth: number;
-}
+const MAX_INDENT = 6;
+const INDENT_STEP = 0.75;
 
 @Component({
   selector: 'app-jump-sheet',
+  imports: [NgTemplateOutlet],
   template: `
-    <ul class="m-0 list-none p-2">
-      @for (item of items(); track item.section.id) {
-        <li>
-          <button
-            type="button"
-            class="menu-item"
-            [style.padding-left.rem]="0.75 + item.depth"
-            [class.font-semibold]="item.section.children.length > 0"
-            [attr.aria-current]="item.section.id === current() ? 'location' : null"
-            (click)="jump(item.section)"
-          >
-            @if (hidden(item.section)) {
-              <span aria-hidden="true" class="select-none blur-sm">{{ item.section.title }}</span>
-              <span class="sr-only">Hidden section</span>
-            } @else {
-              {{ item.section.title }}
+    <ng-template #level let-sections>
+      <ul class="m-0 list-none p-0">
+        @for (section of sections; track section.id) {
+          <li>
+            <button
+              type="button"
+              class="menu-item"
+              [style.padding-left.rem]="indent(section.id)"
+              [class.font-semibold]="section.children.length > 0"
+              [attr.aria-current]="section.id === current() ? 'location' : null"
+              (click)="jump(section)"
+            >
+              @if (hidden(section)) {
+                <span aria-hidden="true" class="select-none blur-sm">{{ section.title }}</span>
+                <span class="sr-only">Hidden section</span>
+              } @else {
+                @if (locked(section)) {
+                  <span aria-hidden="true">🔒</span>
+                }
+                {{ section.title }}
+                @if (locked(section)) {
+                  <span class="sr-only">locked</span>
+                }
+              }
+              @if (section.id === current()) {
+                <span class="ml-auto text-sm text-accent">current</span>
+              }
+            </button>
+            @if (section.children.length > 0) {
+              <ng-container *ngTemplateOutlet="level; context: { $implicit: section.children }" />
             }
-            @if (item.section.id === current()) {
-              <span class="ml-auto text-sm text-accent">current</span>
-            }
-          </button>
-        </li>
-      }
-    </ul>
+          </li>
+        }
+      </ul>
+    </ng-template>
+    <div class="p-2">
+      <ng-container *ngTemplateOutlet="level; context: { $implicit: roots() }" />
+    </div>
   `,
 })
 export class JumpSheet {
@@ -45,16 +59,25 @@ export class JumpSheet {
   private readonly store = inject(RunStore);
   private readonly layout = inject(RunLayout);
   private readonly reveals = inject(Reveals);
-  /** Route order comes from the core index, depth from its ancestors. */
-  protected readonly items = computed<JumpItem[]>(() => {
+  /** Children keep file (route) order; the roots come from the core index. */
+  protected readonly roots = computed<Section[]>(() => {
     const index = this.store.index();
     if (!index) return [];
-    return [...index.sections.values()].map((section) => ({
-      section,
-      depth: index.ancestors.get(section.id)?.length ?? 0,
-    }));
+    return [...index.sections.values()].filter((s) => index.parent.get(s.id) === null);
   });
   protected readonly current = computed(() => this.store.view()?.current ?? null);
+
+  /** Deep sections stop indenting after MAX_INDENT levels, so titles keep their width on a phone. */
+  protected indent(sectionId: string): number {
+    const depth = this.store.index()?.ancestors.get(sectionId)?.length ?? 0;
+    return 0.75 + Math.min(depth, MAX_INDENT) * INDENT_STEP;
+  }
+
+  /** A locked leaf that isn't a hidden spoiler says so (its gate is not a secret). */
+  protected locked(section: Section): boolean {
+    const view = this.store.view()?.sections.get(section.id);
+    return section.children.length === 0 && view?.unlocked === false && view.cleared === false;
+  }
 
   protected hidden(section: Section): boolean {
     return sectionBlurred(

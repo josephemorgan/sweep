@@ -8,6 +8,7 @@ test('renames, toggles a category and jumps to a section', async ({ page, runs }
   await menu.click();
   await expectAccessible(page);
   await page.getByRole('button', { name: 'Rename run' }).click();
+  await expectAccessible(page);
   await page.getByLabel('Run name').fill(`Renamed ${testInfo.project.name}`);
   await page.getByRole('button', { name: 'Save' }).click();
   await expect(page.getByRole('heading', { level: 1 })).toHaveText(
@@ -16,6 +17,7 @@ test('renames, toggles a category and jumps to a section', async ({ page, runs }
 
   await menu.click();
   await page.getByRole('button', { name: 'Categories' }).click();
+  await expectAccessible(page);
   await page.getByRole('switch', { name: /Side quests/ }).uncheck();
   await page
     .getByRole('dialog', { name: 'Categories' })
@@ -58,6 +60,7 @@ test('deletes a run after confirming its name', async ({ page, runs }, testInfo)
   await page.getByRole('button', { name: 'Delete run' }).click();
   const confirm = page.getByRole('dialog', { name: 'Delete run?' });
   await expect(confirm).toContainText(`Delete “${name}”?`);
+  await expectAccessible(page);
   await confirm.getByRole('button', { name: 'Delete run' }).click();
   await expect(page).toHaveURL(/\/runs$/);
   await expect(page.getByRole('link', { name: new RegExp(name) })).toHaveCount(0);

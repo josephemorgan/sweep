@@ -1,4 +1,6 @@
 import { TestBed } from '@angular/core/testing';
+import { ApiError } from '../api/api-error';
+import { Toasts } from '../shared/toasts';
 import { RUN_ID } from '../../testing/lantern-keep';
 import { setupRunStore } from '../../testing/run-store-harness';
 import { ResumeCache } from './resume-cache';
@@ -7,8 +9,14 @@ import { RunLayout } from './run-layout';
 import { RunMenu } from './run-menu';
 
 const text = (el: Element): string => (el.textContent ?? '').replace(/\s+/g, ' ').trim();
+/** A jump item's title without its "current" and lock decorations. */
+const title = (el: Element): string =>
+  text(el)
+    .replace(/ current$/, '')
+    .replace(/^🔒 /, '')
+    .replace(/ locked$/, '');
 const findButton = (root: Element, name: string): HTMLButtonElement =>
-  [...root.querySelectorAll('button')].find((b) => text(b).startsWith(name))!;
+  [...root.querySelectorAll('button')].find((b) => text(b).includes(name))!;
 const click = (root: Element, name: string): void => findButton(root, name).click();
 
 async function renderMenu(progress = {}) {
@@ -56,18 +64,50 @@ describe('RunMenu (§5.2 ☰ menu)', () => {
     const { openItem } = await renderMenu();
     const sheet = await openItem('Jump to section');
     const titles = [...sheet.querySelectorAll('li button')].map((b) => text(b));
-    expect(titles.slice(0, 4).map((t) => t.replace(/ current$/, ''))).toEqual([
-      'Act 1',
-      'Harrow Village',
-      'Whisper Marsh',
-      'Act 2',
-    ]);
+    expect(
+      titles.slice(0, 4).map((t) =>
+        t
+          .replace(/ current$/, '')
+          .replace(/^🔒 /, '')
+          .replace(/ locked$/, ''),
+      ),
+    ).toEqual(['Act 1', 'Harrow Village', 'Whisper Marsh', 'Act 2']);
+  });
+
+  it('renders the section tree as nested lists', async () => {
+    const { openItem } = await renderMenu();
+    const sheet = await openItem('Jump to section');
+    const act1 = [...sheet.querySelectorAll('li')].find(
+      (li) => title(li.querySelector(':scope > button')!) === 'Act 1',
+    )!;
+    const inner = [...act1.querySelectorAll(':scope > ul button')].map(title);
+    expect(inner).toEqual(['Harrow Village', 'Whisper Marsh']);
+  });
+
+  it('marks a locked non-spoiler section as locked for everyone', async () => {
+    const { openItem } = await renderMenu();
+    const sheet = await openItem('Jump to section');
+    const west = findButton(sheet, 'West Tower');
+    expect(west.querySelector('[aria-hidden="true"]')?.textContent).toContain('🔒');
+    expect(west.querySelector('.sr-only')?.textContent).toBe('locked');
+    expect(findButton(sheet, 'Harrow Village').querySelector('.sr-only')).toBeNull();
+  });
+
+  it('caps the indentation of deep sections', async () => {
+    const { openItem } = await renderMenu();
+    const sheet = await openItem('Jump to section');
+    const pads = [...sheet.querySelectorAll('li button')].map((b) =>
+      parseFloat((b as HTMLElement).style.paddingLeft),
+    );
+    expect(Math.max(...pads)).toBeLessThanOrEqual(3);
   });
 
   it('never exposes the title of a locked spoiler section (§5.6)', async () => {
     const { openItem } = await renderMenu();
     const sheet = await openItem('Jump to section');
-    expect(sheet.querySelector('.sr-only')?.textContent).toBe('Hidden section');
+    expect(findButton(sheet, 'Hidden section').querySelector('.sr-only')?.textContent).toBe(
+      'Hidden section',
+    );
     expect(accessibleText(sheet)).not.toContain('Throne Room');
     expect(accessibleText(sheet)).toContain('Hidden section');
   });
@@ -138,6 +178,14 @@ describe('RunMenu (§5.2 ☰ menu)', () => {
       expect(el.querySelector('dialog[open]')).toBe(sheet);
     });
 
+    it('checks the length of the trimmed name', async () => {
+      const { fixture, queue } = await rename(`  ${'x'.repeat(100)}  `);
+      await vi.waitFor(async () => {
+        await fixture.whenStable();
+        expect(queue.pending().at(-1)).toMatchObject({ kind: 'run-name', name: 'x'.repeat(100) });
+      });
+    });
+
     it('rejects a name over 100 characters', async () => {
       const { fixture, queue, sheet } = await rename('x'.repeat(101));
       await fixture.whenStable();
@@ -166,13 +214,64 @@ describe('RunMenu (§5.2 ☰ menu)', () => {
     expect(queue.pending().length).toBeLessThanOrEqual(1);
   });
 
-  it('keeps the run when the server refuses the delete', async () => {
-    const { openItem, api, router } = await renderMenu();
-    api.deleteRun.mockRejectedValue(new Error('boom'));
-    const sheet = await openItem('Delete run');
-    click(sheet, 'Delete run');
-    await vi.waitFor(() => expect(api.deleteRun).toHaveBeenCalled());
-    expect(router.navigateByUrl).not.toHaveBeenCalled();
+  describe('delete failures and races', () => {
+    it('keeps the run when the server refuses the delete', async () => {
+      const { openItem, api, router, queue, store } = await renderMenu();
+      const cache = TestBed.inject(ResumeCache);
+      const forget = vi.spyOn(cache, 'forget');
+      const discard = vi.spyOn(queue, 'discardRun');
+      const show = vi.spyOn(TestBed.inject(Toasts), 'show');
+      api.deleteRun.mockRejectedValue(new Error('boom'));
+      const sheet = await openItem('Delete run');
+      click(sheet, 'Delete run');
+      await vi.waitFor(() => expect(show).toHaveBeenCalled());
+      expect(show.mock.calls[0]![0]).toContain("Couldn't delete the run.");
+      expect(router.navigateByUrl).not.toHaveBeenCalled();
+      expect(discard).not.toHaveBeenCalled();
+      expect(forget).not.toHaveBeenCalled();
+      expect(store.run()?.name).toBe('LK run');
+    });
+
+    it('treats a 404 as already deleted', async () => {
+      const { openItem, api, router, queue } = await renderMenu();
+      const cache = TestBed.inject(ResumeCache);
+      const forget = vi.spyOn(cache, 'forget');
+      const discard = vi.spyOn(queue, 'discardRun');
+      api.deleteRun.mockRejectedValue(new ApiError(404, 'not_found', 'gone'));
+      click(await openItem('Delete run'), 'Delete run');
+      await vi.waitFor(() => expect(router.navigateByUrl).toHaveBeenCalledWith('/runs'));
+      expect(discard).toHaveBeenCalledWith(RUN_ID);
+      expect(forget).toHaveBeenCalledWith(RUN_ID);
+    });
+
+    it('navigates before the store closes, and closes before forgetting', async () => {
+      const { openItem, api, router, store } = await renderMenu();
+      const cache = TestBed.inject(ResumeCache);
+      const order: string[] = [];
+      api.deleteRun.mockResolvedValue(undefined);
+      router.navigateByUrl = vi.fn(async () => {
+        order.push('navigate');
+        return true;
+      });
+      vi.spyOn(store, 'close').mockImplementation(() => void order.push('close'));
+      vi.spyOn(cache, 'forget').mockImplementation(() => void order.push('forget'));
+      click(await openItem('Delete run'), 'Delete run');
+      await vi.waitFor(() => expect(order).toEqual(['navigate', 'close', 'forget']));
+    });
+
+    it('sends one DELETE while the first is in flight', async () => {
+      const { openItem, api, fixture } = await renderMenu();
+      let finish!: () => void;
+      api.deleteRun.mockReturnValue(new Promise<void>((r) => (finish = r)));
+      const confirm = await openItem('Delete run');
+      click(confirm, 'Delete run');
+      await fixture.whenStable();
+      expect(findButton(confirm, 'Delete run').disabled).toBe(true);
+      click(confirm, 'Delete run');
+      expect(api.deleteRun).toHaveBeenCalledTimes(1);
+      finish();
+      await fixture.whenStable();
+    });
   });
 
   describe('Update guide entry point', () => {
