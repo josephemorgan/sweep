@@ -26,7 +26,7 @@ export function taskBadges(
     const label =
       status.nextChance === null
         ? 'Missed'
-        : `Missed · 2nd chance at ${nextChanceLabel ?? status.nextChance}`;
+        : `Missed · 2nd chance at ${nextChanceLabel ?? 'later'}`;
     badges.push({ label, tone: 'missed' });
   }
   if (lastChance) badges.push({ label: 'Last chance', tone: 'last-chance' });

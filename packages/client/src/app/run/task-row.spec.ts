@@ -116,10 +116,157 @@ describe('TaskRow', () => {
     ) as HTMLButtonElement;
     more.click();
     await fixture.whenStable();
-    (el.querySelector('[role="menuitem"]') as HTMLButtonElement).click();
+    (el.querySelector('[data-actions] button') as HTMLButtonElement).click();
     more.click();
     await fixture.whenStable();
-    ([...el.querySelectorAll('[role="menuitem"]')][1] as HTMLButtonElement).click();
+    ([...el.querySelectorAll('[data-actions] button')][1] as HTMLButtonElement).click();
     expect(emitted).toEqual(['dont-care', null]);
+  });
+});
+
+describe('TaskRow fix round 1', () => {
+  const trigger = (el: HTMLElement) =>
+    el.querySelector('button[aria-label^="More actions"]') as HTMLButtonElement;
+  const items = (el: HTMLElement) =>
+    [...el.querySelectorAll('[data-actions] button')] as HTMLButtonElement[];
+
+  it('uses a disclosure, not an ARIA menu', async () => {
+    const { el, fixture } = await render('village-chest', OPEN);
+    const more = trigger(el);
+    expect(more.getAttribute('aria-expanded')).toBe('false');
+    more.click();
+    await fixture.whenStable();
+    expect(more.getAttribute('aria-expanded')).toBe('true');
+    expect(el.querySelector('[role="menu"], [role="menuitem"]')).toBeNull();
+    const list = el.querySelector(`#${more.getAttribute('aria-controls')}`)!;
+    expect([...list.querySelectorAll('button')].map((b) => b.textContent!.trim())).toEqual([
+      "Don't care",
+      'Reset',
+    ]);
+    more.click();
+    await fixture.whenStable();
+    expect(more.getAttribute('aria-expanded')).toBe('false');
+  });
+
+  it('closes on Escape from the trigger and keeps focus there', async () => {
+    const { el, fixture } = await render('village-chest', OPEN);
+    const more = trigger(el);
+    more.click();
+    await fixture.whenStable();
+    more.focus();
+    more.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    await fixture.whenStable();
+    expect(more.getAttribute('aria-expanded')).toBe('false');
+    expect(document.activeElement).toBe(more);
+  });
+
+  it('closes and refocuses the trigger after choosing', async () => {
+    const { el, emitted, fixture } = await render('village-chest', OPEN);
+    const more = trigger(el);
+    more.click();
+    await fixture.whenStable();
+    items(el)[0]!.focus();
+    items(el)[0]!.click();
+    await fixture.whenStable();
+    expect(emitted).toEqual(['dont-care']);
+    expect(more.getAttribute('aria-expanded')).toBe('false');
+    expect(document.activeElement).toBe(more);
+  });
+
+  it('closes when focus leaves the row or a pointer goes down outside', async () => {
+    const { el, fixture } = await render('village-chest', OPEN);
+    const more = trigger(el);
+    more.click();
+    await fixture.whenStable();
+    items(el)[0]!.dispatchEvent(
+      new FocusEvent('focusout', { bubbles: true, relatedTarget: document.body }),
+    );
+    await fixture.whenStable();
+    expect(more.getAttribute('aria-expanded')).toBe('false');
+    more.click();
+    await fixture.whenStable();
+    document.body.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }));
+    await fixture.whenStable();
+    expect(more.getAttribute('aria-expanded')).toBe('false');
+  });
+
+  it('keeps the menu open when focus moves within the wrapper', async () => {
+    const { el, fixture } = await render('village-chest', OPEN);
+    const more = trigger(el);
+    more.click();
+    await fixture.whenStable();
+    items(el)[0]!.dispatchEvent(
+      new FocusEvent('focusout', { bubbles: true, relatedTarget: items(el)[1] }),
+    );
+    await fixture.whenStable();
+    expect(more.getAttribute('aria-expanded')).toBe('true');
+  });
+
+  it('focuses the revealed title after a keyboard reveal', async () => {
+    const { el, fixture } = await render('keepers-lantern', OPEN);
+    const reveal = el.querySelector(
+      'button[aria-label="Hidden spoiler task. Tap to reveal."]',
+    ) as HTMLButtonElement;
+    reveal.focus();
+    reveal.click();
+    await fixture.whenStable();
+    expect(document.activeElement).not.toBe(document.body);
+    expect(el.contains(document.activeElement)).toBe(true);
+    expect(document.activeElement!.textContent).toContain("The keeper's lantern");
+  });
+
+  it('points the title at the how region while it exists, with unique ids', async () => {
+    const a = await render('village-chest', OPEN);
+    const b = await render('lost-cat', OPEN);
+    const titleA = a.el.querySelector('button[aria-expanded]') as HTMLButtonElement;
+    const titleB = b.el.querySelector('button[aria-expanded]') as HTMLButtonElement;
+    expect(titleA.hasAttribute('aria-controls')).toBe(false);
+    titleA.click();
+    titleB.click();
+    await a.fixture.whenStable();
+    await b.fixture.whenStable();
+    const idA = titleA.getAttribute('aria-controls')!;
+    const idB = titleB.getAttribute('aria-controls')!;
+    expect(idA).not.toBe(idB);
+    expect(a.el.querySelector(`#${idA}`)!.textContent).toContain('Push the crate');
+    expect(b.el.querySelector(`#${idB}`)!.textContent).toContain('cat hides');
+  });
+
+  it('renders a task without how as plain text, not a button', async () => {
+    const { el } = await render('ferry-passage', OPEN);
+    expect(
+      [...el.querySelectorAll('button')].some((b) => b.textContent?.includes('Pay the ferryman')),
+    ).toBe(false);
+    expect(el.textContent).toContain('Pay the ferryman');
+  });
+
+  it('resets a done row with null', async () => {
+    const { el, emitted, fixture } = await render('village-chest', { kind: 'done' });
+    trigger(el).click();
+    await fixture.whenStable();
+    items(el)[1]!.click();
+    expect(emitted).toEqual([null]);
+  });
+
+  it('does not emit from a disabled not-chosen checkbox', async () => {
+    const { checkbox, emitted } = await render('moonshield', { kind: 'not-chosen' });
+    checkbox.click();
+    expect(emitted).toEqual([]);
+  });
+
+  it('renders a spoiler-safe next-chance label in the Missed badge', async () => {
+    const { el } = await render(
+      'lost-cat',
+      { kind: 'missed', nextChance: 'epilogue' },
+      { nextChanceLabel: 'a hidden section' },
+    );
+    expect(el.textContent).toContain('Missed · 2nd chance at a hidden section');
+    expect(el.textContent).not.toContain('epilogue');
+  });
+
+  it('never falls back to a raw section id', () => {
+    expect(
+      taskBadges({ kind: 'missed', nextChance: 'epilogue' }, false, false, null)[0]!.label,
+    ).toBe('Missed · 2nd chance at later');
   });
 });

@@ -1,14 +1,32 @@
-import { Component, computed, inject, input, output, signal } from '@angular/core';
+import {
+  Component,
+  Injector,
+  afterNextRender,
+  computed,
+  inject,
+  input,
+  output,
+  signal,
+  viewChild,
+  type ElementRef,
+} from '@angular/core';
 import type { Task, TaskState, TaskStatus } from '@sweep/core';
 import { MarkdownView } from '../shared/markdown-view';
 import { Reveals } from './reveals';
 import { taskBlurred, taskRevealKey } from './spoiler';
 import { BADGE_CLASS, taskBadges } from './task-badges';
 
+let nextId = 0;
+
 @Component({
   selector: 'app-task-row',
   imports: [MarkdownView],
-  host: { class: 'block' },
+  host: {
+    class: 'block',
+    '(document:pointerdown)': 'onPointerDown($event)',
+    '(keydown.escape)': 'onEscape()',
+    '(focusout)': 'onFocusOut($event)',
+  },
   template: `
     <div class="flex items-start gap-1" [class.opacity-60]="notChosen()">
       <label class="flex min-h-11 min-w-11 shrink-0 items-center justify-center">
@@ -32,16 +50,29 @@ import { BADGE_CLASS, taskBadges } from './task-badges';
             <span aria-hidden="true" class="select-none blur-md">{{ task().title }}</span>
           </button>
         } @else {
-          <button
-            type="button"
-            class="min-h-11 w-full text-left"
-            [class.line-through]="done()"
-            [class.text-fg-muted]="resolved()"
-            [attr.aria-expanded]="task().how ? howOpen() : null"
-            (click)="howOpen.set(!howOpen())"
-          >
-            {{ task().title }}
-          </button>
+          @if (task().how) {
+            <button
+              #title
+              type="button"
+              class="min-h-11 w-full text-left"
+              [class.line-through]="done()"
+              [class.text-fg-muted]="resolved()"
+              [attr.aria-expanded]="howOpen()"
+              [attr.aria-controls]="howOpen() ? howId : null"
+              (click)="howOpen.set(!howOpen())"
+            >
+              {{ task().title }}
+            </button>
+          } @else {
+            <span
+              #title
+              tabindex="-1"
+              class="flex min-h-11 items-center"
+              [class.line-through]="done()"
+              [class.text-fg-muted]="resolved()"
+              >{{ task().title }}</span
+            >
+          }
         }
         @if (badges().length > 0) {
           <div class="-mt-1 mb-1 flex flex-wrap gap-1">
@@ -56,15 +87,16 @@ import { BADGE_CLASS, taskBadges } from './task-badges';
         }
         @if (task().how; as how) {
           @if (howOpen() && !blurred()) {
-            <app-markdown-view class="block pb-2 text-fg-muted" [source]="how" />
+            <app-markdown-view [id]="howId" class="block pb-2 text-fg-muted" [source]="how" />
           }
         }
       </div>
-      <div class="relative shrink-0">
+      <div #wrap class="relative shrink-0">
         <button
+          #trigger
           type="button"
           class="btn-quiet"
-          aria-haspopup="menu"
+          [attr.aria-controls]="menuOpen() ? actionsId : null"
           [attr.aria-expanded]="menuOpen()"
           [attr.aria-label]="
             'More actions for ' + (blurred() ? 'hidden spoiler task' : task().title)
@@ -75,25 +107,14 @@ import { BADGE_CLASS, taskBadges } from './task-badges';
         </button>
         @if (menuOpen()) {
           <div
-            role="menu"
-            tabindex="-1"
+            data-actions
+            [id]="actionsId"
             class="absolute right-0 top-full z-30 flex min-w-40 flex-col rounded-control border border-border bg-surface-raised py-1 shadow-lg"
-            (keydown.escape)="menuOpen.set(false)"
           >
-            <button
-              type="button"
-              role="menuitem"
-              class="min-h-11 px-4 text-left"
-              (click)="choose('dont-care')"
-            >
+            <button type="button" class="min-h-11 px-4 text-left" (click)="choose('dont-care')">
               Don't care
             </button>
-            <button
-              type="button"
-              role="menuitem"
-              class="min-h-11 px-4 text-left"
-              (click)="choose(null)"
-            >
+            <button type="button" class="min-h-11 px-4 text-left" (click)="choose(null)">
               Reset
             </button>
           </div>
@@ -111,6 +132,13 @@ export class TaskRow {
   readonly stateChange = output<TaskState | null>();
 
   private readonly reveals = inject(Reveals);
+  private readonly injector = inject(Injector);
+  private readonly uid = ++nextId;
+  protected readonly howId = `how-${this.uid}`;
+  protected readonly actionsId = `actions-${this.uid}`;
+  private readonly title = viewChild<ElementRef<HTMLElement>>('title');
+  private readonly trigger = viewChild<ElementRef<HTMLElement>>('trigger');
+  private readonly wrap = viewChild<ElementRef<HTMLElement>>('wrap');
   protected readonly badgeClass = BADGE_CLASS;
   protected readonly howOpen = signal(false);
   protected readonly menuOpen = signal(false);
@@ -132,10 +160,31 @@ export class TaskRow {
 
   protected reveal(): void {
     this.reveals.reveal(taskRevealKey(this.task().id));
+    // The tapped button is destroyed; keep focus on the revealed title instead of <body>.
+    afterNextRender(() => this.title()?.nativeElement.focus(), { injector: this.injector });
+  }
+
+  protected onEscape(): void {
+    if (!this.menuOpen()) return;
+    this.menuOpen.set(false);
+    this.trigger()?.nativeElement.focus();
+  }
+
+  protected onFocusOut(event: FocusEvent): void {
+    const next = event.relatedTarget;
+    if (next instanceof Node && !this.wrap()?.nativeElement.contains(next))
+      this.menuOpen.set(false);
+  }
+
+  protected onPointerDown(event: Event): void {
+    if (this.menuOpen() && !this.wrap()?.nativeElement.contains(event.target as Node)) {
+      this.menuOpen.set(false);
+    }
   }
 
   protected choose(state: TaskState | null): void {
     this.menuOpen.set(false);
+    this.trigger()?.nativeElement.focus();
     this.stateChange.emit(state);
   }
 }
