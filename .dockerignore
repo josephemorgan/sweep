@@ -9,3 +9,5 @@
 .claude
 packages/client/playwright-report
 packages/client/test-results
+docs/
+.superpowers/

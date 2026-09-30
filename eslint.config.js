@@ -23,7 +23,7 @@ export default defineConfig([
 
   // All TS/JS: recommended rules, Node globals for tooling and server code.
   {
-    files: ['**/*.{ts,js,mjs,cjs}'],
+    files: ['**/*.{ts,mts,js,mjs,cjs}'],
     extends: [eslint.configs.recommended, tseslint.configs.recommended],
     languageOptions: { globals: { ...globals.node } },
     rules: {

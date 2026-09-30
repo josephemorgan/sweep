@@ -1,6 +1,9 @@
 @import 'tailwindcss';
 @import './styles/tokens.css';
 
+/* Spec §5.9: the 4:3 handheld layout. */
+@custom-variant handheld (@media (orientation: landscape) and (max-height: 800px));
+
 @layer base {
   :root {
     color-scheme: dark;
@@ -9,4 +12,30 @@
   body {
     @apply bg-surface text-fg antialiased;
   }
+
+  :focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+  }
+
+  [id^='section-'] {
+    scroll-margin-top: 4rem;
+    scroll-margin-bottom: 8rem;
+  }
+}
+
+@utility btn {
+  @apply inline-flex min-h-11 min-w-11 items-center justify-center gap-2 rounded-control border border-border bg-surface-raised px-3 text-sm font-medium text-fg disabled:opacity-50;
+}
+@utility btn-primary {
+  @apply inline-flex min-h-11 min-w-11 items-center justify-center gap-2 rounded-control border border-accent bg-accent px-3 text-sm font-semibold text-on-accent disabled:opacity-50;
+}
+@utility btn-danger {
+  @apply inline-flex min-h-11 min-w-11 items-center justify-center gap-2 rounded-control border border-missed bg-missed px-3 text-sm font-semibold text-on-accent disabled:opacity-50;
+}
+@utility btn-quiet {
+  @apply inline-flex min-h-11 min-w-11 items-center justify-center gap-1 rounded-control px-2 text-sm text-fg-muted;
+}
+@utility field {
+  @apply min-h-11 w-full rounded-control border border-border bg-surface px-3 text-fg;
 }
