@@ -29,57 +29,85 @@ interface CardSource {
       [id]="'section-' + leafId()"
       [attr.aria-label]="blurred() ? 'Hidden section' : leaf().title"
       [attr.data-state]="state()"
-      class="scroll-mt-14 border"
+      class="scroll-mt-14"
       [class]="cardClasses()"
     >
       <div role="heading" [attr.aria-level]="level()">
         <button
           type="button"
-          class="flex min-h-11 w-full items-center gap-2 px-3 text-left"
+          class="flex w-full items-center gap-2.5 pl-3 pr-4 text-left"
+          [class]="buttonClasses()"
           [attr.aria-current]="detailPane() && selected() ? 'true' : null"
           [attr.aria-expanded]="detailPane() ? null : expanded()"
           [attr.aria-controls]="expanded() && !detailPane() ? bodyId() : null"
           (click)="headerClick()"
         >
-          @if (state() === 'locked') {
-            <svg aria-hidden="true" viewBox="0 0 16 16" class="size-4 shrink-0 fill-current">
-              <path d="M5 7V5a3 3 0 1 1 6 0v2h1v7H4V7zm1.5 0h3V5a1.5 1.5 0 1 0-3 0z" />
-            </svg>
-            <span class="sr-only">Locked:</span>
-          }
-          <span
-            class="min-w-0 flex-1"
-            [class]="selected() ? 'font-display text-lamp' : 'font-medium'"
-            [class.line-through]="state() === 'cleared'"
-          >
-            @if (blurred()) {
-              <span class="inline-flex items-center gap-2.5"
-                ><span aria-hidden="true" class="redaction" [style.width.px]="barWidth()"></span
-                ><span aria-hidden="true" class="text-xs font-normal text-fg-muted"
-                  >tap to reveal</span
-                ><span aria-hidden="true" class="sr-only select-none">{{ leaf().title }}</span
-                ><span class="sr-only">Hidden section</span></span
-              >
-            } @else {
-              {{ leaf().title }}
+          <span data-node aria-hidden="true" class="relative z-10 flex w-4 shrink-0 justify-center">
+            @switch (node()) {
+              @case ('lamp') {
+                <span
+                  class="size-3.5 rounded-full bg-lamp"
+                  style="box-shadow: 0 0 0 3px var(--color-surface), 0 0 0 4.5px var(--color-rail-ring)"
+                ></span>
+              }
+              @case ('cleared') {
+                <span class="size-2 rounded-full bg-rail-dot"></span>
+              }
+              @case ('locked') {
+                <span
+                  class="size-[9px] rounded-full border-[1.5px] border-dashed border-rail-ring bg-surface"
+                ></span>
+              }
+              @default {
+                <span
+                  class="size-[9px] rounded-full border-[1.5px] border-solid border-rail-ring bg-surface"
+                ></span>
+              }
+            }
+          </span>
+          <span class="min-w-0 flex-1 py-1">
+            <span class="block text-sm" [class]="titleClasses()">
+              @if (state() === 'locked') {
+                <span class="sr-only">Locked:</span>
+              }
+              @if (blurred()) {
+                <span class="inline-flex items-center gap-2.5"
+                  ><span aria-hidden="true" class="redaction" [style.width.px]="barWidth()"></span
+                  ><span aria-hidden="true" class="text-xs font-normal text-fg-muted"
+                    >tap to reveal</span
+                  ><span aria-hidden="true" class="sr-only select-none">{{ leaf().title }}</span
+                  ><span class="sr-only">Hidden section</span></span
+                >
+              } @else {
+                {{ leaf().title }}
+              }
+            </span>
+            @if (variant() === 'row') {
+              @if (hint(); as text) {
+                <span data-hint class="block text-xs text-fg-muted">{{ text }}</span>
+              } @else if (lockText(); as text) {
+                <span class="block text-xs text-fg-muted">{{ text }}</span>
+              }
             }
           </span>
           @if (pinned()) {
-            <span class="rounded-control border border-accent px-1.5 text-xs text-accent"
-              >Pinned</span
-            >
+            <span class="text-xs text-accent">Pinned</span>
           }
           @if (openCount() > 0) {
-            <span class="text-sm text-open">{{ openCount() }} open</span>
+            <span class="text-[13px]" [class]="state() === 'locked' ? 'text-fg-muted' : 'text-open'"
+              >{{ openCount() }} open</span
+            >
           }
         </button>
       </div>
-      @if (hint(); as text) {
-        <p data-hint class="m-0 px-3 pb-2 text-xs text-fg-muted">{{ text }}</p>
-      } @else if (lockText(); as text) {
-        <p class="m-0 px-3 pb-2 text-sm">{{ text }}</p>
+      @if (variant() === 'panel') {
+        @if (hint(); as text) {
+          <p data-hint class="m-0 px-3 pb-2 text-xs text-fg-muted">{{ text }}</p>
+        } @else if (lockText(); as text) {
+          <p class="m-0 px-3 pb-2 text-sm">{{ text }}</p>
+        }
       }
-      @if (expanded() && !detailPane()) {
+      @if (variant() === 'panel' && expanded() && !detailPane()) {
         <div [id]="bodyId()" class="flex flex-col gap-2 px-3 pb-3">
           <p class="m-0 text-sm text-fg-muted">
             <app-spoiler-text
@@ -168,13 +196,28 @@ export class LeafCard {
   protected readonly pinned = computed(
     () => this.view().pinned && this.view().current === this.leafId(),
   );
+  /** Compact current row of the two-pane layout. */
+  private readonly compact = computed(
+    () =>
+      this.variant() === 'row' &&
+      this.detailPane() &&
+      (this.selected() || this.state() === 'current'),
+  );
+  protected readonly node = computed<'lamp' | 'cleared' | 'locked' | 'unlocked'>(() => {
+    const state = this.state();
+    if (state === 'cleared') return 'cleared';
+    if (this.detailPane() ? this.selected() || state === 'current' : state === 'current')
+      return 'lamp';
+    return state === 'locked' ? 'locked' : 'unlocked';
+  });
   protected readonly cardClasses = computed(() => {
     const state = this.state();
+    if (this.variant() === 'row') return this.compact() ? 'rounded-l-panel bg-surface-raised' : '';
     if (this.detailPane()) {
-      if (this.selected()) return 'rounded-l-panel border-transparent bg-surface-raised';
+      if (this.selected()) return 'border rounded-l-panel border-transparent bg-surface-raised';
       return state === 'locked'
-        ? 'rounded-panel border-transparent bg-surface text-fg-muted'
-        : 'rounded-panel border-transparent bg-surface';
+        ? 'border rounded-panel border-transparent bg-surface text-fg-muted'
+        : 'border rounded-panel border-transparent bg-surface';
     }
     const colors =
       state === 'current'
@@ -182,7 +225,26 @@ export class LeafCard {
         : state === 'locked'
           ? 'border-border bg-surface text-fg-muted'
           : 'border-border bg-surface-raised';
-    return 'rounded-panel ' + colors;
+    return 'border rounded-panel ' + colors;
+  });
+  protected readonly buttonClasses = computed(() => {
+    if (this.variant() === 'panel') return 'min-h-11';
+    if (this.compact()) return 'h-11';
+    switch (this.state()) {
+      case 'cleared':
+        return 'h-9 text-fg-cleared';
+      case 'locked':
+        return 'min-h-11 text-fg-muted';
+      default:
+        return 'min-h-11';
+    }
+  });
+  protected readonly titleClasses = computed(() => {
+    if (this.compact() || (this.variant() === 'panel' && this.selected()))
+      return 'font-display font-semibold text-[15px] text-lamp truncate';
+    if (this.variant() === 'panel')
+      return this.state() === 'cleared' ? 'font-medium line-through' : 'font-medium';
+    return this.state() === 'cleared' ? 'truncate line-through decoration-rail-dot' : 'truncate';
   });
   protected readonly bodyId = computed(() => 'card-body-' + this.leafId());
   protected readonly revealKey = computed(() => sectionRevealKey(this.leafId()));

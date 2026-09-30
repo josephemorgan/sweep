@@ -107,7 +107,7 @@ describe('SectionList (route rail)', () => {
     await fixture.whenStable();
     expect(emitted).toEqual(['marsh']);
     expect(card('marsh').className).toContain('bg-surface-raised');
-    expect(card('village').className).not.toContain('bg-surface-raised');
+    expect(card('epilogue').className).not.toContain('bg-surface-raised');
     expect(card('marsh').querySelector('button')!.getAttribute('aria-current')).toBe('true');
     expect(card('village').querySelector('button')!.hasAttribute('aria-current')).toBe(false);
     expect(el.querySelector('[id^="card-body-"]')).toBeNull();
