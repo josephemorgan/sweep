@@ -10,6 +10,7 @@ import {
 } from '@angular/core';
 import type { ClearImpact } from '@sweep/core';
 import { lockReason } from './lock-reason';
+import { taskHome } from './metric-groups';
 import { Reveals } from './reveals';
 import { RunStore } from './run-store';
 import { sectionLabel, taskBlurred, taskRevealKey } from './spoiler';
@@ -21,38 +22,38 @@ const capitalize = (s: string): string => s.charAt(0).toUpperCase() + s.slice(1)
   selector: 'app-clear-dialog',
   imports: [SpoilerText],
   template: `
-    <div class="flex flex-col gap-3 p-4">
+    <div class="flex flex-col gap-3 px-5 pb-5">
       @if (lockedText(); as text) {
-        <p class="m-0 rounded-control border border-last-chance p-2 text-sm">{{ text }}</p>
+        <p class="m-0 text-[15px] leading-[21px] text-missed">{{ text }}</p>
       }
       @if (impact().closing.length > 0) {
-        <p class="m-0 font-semibold">{{ closesText() }}</p>
-        @for (list of lists(); track list.heading) {
-          @if (list.items.length > 0) {
-            <section>
-              <h3 class="m-0 text-sm font-semibold" [class]="list.tone">{{ list.heading }}</h3>
-              <ul class="m-0 list-none p-0">
-                @for (item of list.items; track item.taskId) {
-                  <li class="flex min-h-11 flex-wrap items-center gap-x-1">
-                    <app-spoiler-text
-                      [text]="title(item.taskId)"
-                      [hidden]="blurred(item.taskId)"
-                      [revealKey]="revealKey(item.taskId)"
-                      label="Hidden spoiler task. Tap to reveal."
-                    />
-                    @if (item.nextChance; as next) {
-                      {{ ' ' }}<span class="text-fg-muted">· 2nd chance at {{ label(next) }}</span>
-                    }
-                  </li>
-                }
-              </ul>
-            </section>
+        <p class="m-0 text-[15px] leading-[21px]">{{ closesText() }}</p>
+        <ul class="m-0 list-none border-t border-rule p-0">
+          @for (row of rows(); track row.taskId) {
+            <li class="flex min-h-12 items-center gap-3 border-b border-rule">
+              <span aria-hidden="true" class="size-2 shrink-0 rounded-full bg-last-chance"></span>
+              <span class="flex min-w-0 flex-1 flex-col">
+                <app-spoiler-text
+                  [text]="title(row.taskId)"
+                  [hidden]="blurred(row.taskId)"
+                  [revealKey]="revealKey(row.taskId)"
+                  label="Hidden spoiler task. Tap to reveal."
+                />
+                <span class="text-xs text-fg-muted">{{ row.sub }}</span>
+              </span>
+              @if (row.next; as next) {
+                <span class="text-xs text-fg-muted">2nd chance at {{ next }}</span>
+              } @else {
+                <span class="text-xs font-bold text-last-chance">Gone for good</span>
+              }
+            </li>
           }
-        }
+        </ul>
       }
+      <p class="m-0 text-[13px] leading-[18px] text-fg-muted">Everything else here stays open.</p>
       <div class="flex justify-end gap-2 pt-1">
-        <button #cancel type="button" class="btn" (click)="cancelled.emit()">Cancel</button>
-        <button type="button" class="btn-danger" (click)="confirmed.emit()">Clear anyway</button>
+        <button #cancel type="button" class="btn" (click)="cancelled.emit()">Stay here</button>
+        <button type="button" class="btn-primary" (click)="confirmed.emit()">Clear anyway</button>
       </div>
     </div>
   `,
@@ -69,7 +70,7 @@ export class ClearDialog {
   protected readonly revealKey = taskRevealKey;
 
   constructor() {
-    // Focus Cancel explicitly: the destructive action must not be the initial focus.
+    // Focus Stay here explicitly: the destructive action must not be the initial focus.
     afterNextRender(() => this.cancelButton().nativeElement.focus());
   }
 
@@ -81,17 +82,26 @@ export class ClearDialog {
     return `${capitalize(this.label(this.leafId()))} is locked (${requires}). Clear anyway?`;
   });
   protected readonly closesText = computed(() => {
-    const n = this.impact().closing.length;
-    return `Clearing ${this.label(this.leafId())} closes ${n} open ${n === 1 ? 'task' : 'tasks'}.`;
+    const { closing, lastChance } = this.impact();
+    const n = closing.length;
+    const lead = `Clearing this section closes ${n} open ${n === 1 ? 'task' : 'tasks'}.`;
+    return lastChance.length === n ? `${lead} They have no second chance.` : lead;
   });
-  protected readonly lists = computed(() => [
-    { heading: 'Gone for good', tone: 'text-missed', items: this.impact().lastChance },
-    {
-      heading: 'Closes until later',
-      tone: 'text-fg',
-      items: this.impact().closing.filter((c) => c.nextChance !== null),
-    },
-  ]);
+  protected readonly rows = computed(() =>
+    this.impact().closing.map((c) => {
+      const index = this.store.index()!;
+      const task = index.tasks.get(c.taskId)!;
+      const category =
+        this.store.guide()?.categories.find((k) => k.id === task.category)?.name ?? task.category;
+      const homeId = taskHome(c.taskId, index, this.store.view()!);
+      const home = homeId === this.leafId() ? 'here' : this.label(homeId);
+      return {
+        taskId: c.taskId,
+        sub: `${category} · ${home}`,
+        next: c.nextChance === null ? null : this.label(c.nextChance),
+      };
+    }),
+  );
 
   protected title(taskId: string): string {
     return this.store.index()!.tasks.get(taskId)!.title;

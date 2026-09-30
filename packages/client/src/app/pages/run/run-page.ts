@@ -164,7 +164,7 @@ export class RunPage implements RunActions {
   protected readonly updating = signal(false);
   protected readonly clearHeading = computed(() => {
     const pending = this.pendingClear();
-    return pending ? `Clear ${this.label(pending.leafId)}?` : 'Clear section';
+    return pending ? `Leave ${this.label(pending.leafId)} behind?` : 'Clear section';
   });
   protected readonly pinMessage = computed(() => {
     const leafId = this.pendingPin();

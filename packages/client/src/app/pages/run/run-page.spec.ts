@@ -123,7 +123,10 @@ describe('RunPage clear and pin (§5.4)', () => {
     const { el, fixture, store } = await renderPage();
     fixture.componentInstance.requestClear('village');
     await fixture.whenStable();
-    expect(dialog(el)?.textContent).toContain('Clear Harrow Village?');
+    const d = dialog(el)!;
+    const title = el.querySelector(`#${d.getAttribute('aria-labelledby')}`)!;
+    expect(title.textContent?.trim()).toBe('Leave Harrow Village behind?');
+    expect(title.classList.contains('text-lamp')).toBe(true);
     expect(store.view()?.sections.get('village')?.cleared).toBe(false);
     click(dialog(el)!, 'Clear anyway');
     await fixture.whenStable();
@@ -164,17 +167,17 @@ describe('RunPage clear and pin (§5.4)', () => {
     const { el, fixture, store } = await renderPage();
     fixture.componentInstance.requestClear('village');
     await fixture.whenStable();
-    click(dialog(el)!, 'Cancel');
+    click(dialog(el)!, 'Stay here');
     await fixture.whenStable();
     expect(dialog(el)).toBeNull();
     expect(store.view()?.sections.get('village')?.cleared).toBe(false);
   });
 
-  it('focuses Cancel when the Clear dialog opens', async () => {
+  it('focuses Stay here when the Clear dialog opens', async () => {
     const { el, fixture } = await renderPage();
     fixture.componentInstance.requestClear('village');
     await fixture.whenStable();
-    await vi.waitFor(() => expect(document.activeElement?.textContent?.trim()).toBe('Cancel'));
+    await vi.waitFor(() => expect(document.activeElement?.textContent?.trim()).toBe('Stay here'));
     expect(dialog(el)?.contains(document.activeElement)).toBe(true);
   });
 
