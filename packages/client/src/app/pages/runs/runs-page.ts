@@ -46,7 +46,7 @@ type LoadState = 'loading' | 'ready' | 'failed';
                 <li>
                   <a
                     [routerLink]="['/runs', run.id]"
-                    class="block min-h-11 rounded-card border border-border bg-surface-raised px-4 py-3"
+                    class="block min-h-11 rounded-panel border border-border bg-surface-raised px-4 py-3"
                   >
                     <span class="block font-semibold">{{ run.name }}</span>
                     <span class="block text-sm text-fg-muted">{{ run.game }}</span>

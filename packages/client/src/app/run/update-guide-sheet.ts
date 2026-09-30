@@ -49,7 +49,7 @@ interface Problem {
       @if (problem(); as p) {
         <div
           role="alert"
-          class="flex flex-wrap items-center gap-2 rounded-card border border-missed p-3"
+          class="flex flex-wrap items-center gap-2 rounded-panel border border-missed p-3"
         >
           <p class="m-0 flex-1">{{ p.message }}</p>
           @if (p.retry) {

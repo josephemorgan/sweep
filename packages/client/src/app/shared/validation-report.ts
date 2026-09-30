@@ -19,7 +19,7 @@ export function issueLocation(issue: Issue): string {
         </div>
       }
       @if (errors().length > 0) {
-        <div role="alert" class="rounded-card border border-missed p-3">
+        <div role="alert" class="rounded-panel border border-missed p-3">
           <p class="m-0 font-semibold text-missed">{{ headline() }}</p>
           <ul class="m-0 mt-2 list-none p-0 text-sm">
             @for (item of errors(); track $index) {
@@ -35,7 +35,7 @@ export function issueLocation(issue: Issue): string {
         <p class="m-0 text-sm text-open">No errors.</p>
       }
       @if (warnings().length > 0) {
-        <details class="rounded-card border border-border px-3">
+        <details class="rounded-panel border border-border px-3">
           <summary class="flex min-h-11 cursor-pointer items-center">
             {{ warnings().length }} {{ warnings().length === 1 ? 'warning' : 'warnings' }}
           </summary>
