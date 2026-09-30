@@ -41,7 +41,7 @@ describe('styles.css', () => {
   });
 
   it('phone sheet is flat with a top rule', () => {
-    const rule = /\n {2}\.sheet \{([^}]*)\}/.exec(css)?.[1] ?? '';
+    const rule = /(^|\n)\s*\.sheet\s*\{([^}]*)\}/.exec(css)?.[2] ?? '';
     expect(rule).toContain('border-top: 1px solid var(--color-border)');
     expect(rule).toMatch(/border-radius:\s*0\s*;/);
   });
@@ -56,5 +56,9 @@ describe('styles.css', () => {
   it('checked ck is accent-filled', () => {
     expect(utilityBody('ck')).toContain('&:checked');
     expect(utilityBody('ck')).toContain('var(--color-accent)');
+  });
+
+  it('@utility ck supports forced-colors mode', () => {
+    expect(utilityBody('ck')).toContain('forced-colors');
   });
 });
