@@ -31,7 +31,8 @@ export class ConfirmSheet {
   readonly confirmed = output<void>();
 
   protected confirm(): void {
-    this.open.set(false);
+    // Emit first: a parent that clears its pending state on openChange(false) would lose it.
     this.confirmed.emit();
+    this.open.set(false);
   }
 }

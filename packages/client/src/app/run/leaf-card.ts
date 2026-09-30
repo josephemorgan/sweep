@@ -162,7 +162,8 @@ export class LeafCard {
     ),
   );
   protected readonly lockText = computed(() => {
-    if (this.state() !== 'locked') return null;
+    const section = this.view().sections.get(this.leafId())!;
+    if (section.unlocked || section.cleared) return null;
     const reason = lockReason(this.index(), this.view(), this.leafId());
     if (!reason) return null;
     const names = reason.ids.map((id) => this.label(id)).join(', ');

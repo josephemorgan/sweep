@@ -1,4 +1,5 @@
 import { TestBed } from '@angular/core/testing';
+import { SheetStack } from '../../shared/sheet-stack';
 import { Toasts } from '../../shared/toasts';
 import { RUN_ID, lanternKeepPayload } from '../../../testing/lantern-keep';
 import { ResumeCache } from '../../run/resume-cache';
@@ -102,5 +103,96 @@ describe('RunPage', () => {
     await fixture.whenStable();
     expect(store.view()?.current).toBe('keep-gate');
     expect(el.querySelector('#section-keep-gate')?.getAttribute('data-state')).toBe('current');
+  });
+});
+
+describe('RunPage clear and pin (§5.4)', () => {
+  const dialog = (el: HTMLElement): HTMLDialogElement | null => el.querySelector('dialog[open]');
+  const click = (root: Element, name: string): void =>
+    [...root.querySelectorAll('button')].find((b) => b.textContent?.trim() === name)!.click();
+
+  it('clears at once when the leaf is unlocked and nothing closes', async () => {
+    const { el, fixture, store } = await renderPage({ cleared: ['village', 'marsh'] });
+    fixture.componentInstance.requestClear('keep-gate');
+    await fixture.whenStable();
+    expect(dialog(el)).toBeNull();
+    expect(store.view()?.sections.get('keep-gate')?.cleared).toBe(true);
+  });
+
+  it('asks first when something closes, then clears with Undo', async () => {
+    const { el, fixture, store } = await renderPage();
+    fixture.componentInstance.requestClear('village');
+    await fixture.whenStable();
+    expect(dialog(el)?.textContent).toContain('Clear Harrow Village?');
+    expect(store.view()?.sections.get('village')?.cleared).toBe(false);
+    click(dialog(el)!, 'Clear anyway');
+    await fixture.whenStable();
+    expect(store.view()?.current).toBe('marsh');
+    expect(dialog(el)).toBeNull();
+    const toasts = TestBed.inject(Toasts);
+    toasts.runAction(toasts.toasts()[0]!.id);
+    expect(store.view()?.current).toBe('village');
+  });
+
+  it('closes the sheet and empties the SheetStack before the Undo toast shows', async () => {
+    const { el, fixture } = await renderPage();
+    const stack = TestBed.inject(SheetStack);
+    fixture.componentInstance.requestClear('village');
+    await fixture.whenStable();
+    expect(stack.isEmpty()).toBe(false);
+    click(dialog(el)!, 'Clear anyway');
+    await fixture.whenStable();
+    expect(stack.isEmpty()).toBe(true);
+    expect(TestBed.inject(Toasts).toasts()[0]?.action?.label).toBe('Undo');
+  });
+
+  it('undo restores the previous pin when the clear removed it', async () => {
+    const { fixture, store } = await renderPage({
+      cleared: ['village', 'marsh', 'keep-gate'],
+      pin: 'east-tower',
+    });
+    fixture.componentInstance.requestClear('east-tower');
+    await fixture.whenStable();
+    expect(store.view()?.pinned).toBe(false);
+    const toasts = TestBed.inject(Toasts);
+    toasts.runAction(toasts.toasts()[0]!.id);
+    expect(store.view()?.current).toBe('east-tower');
+    expect(store.view()?.pinned).toBe(true);
+  });
+
+  it('cancels without clearing', async () => {
+    const { el, fixture, store } = await renderPage();
+    fixture.componentInstance.requestClear('village');
+    await fixture.whenStable();
+    click(dialog(el)!, 'Cancel');
+    await fixture.whenStable();
+    expect(dialog(el)).toBeNull();
+    expect(store.view()?.sections.get('village')?.cleared).toBe(false);
+  });
+
+  it('focuses Cancel when the Clear dialog opens', async () => {
+    const { el, fixture } = await renderPage();
+    fixture.componentInstance.requestClear('village');
+    await fixture.whenStable();
+    await vi.waitFor(() => expect(document.activeElement?.textContent?.trim()).toBe('Cancel'));
+    expect(dialog(el)?.contains(document.activeElement)).toBe(true);
+  });
+
+  it('asks before pinning a locked leaf, then shows it as current with a lock hint', async () => {
+    const { el, fixture, store } = await renderPage();
+    fixture.componentInstance.requestPin('marsh');
+    await fixture.whenStable();
+    expect(dialog(el)?.textContent).toContain('Whisper Marsh is locked (requires Harrow Village).');
+    click(dialog(el)!, 'Pin anyway');
+    await fixture.whenStable();
+    expect(store.view()?.current).toBe('marsh');
+    expect(el.querySelector('#section-marsh')?.textContent).toContain('Requires: Harrow Village');
+  });
+
+  it('pins an unlocked leaf at once', async () => {
+    const { fixture, store } = await renderPage({ cleared: ['village', 'marsh', 'keep-gate'] });
+    fixture.componentInstance.requestPin('west-tower');
+    expect(store.view()?.current).toBe('west-tower');
+    expect(store.view()?.pinned).toBe(true);
   });
 });

@@ -1,4 +1,13 @@
-import { Component, computed, inject, input, output } from '@angular/core';
+import {
+  Component,
+  ElementRef,
+  afterNextRender,
+  computed,
+  inject,
+  input,
+  output,
+  viewChild,
+} from '@angular/core';
 import type { ClearImpact } from '@sweep/core';
 import { lockReason } from './lock-reason';
 import { Reveals } from './reveals';
@@ -42,7 +51,7 @@ const capitalize = (s: string): string => s.charAt(0).toUpperCase() + s.slice(1)
         }
       }
       <div class="flex justify-end gap-2 pt-1">
-        <button type="button" class="btn" (click)="cancelled.emit()">Cancel</button>
+        <button #cancel type="button" class="btn" (click)="cancelled.emit()">Cancel</button>
         <button type="button" class="btn-danger" (click)="confirmed.emit()">Clear anyway</button>
       </div>
     </div>
@@ -54,9 +63,15 @@ export class ClearDialog {
   readonly confirmed = output<void>();
   readonly cancelled = output<void>();
 
+  private readonly cancelButton = viewChild.required<ElementRef<HTMLButtonElement>>('cancel');
   private readonly store = inject(RunStore);
   private readonly reveals = inject(Reveals);
   protected readonly revealKey = taskRevealKey;
+
+  constructor() {
+    // Focus Cancel explicitly: the destructive action must not be the initial focus.
+    afterNextRender(() => this.cancelButton().nativeElement.focus());
+  }
 
   protected readonly lockedText = computed(() => {
     if (!this.impact().wasLocked) return null;

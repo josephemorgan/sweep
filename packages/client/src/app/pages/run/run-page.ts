@@ -3,16 +3,23 @@ import {
   DOCUMENT,
   Injector,
   afterNextRender,
+  computed,
   effect,
   forwardRef,
   inject,
   input,
+  signal,
   untracked,
 } from '@angular/core';
 import { Title } from '@angular/platform-browser';
 import { RouterLink } from '@angular/router';
+import type { ClearImpact } from '@sweep/core';
+import { ConfirmSheet } from '../../shared/confirm-sheet';
+import { Sheet } from '../../shared/sheet';
 import { Toasts } from '../../shared/toasts';
 import { UnsavedBadge } from '../../shared/unsaved-badge';
+import { ClearDialog } from '../../run/clear-dialog';
+import { lockReason } from '../../run/lock-reason';
 import { Reveals } from '../../run/reveals';
 import { RunActions } from '../../run/run-actions';
 import { RunLayout } from '../../run/run-layout';
@@ -22,7 +29,7 @@ import { sectionLabel } from '../../run/spoiler';
 
 @Component({
   selector: 'app-run-page',
-  imports: [RouterLink, SectionList, UnsavedBadge],
+  imports: [RouterLink, SectionList, UnsavedBadge, ClearDialog, ConfirmSheet, Sheet],
   providers: [RunLayout, { provide: RunActions, useExisting: forwardRef(() => RunPage) }],
   template: `
     <div class="flex min-h-dvh flex-col">
@@ -71,6 +78,28 @@ import { sectionLabel } from '../../run/spoiler';
           }
         }
       </main>
+      <app-sheet
+        [heading]="clearHeading()"
+        [open]="pendingClear() !== null"
+        (openChange)="onClearSheet($event)"
+      >
+        @if (pendingClear(); as pending) {
+          <app-clear-dialog
+            [leafId]="pending.leafId"
+            [impact]="pending.impact"
+            (confirmed)="confirmClear()"
+            (cancelled)="pendingClear.set(null)"
+          />
+        }
+      </app-sheet>
+      <app-confirm-sheet
+        heading="Pin a locked section?"
+        [message]="pinMessage()"
+        confirmLabel="Pin anyway"
+        [open]="pendingPin() !== null"
+        (openChange)="onPinSheet($event)"
+        (confirmed)="confirmPin()"
+      />
     </div>
   `,
 })
@@ -114,12 +143,54 @@ export class RunPage implements RunActions {
     });
   }
 
+  protected readonly pendingClear = signal<{ leafId: string; impact: ClearImpact } | null>(null);
+  protected readonly pendingPin = signal<string | null>(null);
+  protected readonly clearHeading = computed(() => {
+    const pending = this.pendingClear();
+    return pending ? `Clear ${this.label(pending.leafId)}?` : 'Clear section';
+  });
+  protected readonly pinMessage = computed(() => {
+    const leafId = this.pendingPin();
+    const index = this.store.index();
+    const view = this.store.view();
+    if (leafId === null || !index || !view) return '';
+    const reason = lockReason(index, view, leafId);
+    const names = reason?.ids.map((id) => this.label(id)).join(', ') ?? '';
+    return `${this.label(leafId)} is locked (requires ${names}). Mark it as where you are anyway?`;
+  });
+
+  /** §5.4: unlocked with nothing closing clears at once; otherwise confirm in a sheet. */
   requestClear(leafId: string): void {
-    this.clearNow(leafId);
+    const impact = this.store.impactOf(leafId);
+    if (!impact) return;
+    if (!impact.wasLocked && impact.closing.length === 0) this.clearNow(leafId);
+    else this.pendingClear.set({ leafId, impact });
   }
 
+  /** §4.5: pinning a locked leaf asks first. */
   requestPin(leafId: string): void {
-    this.store.setPin(leafId);
+    if (this.store.view()?.sections.get(leafId)?.unlocked === false) this.pendingPin.set(leafId);
+    else this.store.setPin(leafId);
+  }
+
+  protected confirmClear(): void {
+    const pending = this.pendingClear();
+    this.pendingClear.set(null);
+    if (pending) this.clearNow(pending.leafId);
+  }
+
+  protected confirmPin(): void {
+    const leafId = this.pendingPin();
+    this.pendingPin.set(null);
+    if (leafId !== null) this.store.setPin(leafId);
+  }
+
+  protected onClearSheet(open: boolean): void {
+    if (!open) this.pendingClear.set(null);
+  }
+
+  protected onPinSheet(open: boolean): void {
+    if (!open) this.pendingPin.set(null);
   }
 
   unpin(): void {
