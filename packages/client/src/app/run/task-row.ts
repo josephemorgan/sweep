@@ -1,7 +1,7 @@
 import {
-  Component,
   Injector,
   afterNextRender,
+  Component,
   computed,
   inject,
   input,
@@ -13,6 +13,7 @@ import {
 import type { Task, TaskState, TaskStatus } from '@sweep/core';
 import { MarkdownView } from '../shared/markdown-view';
 import { Reveals } from './reveals';
+import { SpoilerText } from './spoiler-text';
 import { taskBlurred, taskRevealKey } from './spoiler';
 import { BADGE_CLASS, taskBadges } from './task-badges';
 
@@ -20,7 +21,7 @@ let nextId = 0;
 
 @Component({
   selector: 'app-task-row',
-  imports: [MarkdownView],
+  imports: [MarkdownView, SpoilerText],
   host: {
     class: 'block',
     '(document:pointerdown)': 'onPointerDown($event)',
@@ -41,14 +42,13 @@ let nextId = 0;
       </label>
       <div class="min-w-0 flex-1">
         @if (blurred()) {
-          <button
-            type="button"
-            class="min-h-11 w-full text-left"
-            aria-label="Hidden spoiler task. Tap to reveal."
-            (click)="reveal()"
-          >
-            <span aria-hidden="true" class="select-none blur-md">{{ task().title }}</span>
-          </button>
+          <app-spoiler-text
+            [text]="task().title"
+            [hidden]="true"
+            [revealKey]="revealKey()"
+            label="Hidden spoiler task. Tap to reveal."
+            (revealed)="focusTitle()"
+          />
         } @else {
           @if (task().how) {
             <button
@@ -133,12 +133,12 @@ export class TaskRow {
   readonly nextChanceLabel = input<string | null>(null);
   readonly stateChange = output<TaskState | null>();
 
-  private readonly reveals = inject(Reveals);
   private readonly injector = inject(Injector);
+  private readonly title = viewChild<ElementRef<HTMLElement>>('title');
+  private readonly reveals = inject(Reveals);
   private readonly uid = ++nextId;
   protected readonly howId = `how-${this.uid}`;
   protected readonly actionsId = `actions-${this.uid}`;
-  private readonly title = viewChild<ElementRef<HTMLElement>>('title');
   private readonly trigger = viewChild<ElementRef<HTMLElement>>('trigger');
   private readonly wrap = viewChild<ElementRef<HTMLElement>>('wrap');
   protected readonly badgeClass = BADGE_CLASS;
@@ -149,6 +149,7 @@ export class TaskRow {
   protected readonly resolved = computed(() =>
     ['done', 'dont-care', 'not-chosen'].includes(this.status().kind),
   );
+  protected readonly revealKey = computed(() => taskRevealKey(this.task().id));
   protected readonly blurred = computed(() =>
     taskBlurred(this.task(), this.status(), this.reveals.has(taskRevealKey(this.task().id))),
   );
@@ -160,9 +161,8 @@ export class TaskRow {
     this.stateChange.emit((event.target as HTMLInputElement).checked ? 'done' : null);
   }
 
-  protected reveal(): void {
-    this.reveals.reveal(taskRevealKey(this.task().id));
-    // The tapped button is destroyed; keep focus on the revealed title instead of <body>.
+  protected focusTitle(): void {
+    // The redaction button is destroyed on reveal; keep focus on the revealed title instead of <body>.
     afterNextRender(() => this.title()?.nativeElement.focus(), { injector: this.injector });
   }
 

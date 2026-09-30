@@ -195,10 +195,12 @@ describe('LeafCard (§5.2)', () => {
     expect(toggle.getAttribute('aria-controls')).toBeNull();
   });
 
-  it('blurs a hidden section title with the shared blur strength', async () => {
+  it('redacts a hidden section title with a bar and keeps the text out of the name', async () => {
     const { el } = await renderCard('throne-room');
-    expect(el.querySelector('section > div button span[aria-hidden]')?.className).toContain(
-      'blur-md',
-    );
+    const header = el.querySelector('section > div button')!;
+    expect(header.querySelector('.redaction')).not.toBeNull();
+    expect(header.textContent).toContain('tap to reveal');
+    expect(el.querySelector('section')!.getAttribute('aria-label')).toBe('Hidden section');
+    expect(header.querySelector('.blur-md')).toBeNull();
   });
 });

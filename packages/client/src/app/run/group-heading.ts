@@ -26,13 +26,19 @@ import { SpoilerText } from './spoiler-text';
       </button>
       <div class="min-w-0 flex-1 pt-2">
         <div role="heading" [attr.aria-level]="level()" class="text-lg font-semibold">
-          <app-spoiler-text [text]="group().title" [hidden]="blurred()" [revealKey]="revealKey()" />
+          <app-spoiler-text
+            [text]="group().title"
+            [hidden]="blurred()"
+            [revealKey]="revealKey()"
+            label="Hidden spoiler section. Tap to reveal."
+          />
         </div>
         <p class="m-0 text-sm text-fg-muted">
           <app-spoiler-text
             [text]="group().overview"
             [hidden]="blurred()"
             [revealKey]="revealKey()"
+            label="Hidden spoiler section. Tap to reveal."
           />
         </p>
       </div>

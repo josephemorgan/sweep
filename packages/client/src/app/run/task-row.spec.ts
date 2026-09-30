@@ -87,6 +87,9 @@ describe('TaskRow', () => {
       .join(' ');
     expect(names).not.toContain("keeper's lantern");
     expect(el.querySelector('[aria-describedby]')).toBeNull();
+    expect(el.querySelector('.redaction')).not.toBeNull();
+    expect(el.textContent).toContain('tap to reveal');
+    expect(el.querySelector('.blur-md')).toBeNull();
     expect(checkbox.getAttribute('aria-label')).toBe('Hidden spoiler task');
     expect(el.querySelector('button[aria-label^="More actions"]')!.getAttribute('aria-label')).toBe(
       'More actions for hidden spoiler task',

@@ -71,11 +71,14 @@ describe('GroupHeading (§5.2)', () => {
     expect(el.querySelector('dialog')?.hasAttribute('open')).toBe(true);
   });
 
-  it('blurs a locked spoiler group title and names it as hidden', async () => {
+  it('redacts a locked spoiler group title and names it as hidden', async () => {
     const { el, button } = await renderGroup('act-2');
     const heading = el.querySelector('[role="heading"]')!;
-    expect(heading.querySelector('.blur-md')).not.toBeNull();
-    expect(heading.querySelector('button')?.getAttribute('aria-label')).toContain('Hidden');
+    expect(heading.querySelector('.redaction')).not.toBeNull();
+    expect(heading.textContent).toContain('tap to reveal');
+    expect(heading.querySelector('button')?.getAttribute('aria-label')).toBe(
+      'Hidden spoiler section. Tap to reveal.',
+    );
     expect(button('Expand hidden section') ?? button('Collapse hidden section')).toBeDefined();
     expect(button('Walkthrough for a hidden section')).toBeDefined();
   });

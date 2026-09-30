@@ -89,7 +89,7 @@ describe('DiffPreview (§5.8)', () => {
     );
     expect(text).toContain('Tasks: 1 added');
     const button = el.querySelector<HTMLButtonElement>(HIDDEN)!;
-    expect(button.querySelector('[aria-hidden="true"]')?.textContent).toBe(
+    expect(button.querySelector('.sr-only[aria-hidden="true"]')?.textContent).toBe(
       'The door behind the throne',
     );
     button.click();

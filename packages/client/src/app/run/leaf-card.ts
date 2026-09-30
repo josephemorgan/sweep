@@ -54,8 +54,12 @@ interface CardSource {
           }
           <span class="min-w-0 flex-1 font-medium" [class.line-through]="state() === 'cleared'">
             @if (blurred()) {
-              <span aria-hidden="true" class="select-none blur-md">{{ leaf().title }}</span
-              ><span class="sr-only">Hidden section</span>
+              <span class="inline-flex items-center gap-2.5"
+                ><span aria-hidden="true" class="redaction" [style.width.px]="barWidth()"></span
+                ><span class="text-xs font-normal text-fg-muted">tap to reveal</span
+                ><span aria-hidden="true" class="sr-only select-none">{{ leaf().title }}</span
+                ><span class="sr-only">Hidden section</span></span
+              >
             } @else {
               {{ leaf().title }}
             }
@@ -154,6 +158,10 @@ export class LeafCard {
   );
   protected readonly bodyId = computed(() => 'card-body-' + this.leafId());
   protected readonly revealKey = computed(() => sectionRevealKey(this.leafId()));
+  /** Redaction bar width in px: 7 per character, clamped to 64..176. */
+  protected readonly barWidth = computed(() =>
+    Math.min(176, Math.max(64, 7 * this.leaf().title.length)),
+  );
   protected readonly blurred = computed(() =>
     sectionBlurred(
       this.leaf(),
