@@ -4,14 +4,14 @@ import { RunStore } from './run-store';
 @Component({
   selector: 'app-categories-sheet',
   template: `
-    <ul class="m-0 list-none p-2">
+    <ul class="m-0 list-none px-5 pb-3">
       @for (category of store.guide()?.categories ?? []; track category.id) {
-        <li>
-          <label class="flex min-h-11 items-start gap-3 rounded-control px-2 py-2">
+        <li class="border-b border-rule">
+          <label class="flex min-h-12 items-start gap-3 py-3">
             <input
               type="checkbox"
               role="switch"
-              class="mt-0.5 size-5 shrink-0 accent-accent"
+              class="ck mt-0.5"
               [checked]="store.view()?.tracked?.has(category.id) ?? false"
               (change)="toggle(category.id, $event)"
             />

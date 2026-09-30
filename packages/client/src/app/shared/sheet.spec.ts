@@ -33,6 +33,11 @@ describe('Sheet', () => {
     expect(dialog.hasAttribute('open')).toBe(true);
     const heading = dialog.querySelector(`#${dialog.getAttribute('aria-labelledby')}`);
     expect(heading?.textContent).toBe('NOW');
+    for (const cls of ['font-display', 'font-bold', 'text-lamp']) {
+      expect(heading?.classList.contains(cls)).toBe(true);
+    }
+    expect(heading?.parentElement?.classList.contains('px-5')).toBe(true);
+    expect(heading?.parentElement?.classList.contains('pt-5')).toBe(true);
     (dialog.querySelector('button[aria-label="Close"]') as HTMLButtonElement).click();
     await fixture.whenStable();
     expect(fixture.componentInstance.open()).toBe(false);

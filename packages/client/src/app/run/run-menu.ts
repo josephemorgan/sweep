@@ -46,18 +46,18 @@ const MAX_NAME = 100;
       <span aria-hidden="true">☰</span>
     </button>
     <app-sheet heading="Run menu" [open]="sheet() === 'menu'" (openChange)="closed($event, 'menu')">
-      <ul class="m-0 flex list-none flex-col p-2">
-        <li>
+      <ul class="m-0 flex list-none flex-col px-3 pb-3">
+        <li class="border-b border-rule">
           <button type="button" class="menu-item" (click)="sheet.set('jump')">
             Jump to section
           </button>
         </li>
-        <li>
+        <li class="border-b border-rule">
           <button type="button" class="menu-item" (click)="sheet.set('categories')">
             Categories
           </button>
         </li>
-        <li>
+        <li class="border-b border-rule">
           <button
             type="button"
             class="menu-item"
@@ -70,10 +70,10 @@ const MAX_NAME = 100;
             }
           </button>
         </li>
-        <li>
+        <li class="border-b border-rule">
           <button type="button" class="menu-item" (click)="openRename()">Rename run</button>
         </li>
-        <li>
+        <li class="border-b border-rule">
           <button type="button" class="menu-item text-missed" (click)="sheet.set('delete')">
             Delete run
           </button>
@@ -103,7 +103,7 @@ const MAX_NAME = 100;
       [open]="sheet() === 'rename'"
       (openChange)="closed($event, 'rename')"
     >
-      <form [formRoot]="renameForm" class="flex flex-col gap-3 p-4">
+      <form [formRoot]="renameForm" class="flex flex-col gap-3 px-5 pb-5 pt-3">
         <label class="flex flex-col gap-1 text-sm">
           Run name
           <input type="text" class="field" [formField]="renameForm.name" />

@@ -74,6 +74,28 @@ describe('MetricSheet (§5.5)', () => {
     }
   });
 
+  it('never exposes a hidden spoiler task title in the sheet', async () => {
+    const { el } = await renderSheet('now', {
+      cleared: ['village', 'marsh', 'keep-gate', 'east-tower', 'west-tower'],
+    });
+    const secret = "The keeper's lantern";
+    // TODO(G3): once Section B's redaction spoiler-text is merged, also assert
+    // el.querySelector('.redaction') is not null (Review Focus 3).
+    const row = el.querySelector('input[aria-label="Hidden spoiler task"]')!;
+    expect(row.getAttribute('aria-label')).not.toContain(secret);
+    const clone = el.cloneNode(true) as HTMLElement;
+    clone.querySelectorAll('[aria-hidden="true"]').forEach((n) => n.remove());
+    expect(clone.textContent).not.toContain(secret);
+  });
+
+  it('heads groups with a muted home label and separates rows with hairlines', async () => {
+    const { el } = await renderSheet('now');
+    const label = el.querySelector('h3')!;
+    expect(label.classList.contains('text-fg-muted')).toBe(true);
+    expect(label.classList.contains('text-xs')).toBe(true);
+    expect(el.querySelector('li.border-b.border-rule')).not.toBeNull();
+  });
+
   it('closes only the row menu on the first Escape, not the sheet', async () => {
     await setupRunStore();
     const fixture = TestBed.createComponent(Host);
