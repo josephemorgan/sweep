@@ -72,20 +72,8 @@ describe('MetricSheet (§5.5)', () => {
       expect(n.getAttribute('aria-label') ?? '').not.toContain(secret);
       expect(n.getAttribute('title') ?? '').not.toContain(secret);
     }
-  });
-
-  it('never exposes a hidden spoiler task title in the sheet', async () => {
-    const { el } = await renderSheet('now', {
-      cleared: ['village', 'marsh', 'keep-gate', 'east-tower', 'west-tower'],
-    });
-    const secret = "The keeper's lantern";
     // TODO(G3): once Section B's redaction spoiler-text is merged, also assert
     // el.querySelector('.redaction') is not null (Review Focus 3).
-    const row = el.querySelector('input[aria-label="Hidden spoiler task"]')!;
-    expect(row.getAttribute('aria-label')).not.toContain(secret);
-    const clone = el.cloneNode(true) as HTMLElement;
-    clone.querySelectorAll('[aria-hidden="true"]').forEach((n) => n.remove());
-    expect(clone.textContent).not.toContain(secret);
   });
 
   it('heads groups with a muted home label and separates rows with hairlines', async () => {

@@ -37,7 +37,7 @@ const INDENT_STEP = 0.75;
                   ></span>
                 } @else if (cleared(section)) {
                   <span class="size-2 rounded-full bg-rail-dot"></span>
-                } @else {
+                } @else if (section.children.length === 0) {
                   <span
                     class="size-[9px] rounded-full border-[1.5px] border-solid border-rail-ring"
                   ></span>
