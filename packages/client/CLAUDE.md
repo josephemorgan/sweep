@@ -19,6 +19,32 @@ Angular 22.2 PWA: standalone components and signals, no NgModules, no SSR. Tailw
 - Prose is Markdown → sanitized HTML via DOMPurify (spec §6.4). Never bind unsanitized HTML.
 - The service worker caches the app shell only, never `/api/*` (`ngsw-config.json` has no `dataGroups`).
 
+## How the client is built
+
+- `RunStore` (`src/app/run/run-store.ts`) holds the open run's server payload. Everything shown is derived with `computed()` from "server progress + pending writes" (`applyToProgress` folded over `WriteQueue.pending`). Never keep a second copy of progress in a component.
+- Every run mutation goes through `RunStore` → `WriteQueue` (`src/app/sync/`). The queue rules (keys, coalescing, backoff, 401/404/422 handling, persistence per user) are the "Retry queue semantics" section of `docs/superpowers/plans/2026-09-29-client.md`; the tests in `write-queue.spec.ts` are numbered by rule.
+- Run-view components inject `RunStore` and the page-scoped `RunLayout` (expansion, scroll) and `RunActions` (clear/pin requests that need dialogs). They take IDs as inputs, not view objects.
+- Spoilers: `taskBlurred`/`sectionBlurred`/`sectionLabel` (`src/app/run/spoiler.ts`) plus the session-only `Reveals`. Any text that can name a spoiler goes through them, including toasts and dialog copy.
+- Test helpers live in `src/testing/` (spec-only): `setupRunStore()` gives a signed-in store with Lantern Keep open and a hand-answered `FakeSender`.
+
+## Spec interpretations
+
+Readings of the spec that the user accepted where it leaves room. Change them only with the user's approval.
+
+- **Unpin (§5.4):** "Unpin" shows only when current comes from a pin; a derived current shows "I'm here".
+- **Undo (§5.4):** Undo is offered after both the immediate clear and a clear confirmed in the dialog. Undo restores a pin the clear removed only if the pin is still unset.
+- **Metric sheets (§4.9, §5.5):** a multi-window task groups under the home of its open window, otherwise its first window that isn't closed. The choice uses window statuses only (not done, not-chosen or dont-care), so rows never jump groups.
+- **Diff preview (§5.8):** titles come from `GuideDiff.labels` (read with `Object.hasOwn`), and spoiler-flagged labels follow the §5.6 blur. Items only in the new guide are blurred by default.
+- **Retry queue (§5.7, "any other 4xx drops"):** a 401 pauses and keeps the queue on disk per user; a 404 drops every write for that run; a 422 or other 4xx drops that write, refetches and toasts.
+- **Unsaved badge:** "n unsaved" shows when the queue is stalled or has been non-empty for at least 1 s, not on every in-flight write.
+- **Coalescing:** a new write replaces the LAST queued entry with the same key unless it is in flight. Invariant: writes with different keys are independent absolute values on the server, so reordering across keys cannot change the final state (documented by a test in `write-queue.spec.ts`). If an endpoint ever makes a write depend on another key's state, coalescing must become order-preserving.
+- **Spoiler blur:** a courtesy, not a security boundary. Blurred text stays in the DOM (aria-hidden, select-none), so Ctrl+F can find it.
+- **Task row ⋯:** a disclosure (aria-expanded/aria-controls), not `role=menu`.
+
+## Open items for the user
+
+- **§11.3 Retroid viewport:** `handheld-4x3` (1024x768) is an assumed CSS viewport. Confirm the device's real CSS viewport and DPR, then adjust that project in `playwright.config.ts` and the `(max-height: 800px)` landscape query if needed.
+
 ---
 
 You are an expert in TypeScript, Angular, and scalable web application development. You write functional, maintainable, performant, and accessible code following Angular and TypeScript best practices.

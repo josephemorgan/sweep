@@ -69,6 +69,31 @@ describe('WriteQueue (see "Retry queue semantics")', () => {
     ]);
   });
 
+  it("rule 3 invariant: interleaved writes to different keys end with each key's last value", async () => {
+    // Coalescing replaces the LAST queued entry with the same key, so it can move a write
+    // past writes to other keys. That is safe only because writes with different keys are
+    // independent absolute values on the server. If an endpoint ever makes a write depend
+    // on another key's state, coalescing must become order-preserving and this test with it.
+    const { queue, sender } = setup();
+    queue.enqueue(task('a', 'done')); // in flight
+    queue.enqueue(task('b', 'done'));
+    queue.enqueue(task('a', 'dont-care'));
+    queue.enqueue(task('b', null));
+    queue.enqueue(task('a', null));
+    queue.enqueue(task('b', 'dont-care'));
+    for (let i = 0; i < 4; i += 1) {
+      sender.sent[i]?.resolve();
+      await settle();
+    }
+    const last = new Map<string, unknown>();
+    for (const s of sender.sent) {
+      if (s.write.kind === 'task') last.set(s.write.taskId, s.write.state);
+    }
+    expect(last.get('a')).toBeNull();
+    expect(last.get('b')).toBe('dont-care');
+    expect(queue.size()).toBe(0);
+  });
+
   it('rule 3: ten offline toggles of one checkbox leave one write (Review Focus 2)', async () => {
     const { queue, sender } = setup();
     queue.enqueue(task('x', 'done'));
