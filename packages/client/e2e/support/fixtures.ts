@@ -3,7 +3,7 @@ import path from 'node:path';
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test as base, type Page } from '@playwright/test';
 import { BASE_URL, storageStatePath, userEmail } from './e2e-env';
-import { createUser, signInToFile } from './seed-user';
+import { createUser, sessionIsValid, signInToFile } from './seed-user';
 
 export const LANTERN_KEEP = path.join(__dirname, '../../../../guides/examples/lantern-keep.yaml');
 
@@ -22,14 +22,18 @@ export interface WorkerUser {
 
 export const test = base.extend<{ runs: RunsHelper }, { workerUser: WorkerUser }>({
   // One seeded, signed-in user per (project, parallel slot). parallelIndex (not workerIndex) is
-  // reused when a worker restarts after a failure, so restarts cost no extra sign-ins.
+  // reused when a worker restarts after a failure. A restarted worker finds its storageState file,
+  // checks the session with a GET and reuses it: 0 auth POSTs. Only a missing, expired or stale
+  // file (e.g. from a previous server) costs create-user plus one sign-in POST.
   workerUser: [
     // eslint-disable-next-line no-empty-pattern
     async ({}, use, workerInfo) => {
       const email = userEmail(workerInfo.project.name, workerInfo.parallelIndex);
       const storageState = storageStatePath(workerInfo.project.name, workerInfo.parallelIndex);
-      createUser(email);
-      await signInToFile(email, storageState);
+      if (!(await sessionIsValid(email, storageState))) {
+        createUser(email);
+        await signInToFile(email, storageState);
+      }
       await use({ email, storageState });
     },
     { scope: 'worker' },

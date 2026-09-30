@@ -11,7 +11,8 @@ export default defineConfig({
   fullyParallel: true,
   // Auth budget: the server's auth limiter allows 10 non-GET requests/min per IP (in memory, reset on
   // start). Worst case per run: each project's workers sign in once each (2 projects x workers)
-  // plus the sign-in flow's 2 attempts per project (4) = 2w + 4 <= 8, so w = 2.
+  // plus the sign-in flow's 2 attempts per project (4) = 2w + 4 <= 8, so w = 2. A restarted worker
+  // reuses its still-valid session (GET check), so failures and retries cost 0 auth POSTs.
   workers: 2,
   forbidOnly: ci,
   retries: ci ? 1 : 0,

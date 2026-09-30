@@ -1,3 +1,4 @@
+import { existsSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { expect, request } from '@playwright/test';
 import { BASE_URL, E2E_PASSWORD, serverEnv } from './e2e-env';
@@ -28,4 +29,18 @@ export async function signInToFile(email: string, file: string): Promise<void> {
   expect(res.status(), await res.text()).toBe(200);
   await api.storageState({ path: file });
   await api.dispose();
+}
+
+/** True when `file` holds a live session for `email` (GET, so not rate-limited). */
+export async function sessionIsValid(email: string, file: string): Promise<boolean> {
+  if (!existsSync(file)) return false;
+  const api = await request.newContext({ baseURL: BASE_URL, storageState: file });
+  try {
+    const res = await api.get('/api/auth/get-session');
+    if (res.status() !== 200) return false;
+    const body = (await res.json().catch(() => null)) as { user?: { email?: string } } | null;
+    return body?.user?.email === email;
+  } finally {
+    await api.dispose();
+  }
 }
