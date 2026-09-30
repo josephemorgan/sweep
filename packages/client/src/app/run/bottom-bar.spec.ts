@@ -61,6 +61,18 @@ describe('BottomBar (§5.5)', () => {
     expect(metric('LAST CHANCE').classList).not.toContain('text-last-chance');
   });
 
+  it('marks the metrics as dialog openers and binds the chip value', async () => {
+    const { el, fixture, metric, store } = await renderBar({ tracked: { quests: false } });
+    expect(metric('HERE').getAttribute('aria-haspopup')).toBe('dialog');
+    const select = el.querySelector('select')!;
+    store.categoryFilter.set('quests');
+    await fixture.whenStable();
+    expect(select.value).toBe('');
+    store.categoryFilter.set('loot');
+    await fixture.whenStable();
+    expect(select.value).toBe('loot');
+  });
+
   it('opens a sheet listing the metric tasks grouped by home section', async () => {
     const { el, fixture, metric } = await renderBar();
     metric('NOW').click();

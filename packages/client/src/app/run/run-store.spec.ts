@@ -304,6 +304,16 @@ describe('RunStore', () => {
     expect(store.metricTasks()?.now).toEqual(['village-chest']);
   });
 
+  it('treats a filter on an untracked category as no filter', async () => {
+    const { store } = await setupRunStore({ tracked: { quests: false } });
+    const all = store.metrics();
+    store.categoryFilter.set('quests');
+    expect(store.activeCategory()).toBeNull();
+    expect(store.metrics()).toEqual(all);
+    store.categoryFilter.set('loot');
+    expect(store.activeCategory()).toBe('loot');
+  });
+
   it('filters clear impact to tracked categories', async () => {
     const { store } = await setupRunStore({ tracked: { quests: false } });
     expect(store.impactOf('village')?.closing).toEqual([

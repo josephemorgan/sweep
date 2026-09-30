@@ -96,8 +96,13 @@ export class RunStore {
     return guide && progress ? deriveRun(guide, progress) : null;
   });
   private readonly trackedTasks = computed(() => this.metricTasksFor(null));
-  readonly metricTasks = computed<MetricTasks | null>(() => {
+  /** The filter in effect: a category that is no longer tracked (refetch, guide change) counts as none. */
+  readonly activeCategory = computed<string | null>(() => {
     const filter = this.categoryFilter();
+    return filter !== null && this.view()?.tracked.has(filter) ? filter : null;
+  });
+  readonly metricTasks = computed<MetricTasks | null>(() => {
+    const filter = this.activeCategory();
     return filter === null ? this.trackedTasks() : this.metricTasksFor(filter);
   });
   readonly metrics = computed<Metrics | null>(() => {

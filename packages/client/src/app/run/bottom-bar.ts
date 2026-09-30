@@ -1,11 +1,12 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { Sheet } from '../shared/sheet';
-import { Metric, METRIC_LABEL, groupByHome, metricTaskIds, type HomeGroup } from './metric-groups';
+import { Metric, METRIC_LABEL } from './metric-groups';
+import { MetricSheet } from './metric-sheet';
 import { RunStore } from './run-store';
 
 @Component({
   selector: 'app-bottom-bar',
-  imports: [Sheet],
+  imports: [Sheet, MetricSheet],
   template: `
     <nav
       aria-label="Run metrics"
@@ -23,6 +24,7 @@ import { RunStore } from './run-store';
               [class.text-last-chance]="highlighted(m)"
               [class.border]="highlighted(m)"
               [class.border-last-chance]="highlighted(m)"
+              aria-haspopup="dialog"
               (click)="open.set(m)"
             >
               <span
@@ -38,10 +40,14 @@ import { RunStore } from './run-store';
         </div>
         <label class="flex items-center justify-center text-sm">
           <span class="sr-only">Category filter</span>
-          <select class="field w-auto rounded-full" (change)="setFilter($event)">
-            <option value="" [selected]="store.categoryFilter() === null">All tracked</option>
+          <select
+            class="field w-auto rounded-full"
+            [value]="store.activeCategory() ?? ''"
+            (change)="setFilter($event)"
+          >
+            <option value="">All tracked</option>
             @for (category of trackedCategories(); track category.id) {
-              <option [value]="category.id" [selected]="store.categoryFilter() === category.id">
+              <option [value]="category.id" [selected]="store.activeCategory() === category.id">
                 {{ category.name }}
               </option>
             }
@@ -51,18 +57,7 @@ import { RunStore } from './run-store';
     </nav>
     <app-sheet [heading]="sheetHeading()" [open]="open() !== null" (openChange)="onSheet($event)">
       @if (open(); as metric) {
-        <div class="p-3">
-          @for (group of groups(metric); track group.leafId) {
-            <h3 class="m-0 mt-2 text-sm font-semibold">
-              {{ store.index()!.sections.get(group.leafId)!.title }}
-            </h3>
-            <ul class="m-0 list-none p-0">
-              @for (id of group.taskIds; track id) {
-                <li class="py-1">{{ store.index()!.tasks.get(id)!.title }}</li>
-              }
-            </ul>
-          }
-        </div>
+        <app-metric-sheet [metric]="metric" />
       }
     </app-sheet>
   `,
@@ -87,13 +82,6 @@ export class BottomBar {
 
   protected highlighted(metric: Metric): boolean {
     return metric === 'lastChance' && this.value(metric) > 0;
-  }
-
-  protected groups(metric: Metric): HomeGroup[] {
-    const tasks = this.store.metricTasks();
-    return tasks
-      ? groupByHome(metricTaskIds(tasks, metric), this.store.index()!, this.store.view()!)
-      : [];
   }
 
   protected setFilter(event: Event): void {

@@ -24,7 +24,7 @@ let nextId = 0;
   host: {
     class: 'block',
     '(document:pointerdown)': 'onPointerDown($event)',
-    '(keydown.escape)': 'onEscape()',
+    '(keydown.escape)': 'onEscape($event)',
     '(focusout)': 'onFocusOut($event)',
   },
   template: `
@@ -166,8 +166,11 @@ export class TaskRow {
     afterNextRender(() => this.title()?.nativeElement.focus(), { injector: this.injector });
   }
 
-  protected onEscape(): void {
+  /** With the menu open Escape closes only the menu, not an enclosing <dialog> sheet. */
+  protected onEscape(event: Event): void {
     if (!this.menuOpen()) return;
+    event.preventDefault();
+    event.stopPropagation();
     this.menuOpen.set(false);
     this.trigger()?.nativeElement.focus();
   }
