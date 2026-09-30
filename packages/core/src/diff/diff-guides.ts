@@ -35,12 +35,32 @@ export interface ProgressDiff {
   orphaned: ProgressRef[];
   restored: ProgressRef[];
 }
+/** A section's or task's display label (spec §5.6 blurs it when `spoiler` is set). */
+export interface ItemLabel {
+  title: string;
+  spoiler: boolean;
+}
+export interface CategoryLabel {
+  name: string;
+}
+/**
+ * Labels for every ID the diff lists: the kind lists, both sides of renames and the progress refs.
+ * From the new guide, or from the old guide for IDs only there (removed, rename sources, orphaned).
+ * Keys follow the new guide's order (sections in route order), then old-only IDs in the old guide's
+ * order. IDs are slugs (never integer-like), so JSON and `Object.keys` keep that order.
+ */
+export interface DiffLabels {
+  sections: Record<string, ItemLabel>;
+  tasks: Record<string, ItemLabel>;
+  categories: Record<string, CategoryLabel>;
+}
 export interface GuideDiff {
   sections: KindDiff;
   tasks: KindDiff;
   categories: KindDiff;
   likelyRegenerated: boolean;
   progress: ProgressDiff | null;
+  labels: DiffLabels;
 }
 
 const SECTION_FIELDS = ['title', 'overview', 'walkthrough', 'requires', 'spoiler', 'position'];
@@ -248,15 +268,89 @@ export function diffGuides(oldGuide: Guide, newGuide: Guide, progress?: RunProgr
   const newCount = newSections.size + newTasks.size;
   const likelyRegenerated = oldCount >= 10 && removed / oldCount >= 0.5 && added / newCount >= 0.5;
 
+  const effects =
+    progress === undefined
+      ? null
+      : progressDiff(oldGuide, newGuide, progress, sections.renamed, tasks.renamed);
   return {
     sections,
     tasks,
     categories,
     likelyRegenerated,
-    progress:
-      progress === undefined
-        ? null
-        : progressDiff(oldGuide, newGuide, progress, sections.renamed, tasks.renamed),
+    progress: effects,
+    labels: diffLabels(oldGuide, newGuide, { sections, tasks, categories }, effects),
+  };
+}
+
+type LabelKind = keyof DiffLabels;
+
+const LABEL_KIND: Record<ProgressKind, LabelKind> = {
+  [ProgressKind.Cleared]: 'sections',
+  [ProgressKind.Pin]: 'sections',
+  [ProgressKind.Task]: 'tasks',
+  [ProgressKind.Tracked]: 'categories',
+};
+
+/** Every ID one kind's diff lists: added, removed, edited and both sides of renames. */
+function listedIds(d: KindDiff): Set<string> {
+  return new Set([
+    ...d.added,
+    ...d.removed,
+    ...d.edited.map((e) => e.id),
+    ...d.renamed.flatMap((r) => [r.from, r.to]),
+  ]);
+}
+
+/**
+ * `label(item)` for each wanted ID: new-guide items first, then old-only ones, each list in file
+ * order. A `seen` set, not `id in out`: an ID like `constructor` is inherited by every object.
+ */
+function labelsFor<T extends { id: string }, L>(
+  wanted: ReadonlySet<string>,
+  news: readonly T[],
+  olds: readonly T[],
+  label: (item: T) => L,
+): Record<string, L> {
+  const out: Record<string, L> = {};
+  const seen = new Set<string>();
+  for (const item of [...news, ...olds]) {
+    if (!wanted.has(item.id) || seen.has(item.id)) continue;
+    seen.add(item.id);
+    out[item.id] = label(item);
+  }
+  return out;
+}
+
+function diffLabels(
+  oldGuide: Guide,
+  newGuide: Guide,
+  kinds: Record<LabelKind, KindDiff>,
+  effects: ProgressDiff | null,
+): DiffLabels {
+  const wanted: Record<LabelKind, Set<string>> = {
+    sections: listedIds(kinds.sections),
+    tasks: listedIds(kinds.tasks),
+    categories: listedIds(kinds.categories),
+  };
+  for (const m of effects?.migrated ?? []) wanted[LABEL_KIND[m.kind]].add(m.from).add(m.to);
+  for (const r of [...(effects?.orphaned ?? []), ...(effects?.restored ?? [])]) {
+    wanted[LABEL_KIND[r.kind]].add(r.id);
+  }
+  const item = (x: { title: string; spoiler: boolean }): ItemLabel => ({
+    title: x.title,
+    spoiler: x.spoiler,
+  });
+  return {
+    sections: labelsFor(
+      wanted.sections,
+      flatten(newGuide.sections),
+      flatten(oldGuide.sections),
+      item,
+    ),
+    tasks: labelsFor(wanted.tasks, newGuide.tasks, oldGuide.tasks, item),
+    categories: labelsFor(wanted.categories, newGuide.categories, oldGuide.categories, (c) => ({
+      name: c.name,
+    })),
   };
 }
 

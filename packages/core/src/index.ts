@@ -50,8 +50,11 @@ export type { GuideIndex, LeafRange } from './engine/structure.js';
 export { guideSummary } from './engine/summary.js';
 export { ProgressKind, diffGuides } from './diff/diff-guides.js';
 export type {
+  CategoryLabel,
+  DiffLabels,
   Edited,
   GuideDiff,
+  ItemLabel,
   KindDiff,
   ProgressDiff,
   ProgressMigration,

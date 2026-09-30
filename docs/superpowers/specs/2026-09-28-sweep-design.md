@@ -1103,7 +1103,7 @@ The parser is a separate entry point so the client doesn't bundle the YAML and M
 ### 5.8 Update guide
 
 1. From ☰, choose **Update guide**, then pick a file.
-2. The server dry run (`POST /api/runs/:id/guide?dryRun=true`) returns the validation report and the diff.
+2. The server dry run (`POST /api/runs/:id/guide?dryRun=true`) returns the validation report and the diff. The diff carries the title (a category's name) and `spoiler` flag of every ID it lists (`labels`: from the new guide, or the old one for IDs only there), so the preview names them with the §5.6 blur.
 3. **Preview:**
    - Added, edited, removed and renamed counts per kind, as expandable lists (edited items name the fields that changed).
    - Progress effects: "n entries migrated through renames; n orphaned (kept, restored if the IDs return); n restored".

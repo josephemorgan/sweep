@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { diffGuides } from '../../src/diff/diff-guides.js';
-import { parseOk } from '../helpers.js';
+import type { Guide, GuideDiff, RunProgress } from '../../src/index.js';
+import { loadGuide, parseOk, progress } from '../helpers.js';
 
 const LOOT = `categories:
   loot:
@@ -42,6 +43,7 @@ describe('diffGuides', () => {
       categories: NONE,
       likelyRegenerated: false,
       progress: null,
+      labels: { sections: {}, tasks: {}, categories: {} },
     });
   });
 
@@ -395,6 +397,153 @@ tasks:
       const d = diffGuides(guide(linear(old)), guide(renamed));
       expect(d.sections.renamed).toHaveLength(10);
       expect(d.likelyRegenerated).toBe(false);
+    });
+  });
+
+  describe('labels', () => {
+    const OLD = guide(`sections:
+  - { id: a, title: A, overview: o, requires: [] }
+  - { id: b, title: B, overview: o, requires: [] }
+  - { id: gone, title: Gone, overview: o, requires: [], spoiler: true }
+tasks:
+  - { id: t1, title: T1, category: loot, windows: [{ from: a }] }
+  - { id: t2, title: Old T2, category: loot, windows: [{ from: a }], spoiler: true }
+  - { id: t3, title: T3, category: loot, windows: [{ from: a }] }
+`);
+    const NEW = guide(
+      `sections:
+  - { id: fresh, title: Fresh, overview: o, requires: [], spoiler: true }
+  - { id: a, title: A2, overview: o, requires: [] }
+  - { id: bee, title: Bee, overview: o, requires: [], renamed_from: [b] }
+tasks:
+  - { id: t1, title: T1, category: loot, windows: [{ from: a }] }
+  - { id: t2b, title: New T2, category: loot, windows: [{ from: a }], renamed_from: [t2] }
+  - { id: t4, title: T4, category: cards, windows: [{ from: a }], spoiler: true }
+`,
+      `${LOOT}  cards:\n    name: Cards\n    about: c\n`,
+    );
+
+    it('labels every listed ID from the new guide, or the old one for IDs only there', () => {
+      expect(diffGuides(OLD, NEW).labels).toEqual({
+        sections: {
+          fresh: { title: 'Fresh', spoiler: true },
+          a: { title: 'A2', spoiler: false },
+          bee: { title: 'Bee', spoiler: false },
+          b: { title: 'B', spoiler: false },
+          gone: { title: 'Gone', spoiler: true },
+        },
+        tasks: {
+          t2b: { title: 'New T2', spoiler: false },
+          t4: { title: 'T4', spoiler: true },
+          t2: { title: 'Old T2', spoiler: true },
+          t3: { title: 'T3', spoiler: false },
+        },
+        categories: { cards: { name: 'Cards' } },
+      });
+    });
+
+    it("orders keys by the new guide, then old-only IDs in the old guide's order", () => {
+      const { labels } = diffGuides(OLD, NEW);
+      expect(Object.keys(labels.sections)).toEqual(['fresh', 'a', 'bee', 'b', 'gone']);
+      expect(Object.keys(labels.tasks)).toEqual(['t2b', 't4', 't2', 't3']);
+      expect(Object.keys(labels.categories)).toEqual(['cards']);
+    });
+
+    it('labels an ID that only the progress effects list', () => {
+      const old = guide(`sections:
+  - { id: a, title: A, overview: o, requires: [] }
+  - { id: b, title: B, overview: o, requires: [] }
+`);
+      const next = guide(`sections:
+  - { id: a, title: A, overview: o, requires: [] }
+  - id: b
+    title: B
+    overview: o
+    requires: []
+    sections:
+      - { id: b1, title: B1, overview: o, requires: [] }
+`);
+      const d = diffGuides(old, next, progress({ cleared: ['b'] }));
+      expect(d.sections).toEqual({ ...NONE, added: ['b1'] });
+      expect(d.progress!.orphaned).toEqual([{ kind: 'cleared', id: 'b' }]);
+      expect(d.labels.sections).toEqual({
+        b: { title: 'B', spoiler: false },
+        b1: { title: 'B1', spoiler: false },
+      });
+    });
+
+    it('labels IDs named like Object.prototype members', () => {
+      // An own `titles` entry: `linear`'s `titles[id] ?? id` would otherwise read Object.prototype.
+      const next = guide(linear(['a', 'constructor'], { constructor: 'Ctor' }));
+      const d = diffGuides(guide(linear(['a'])), next);
+      expect(d.labels.sections).toEqual({ constructor: { title: 'Ctor', spoiler: false } });
+    });
+
+    const KIND_OF = {
+      cleared: 'sections',
+      pin: 'sections',
+      task: 'tasks',
+      tracked: 'categories',
+    } as const;
+    type Kind = 'sections' | 'tasks' | 'categories';
+
+    /** Every ID the diff lists anywhere: the kind lists, both sides of renames, the progress refs. */
+    function listedIds(d: GuideDiff): Record<Kind, Set<string>> {
+      const out: Record<Kind, Set<string>> = {
+        sections: new Set(),
+        tasks: new Set(),
+        categories: new Set(),
+      };
+      for (const kind of ['sections', 'tasks', 'categories'] as const) {
+        const k = d[kind];
+        for (const id of [
+          ...k.added,
+          ...k.removed,
+          ...k.edited.map((e) => e.id),
+          ...k.renamed.flatMap((r) => [r.from, r.to]),
+        ]) {
+          out[kind].add(id);
+        }
+      }
+      for (const m of d.progress?.migrated ?? []) out[KIND_OF[m.kind]].add(m.from).add(m.to);
+      for (const r of [...(d.progress?.orphaned ?? []), ...(d.progress?.restored ?? [])]) {
+        out[KIND_OF[r.kind]].add(r.id);
+      }
+      return out;
+    }
+
+    it('labels exactly the IDs the diff lists', () => {
+      const lk = loadGuide('lantern-keep');
+      const cases: [Guide, Guide, RunProgress | undefined][] = [
+        [
+          OLD,
+          NEW,
+          progress({
+            cleared: ['a', 'gone'],
+            pin: 'gone',
+            tasks: { t2: 'done', t3: 'dont-care', t4: 'done' },
+            tracked: { loot: false },
+          }),
+        ],
+        [
+          lk,
+          loadGuide('ff6-style'),
+          progress({ cleared: ['village'], tasks: { 'lost-cat': 'done' } }),
+        ],
+        [loadGuide('botw-style'), lk, undefined],
+        [loadGuide('tiny-linear'), loadGuide('ff8-style'), progress()],
+      ];
+      for (const [a, b, p] of cases) {
+        const d = diffGuides(a, b, p);
+        const ids = listedIds(d);
+        for (const kind of ['sections', 'tasks', 'categories'] as const) {
+          expect(Object.keys(d.labels[kind]).sort(), kind).toEqual([...ids[kind]].sort());
+        }
+      }
+      const d = diffGuides(OLD, NEW, cases[0]![2]);
+      expect(d.progress!.migrated).toContainEqual({ kind: 'task', from: 't2', to: 't2b' });
+      expect(d.progress!.orphaned).toContainEqual({ kind: 'pin', id: 'gone' });
+      expect(d.progress!.restored).toContainEqual({ kind: 'task', id: 't4' });
     });
   });
 });
