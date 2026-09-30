@@ -31,17 +31,22 @@ async function renderCard(
   return { ...harness, fixture, el, actions, button, layout: TestBed.inject(RunLayout) };
 }
 
+const categoryHeaders = (el: HTMLElement): string[] =>
+  [...el.querySelectorAll('[data-category-header]')].map((h) =>
+    [...h.children].map((c) => c.textContent?.trim()).join(' '),
+  );
+
 describe('LeafCard (§5.2)', () => {
   it('expands the current card with counts, walkthrough and actions', async () => {
     const { el, button, actions } = await renderCard('village');
-    expect(el.querySelector('section')?.getAttribute('aria-label')).toBe('Harrow Village');
+    expect(el.querySelector('section')?.getAttribute('aria-label')).toBe('Harrow Village, current');
     expect(el.querySelector('section')?.getAttribute('data-state')).toBe('current');
     expect(el.textContent).toContain('3 open');
     expect(el.textContent).toContain('Stock up and find passage across the river.');
-    const summaries = [...el.querySelectorAll('details > summary')].map((s) =>
-      s.textContent?.replace(/\s+/g, ' ').trim(),
+    expect(categoryHeaders(el)).toEqual(['Story 0 of 1', 'Loot 0 of 1', 'Side quests 0 of 1']);
+    expect([...el.querySelectorAll('details > summary')].map((s) => s.textContent?.trim())).toEqual(
+      ['Walkthrough'],
     );
-    expect(summaries).toEqual(['Walkthrough', 'Story 0/1', 'Loot 0/1', 'Side quests 0/1']);
     expect((el.querySelector('details') as HTMLDetailsElement).open).toBe(false);
     button('Clear section')!.click();
     button("I'm here")!.click();
@@ -62,7 +67,7 @@ describe('LeafCard (§5.2)', () => {
     (el.querySelector('input[aria-label="Pay the ferryman"]') as HTMLInputElement).click();
     await fixture.whenStable();
     expect(store.view()?.tasks.get('ferry-passage')).toEqual({ kind: 'done' });
-    expect(el.textContent).toContain('Story 1/1');
+    expect(categoryHeaders(el)[0]).toBe('Story 1 of 1');
   });
 
   it('keeps a resolved 2nd-chance row until the card collapses (§5.3)', async () => {
@@ -168,7 +173,7 @@ describe('LeafCard (§5.2)', () => {
   it('shows a cleared card collapsed and struck through', async () => {
     const { el, button } = await renderCard('village', { cleared: ['village'] });
     expect(el.querySelector('section')?.getAttribute('data-state')).toBe('cleared');
-    expect(el.querySelector('section > div button')?.getAttribute('aria-expanded')).toBe('false');
+    expect(el.querySelector('[role=heading] button')?.getAttribute('aria-expanded')).toBe('false');
     expect(el.querySelector('.line-through')?.textContent).toContain('Harrow Village');
     expect(button('Reopen section')).toBeUndefined();
   });
@@ -184,15 +189,12 @@ describe('LeafCard (§5.2)', () => {
 
   it('leaves untracked categories off the card', async () => {
     const { el } = await renderCard('village', { tracked: { quests: false } });
-    const summaries = [...el.querySelectorAll('details > summary')].map((s) =>
-      s.textContent?.replace(/\s+/g, ' ').trim(),
-    );
-    expect(summaries).toEqual(['Walkthrough', 'Story 0/1', 'Loot 0/1']);
+    expect(categoryHeaders(el)).toEqual(['Story 0 of 1', 'Loot 0 of 1']);
   });
 
   it('points the disclosure at the expanded body', async () => {
     const { el, layout, fixture } = await renderCard('village');
-    const toggle = el.querySelector('section > div button') as HTMLButtonElement;
+    const toggle = el.querySelector('[role=heading] button') as HTMLButtonElement;
     const id = toggle.getAttribute('aria-controls');
     expect(id).toBeTruthy();
     expect(el.querySelector(`#${id}`)).not.toBeNull();
@@ -203,7 +205,7 @@ describe('LeafCard (§5.2)', () => {
 
   it('redacts a hidden section title with a bar and keeps the text out of the name', async () => {
     const { el } = await renderCard('throne-room');
-    const header = el.querySelector('section > div button')!;
+    const header = el.querySelector('[role=heading] button')!;
     expect(header.querySelector('.redaction')).not.toBeNull();
     expect(header.textContent).toContain('tap to reveal');
     expect(el.querySelector('section')!.getAttribute('aria-label')).toBe('Hidden section');
@@ -212,7 +214,7 @@ describe('LeafCard (§5.2)', () => {
 
   it('keeps the hint out of the toggle name and labels the locked overview as a section spoiler', async () => {
     const { el, fixture, layout } = await renderCard('throne-room');
-    const toggle = el.querySelector('section > div button')!;
+    const toggle = el.querySelector('[role=heading] button')!;
     const hint = [...toggle.querySelectorAll('span')].find(
       (n) => n.textContent === 'tap to reveal',
     )!;
@@ -255,7 +257,7 @@ describe('LeafCard plumbing (route)', () => {
 
 describe('LeafCard rows (route)', () => {
   const node = (el: HTMLElement): HTMLElement => el.querySelector('[data-node] > span')!;
-  const row = (el: HTMLElement): HTMLElement => el.querySelector('section > div button')!;
+  const row = (el: HTMLElement): HTMLElement => el.querySelector('[role=heading] button')!;
 
   it('renders a cleared leaf as a 36 px struck-through row with the cleared dot', async () => {
     const { el } = await renderCard('village', { cleared: ['village'] }, undefined, 'row');
@@ -373,5 +375,102 @@ describe('LeafCard rows (route)', () => {
         }
       }
     }
+  });
+});
+
+describe('LeafCard panel (route)', () => {
+  const node = (el: HTMLElement): HTMLElement => el.querySelector('[data-node] > span')!;
+
+  it('labels the current panel and styles its header', async () => {
+    const { el } = await renderCard('village');
+    const section = el.querySelector('section')!;
+    expect(section.getAttribute('aria-label')).toBe('Harrow Village, current');
+    expect(section.className).toContain('pl-3');
+    expect(section.className).toContain('pt-1');
+    const heading = el.querySelector('[role=heading]')!;
+    expect(heading.getAttribute('aria-level')).toBe('3');
+    const title = heading.querySelector('.font-display')!;
+    expect(title.className).toContain('font-bold');
+    expect(title.className).toContain('text-[21px]');
+    expect(title.className).toContain('text-lamp');
+    const open = [...el.querySelectorAll('span')].find((n) => n.textContent?.trim() === '3 open')!;
+    expect(open.className).toContain('text-open');
+    expect(open.className).toContain('font-display');
+    expect(node(el).className).toContain('bg-lamp');
+    expect(el.querySelector('[data-node]')!.className).toContain('pt-4');
+    const body = el.querySelector('section > div:not([data-node])')!;
+    expect(body.className).toContain('bg-surface-raised');
+    expect(body.className).toContain('rounded-l-panel');
+  });
+
+  it('names a non-current expanded panel by its plain title with a plain title colour', async () => {
+    const { el, layout, fixture } = await renderCard('marsh');
+    layout.setExpanded('marsh', true);
+    await fixture.whenStable();
+    expect(el.querySelector('section')!.getAttribute('aria-label')).toBe('Whisper Marsh');
+    const title = el.querySelector('[role=heading] .font-display')!;
+    expect(title.className).toContain('text-[21px]');
+    expect(title.className).toContain('text-fg');
+    expect(title.className).not.toContain('text-lamp');
+    expect(node(el).className).not.toContain('bg-lamp');
+  });
+
+  it('renders category headers with counts and the rule, walkthrough and buttons', async () => {
+    const { el, button } = await renderCard('village');
+    const header = el.querySelector('[data-category-header]')!;
+    expect(header.className).toContain('border-rule');
+    expect(header.className).toContain('text-fg-muted');
+    expect(header.className).toContain('text-xs');
+    expect(categoryHeaders(el)[0]).toBe('Story 0 of 1');
+    expect(el.querySelector('ul app-task-row')).not.toBeNull();
+    const summary = el.querySelector('details > summary')!;
+    expect(summary.className).toContain('min-h-11');
+    expect(summary.className).toContain('text-[15px]');
+    expect(summary.className).toContain('text-fg-muted');
+    expect(el.querySelector('details')!.className).toContain('border-rule');
+    expect(button('Clear section')!.className).toContain('btn-primary');
+    expect(button("I'm here")!.className).toBe('btn');
+  });
+
+  it('puts two columns on a grid and splits four categories 2/2', async () => {
+    const guide = structuredClone(LANTERN_KEEP) as Guide;
+    const lore = guide.tasks.find((t) => t.id === 'keep-history')!;
+    lore.windows[0]!.from = 'village';
+    lore.windows[0]!.home = 'village';
+    const { el, fixture } = await renderCard('village', { tracked: { lore: true } }, guide);
+    expect(categoryHeaders(el).length).toBe(4);
+    expect(el.querySelector('.grid-cols-2')).toBeNull();
+    fixture.componentRef.setInput('columns', 2);
+    await fixture.whenStable();
+    const grid = el.querySelector('.grid')!;
+    expect(grid.className).toContain('grid-cols-2');
+    expect(grid.className).toContain('gap-x-8');
+    const cols = [...grid.children];
+    expect(cols.length).toBe(2);
+    expect(cols.map((c) => c.querySelectorAll('[data-category-header]').length)).toEqual([2, 2]);
+    expect(categoryHeaders(el)[0]).toBe('Story 0 of 1');
+  });
+
+  it('keeps the cleared dot, not the lamp, on a cleared expanded panel', async () => {
+    const { el, layout, fixture } = await renderCard('village', { cleared: ['village'] });
+    layout.setExpanded('village', true);
+    await fixture.whenStable();
+    expect(node(el).className).toContain('bg-rail-dot');
+    expect(el.querySelector('.bg-lamp')).toBeNull();
+  });
+
+  it('uses no shadow utility in a panel', async () => {
+    const { el } = await renderCard('village');
+    for (const n of el.querySelectorAll('*')) {
+      expect(n.className.toString()).not.toMatch(/(^|\s)shadow-/);
+      if (n.className.toString().includes('rounded-full')) {
+        expect(n.closest('[data-node]')).not.toBeNull();
+      }
+    }
+  });
+
+  it('never leaks a hidden section title in the label', async () => {
+    const { el } = await renderCard('throne-room');
+    expect(el.querySelector('section')!.getAttribute('aria-label')).toBe('Hidden section');
   });
 });
