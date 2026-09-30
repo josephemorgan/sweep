@@ -108,6 +108,8 @@ describe('SectionList (route rail)', () => {
     expect(emitted).toEqual(['marsh']);
     expect(card('marsh').className).toContain('bg-surface-raised');
     expect(card('village').className).not.toContain('bg-surface-raised');
+    expect(card('marsh').querySelector('button')!.getAttribute('aria-current')).toBe('true');
+    expect(card('village').querySelector('button')!.hasAttribute('aria-current')).toBe(false);
     expect(el.querySelector('[id^="card-body-"]')).toBeNull();
   });
 
@@ -137,5 +139,15 @@ describe('SectionList (route rail)', () => {
     expect(store.view()!.current).toBe('village');
     await fixture.whenStable();
     expect(hintText(el)).toEqual([]);
+  });
+
+  it('never leaks a hidden spoiler current title into the hint', async () => {
+    const { el, store, fixture } = await renderList({ cleared: ['village'] });
+    store.setPin('throne-room');
+    await fixture.whenStable();
+    expect(store.view()!.current).toBe('throne-room');
+    expect(hintText(el)).toEqual(['Opens after a hidden section']);
+    expect(el.querySelector('#section-epilogue [data-hint]')).not.toBeNull();
+    expect(hintText(el).join()).not.toContain('Throne Room');
   });
 });

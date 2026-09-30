@@ -29,13 +29,14 @@ interface CardSource {
       [id]="'section-' + leafId()"
       [attr.aria-label]="blurred() ? 'Hidden section' : leaf().title"
       [attr.data-state]="state()"
-      class="scroll-mt-14 rounded-panel border"
+      class="scroll-mt-14 border"
       [class]="cardClasses()"
     >
       <div role="heading" [attr.aria-level]="level()">
         <button
           type="button"
           class="flex min-h-11 w-full items-center gap-2 px-3 text-left"
+          [attr.aria-current]="detailPane() && selected() ? 'true' : null"
           [attr.aria-expanded]="detailPane() ? null : expanded()"
           [attr.aria-controls]="expanded() && !detailPane() ? bodyId() : null"
           (click)="headerClick()"

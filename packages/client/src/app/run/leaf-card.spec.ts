@@ -242,6 +242,7 @@ describe('LeafCard plumbing (route)', () => {
     const section = el.querySelector('section')!;
     expect(section.className).toContain('bg-surface-raised');
     expect(section.className).toContain('rounded-l-panel');
+    expect(section.classList.contains('rounded-panel')).toBe(false);
     expect(el.querySelector('.text-lamp.font-display')).not.toBeNull();
   });
 });
