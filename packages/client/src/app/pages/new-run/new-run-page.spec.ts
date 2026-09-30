@@ -140,4 +140,48 @@ describe('NewRunPage', () => {
     expect(el.textContent).toContain('2 MiB or smaller');
     expect(api.dryRunCreate).not.toHaveBeenCalled();
   });
+
+  it('clears the file input so the same file can be picked again', async () => {
+    const api = createRunsApiFake();
+    api.dryRunCreate.mockResolvedValue(OK);
+    const { fixture, el } = await setup(api);
+    const input = el.querySelector<HTMLInputElement>('input[type="file"]')!;
+    // The test DOM has no DataTransfer, so stub `files` and record writes to `value`.
+    const writes: string[] = [];
+    Object.defineProperty(input, 'files', { value: [yaml()], configurable: true });
+    Object.defineProperty(input, 'value', {
+      set: (v: string) => void writes.push(v),
+      get: () => '',
+      configurable: true,
+    });
+    const pickViaInput = async (): Promise<void> => {
+      input.dispatchEvent(new Event('change'));
+      await fixture.whenStable();
+    };
+    await pickViaInput();
+    expect(writes).toEqual(['']);
+    await pickViaInput();
+    expect(api.dryRunCreate).toHaveBeenCalledTimes(2);
+  });
+
+  it('uses the current name when a failed create is retried', async () => {
+    const api = createRunsApiFake();
+    api.dryRunCreate.mockResolvedValue(OK);
+    api.createRun
+      .mockRejectedValueOnce(new ApiError(503, 'unavailable', 'Try later.'))
+      .mockResolvedValue({ runId: 'r1' });
+    const { fixture, page, navigate, button, nameInput } = await setup(api);
+    await page.pick(yaml());
+    await fixture.whenStable();
+    button('Create')!.click();
+    await vi.waitFor(() => expect(api.createRun).toHaveBeenCalledTimes(1));
+    await fixture.whenStable();
+    const input = nameInput()!;
+    input.value = '  Renamed  ';
+    input.dispatchEvent(new Event('input'));
+    await fixture.whenStable();
+    button('Try again')!.click();
+    await vi.waitFor(() => expect(navigate).toHaveBeenCalledWith('/runs/r1'));
+    expect(api.createRun).toHaveBeenLastCalledWith(expect.any(File), 'Renamed');
+  });
 });

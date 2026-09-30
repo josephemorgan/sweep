@@ -59,7 +59,7 @@ interface Problem {
             <input type="text" class="field" [formField]="nameForm.name" />
           </label>
           @if (nameForm.name().touched() && nameForm.name().invalid()) {
-            <p class="-mt-2 m-0 text-sm text-missed">{{ nameForm.name().errors()[0]?.message }}</p>
+            <p class="-mt-2 text-sm text-missed">{{ nameForm.name().errors()[0]?.message }}</p>
           }
           <button type="submit" class="btn-primary self-start" [disabled]="busy()">Create</button>
         </form>
@@ -95,7 +95,10 @@ export class NewRunPage {
   );
 
   protected onFile(event: Event): void {
-    const file = (event.target as HTMLInputElement).files?.[0];
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    // Clear the input so picking the same file again (after editing it) fires `change`.
+    input.value = '';
     if (file) void this.pick(file);
   }
 
@@ -120,10 +123,11 @@ export class NewRunPage {
     const file = this.file;
     const title = this.report()?.summary?.title;
     if (!file || title === undefined || !this.canCreate()) return;
-    // The server rejects an empty name (400), so an empty one falls back to the default.
-    const name = this.nameModel().name.trim() || title;
     await this.attempt(async () => {
       this.step.set('creating');
+      // Read the name when the action runs (a retry sees edits). The server rejects an
+      // empty name (400), so an empty one falls back to the default.
+      const name = this.nameModel().name.trim() || title;
       const { runId } = await this.api.createRun(file, name);
       await this.router.navigateByUrl(`/runs/${runId}`);
     });
