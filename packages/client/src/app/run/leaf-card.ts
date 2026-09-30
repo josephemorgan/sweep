@@ -1,4 +1,4 @@
-import { Component, computed, inject, input, linkedSignal } from '@angular/core';
+import { Component, computed, inject, input, linkedSignal, output } from '@angular/core';
 import type { CardCategory, CardView, Task, TaskStatus } from '@sweep/core';
 import { MarkdownView } from '../shared/markdown-view';
 import { lockReason } from './lock-reason';
@@ -30,21 +30,15 @@ interface CardSource {
       [attr.aria-label]="blurred() ? 'Hidden section' : leaf().title"
       [attr.data-state]="state()"
       class="scroll-mt-14 rounded-panel border"
-      [class]="
-        state() === 'current'
-          ? 'border-accent bg-surface-raised'
-          : state() === 'locked'
-            ? 'border-border bg-surface text-fg-muted'
-            : 'border-border bg-surface-raised'
-      "
+      [class]="cardClasses()"
     >
       <div role="heading" [attr.aria-level]="level()">
         <button
           type="button"
           class="flex min-h-11 w-full items-center gap-2 px-3 text-left"
-          [attr.aria-expanded]="expanded()"
-          [attr.aria-controls]="expanded() ? bodyId() : null"
-          (click)="layout.setExpanded(leafId(), !expanded())"
+          [attr.aria-expanded]="detailPane() ? null : expanded()"
+          [attr.aria-controls]="expanded() && !detailPane() ? bodyId() : null"
+          (click)="headerClick()"
         >
           @if (state() === 'locked') {
             <svg aria-hidden="true" viewBox="0 0 16 16" class="size-4 shrink-0 fill-current">
@@ -52,7 +46,11 @@ interface CardSource {
             </svg>
             <span class="sr-only">Locked:</span>
           }
-          <span class="min-w-0 flex-1 font-medium" [class.line-through]="state() === 'cleared'">
+          <span
+            class="min-w-0 flex-1"
+            [class]="selected() ? 'font-display text-lamp' : 'font-medium'"
+            [class.line-through]="state() === 'cleared'"
+          >
             @if (blurred()) {
               <span class="inline-flex items-center gap-2.5"
                 ><span aria-hidden="true" class="redaction" [style.width.px]="barWidth()"></span
@@ -75,10 +73,12 @@ interface CardSource {
           }
         </button>
       </div>
-      @if (lockText(); as text) {
+      @if (hint(); as text) {
+        <p data-hint class="m-0 px-3 pb-2 text-xs text-fg-muted">{{ text }}</p>
+      } @else if (lockText(); as text) {
         <p class="m-0 px-3 pb-2 text-sm">{{ text }}</p>
       }
-      @if (expanded()) {
+      @if (expanded() && !detailPane()) {
         <div [id]="bodyId()" class="flex flex-col gap-2 px-3 pb-3">
           <p class="m-0 text-sm text-fg-muted">
             <app-spoiler-text
@@ -144,6 +144,15 @@ interface CardSource {
 export class LeafCard {
   readonly leafId = input.required<string>();
   readonly level = input(3);
+  readonly variant = input<'row' | 'panel'>('row');
+  readonly columns = input<1 | 2>(1);
+  /** Replaces the lock text, e.g. "Opens after <current>". */
+  readonly hint = input<string | null>(null);
+  /** Two-pane layout: the header selects the row instead of expanding it. */
+  readonly detailPane = input(false);
+  readonly selected = input(false);
+  // eslint-disable-next-line @angular-eslint/no-output-native -- name fixed by the route plan (Section C consumes it)
+  readonly select = output<void>();
 
   protected readonly store = inject(RunStore);
   protected readonly layout = inject(RunLayout);
@@ -158,6 +167,22 @@ export class LeafCard {
   protected readonly pinned = computed(
     () => this.view().pinned && this.view().current === this.leafId(),
   );
+  protected readonly cardClasses = computed(() => {
+    const state = this.state();
+    if (this.detailPane()) {
+      if (this.selected()) return 'rounded-l-panel border-transparent bg-surface-raised';
+      return state === 'locked'
+        ? 'rounded-panel border-transparent bg-surface text-fg-muted'
+        : 'rounded-panel border-transparent bg-surface';
+    }
+    const colors =
+      state === 'current'
+        ? 'border-accent bg-surface-raised'
+        : state === 'locked'
+          ? 'border-border bg-surface text-fg-muted'
+          : 'border-border bg-surface-raised';
+    return 'rounded-panel ' + colors;
+  });
   protected readonly bodyId = computed(() => 'card-body-' + this.leafId());
   protected readonly revealKey = computed(() => sectionRevealKey(this.leafId()));
   /** Redaction bar width in px: 7 per character, clamped to 64..176. */
@@ -204,6 +229,11 @@ export class LeafCard {
       .cards.get(this.leafId())!
       .categories.reduce((n, c) => n + c.rows.filter((r) => r.status.kind === 'open').length, 0),
   );
+
+  protected headerClick(): void {
+    if (this.detailPane()) this.select.emit();
+    else this.layout.setExpanded(this.leafId(), !this.expanded());
+  }
 
   protected task(taskId: string): Task {
     return this.index().tasks.get(taskId)!;

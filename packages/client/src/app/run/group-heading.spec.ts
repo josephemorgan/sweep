@@ -47,7 +47,7 @@ describe('GroupHeading (§5.2)', () => {
     const heading = el.querySelector('[role="heading"]')!;
     expect(heading.getAttribute('aria-level')).toBe('4');
     expect(heading.textContent).toContain('Act 1');
-    expect(el.textContent).toContain('1/2');
+    expect(el.textContent).toContain('1 of 2');
     expect(el.querySelector('.sr-only')?.textContent).toContain('leaves cleared');
   });
 
@@ -75,11 +75,38 @@ describe('GroupHeading (§5.2)', () => {
     const { el, button } = await renderGroup('act-2');
     const heading = el.querySelector('[role="heading"]')!;
     expect(heading.querySelector('.redaction')).not.toBeNull();
-    expect(heading.textContent).toContain('tap to reveal');
-    expect(heading.querySelector('button')?.getAttribute('aria-label')).toBe(
+    expect(el.textContent).toContain('tap to reveal');
+    expect(el.querySelectorAll('button button').length).toBe(0);
+    expect(el.querySelector('app-spoiler-text button')?.getAttribute('aria-label')).toBe(
       'Hidden spoiler section. Tap to reveal.',
     );
     expect(button('Expand hidden section') ?? button('Collapse hidden section')).toBeDefined();
     expect(button('Walkthrough for a hidden section')).toBeDefined();
+  });
+});
+
+describe('GroupHeading route styles (R3)', () => {
+  it('renders a depth-1 heading as a muted 12px row with "n of m"', async () => {
+    const { el, fixture } = await renderGroup('act-1', { cleared: ['village'] });
+    fixture.componentRef.setInput('depth', 1);
+    await fixture.whenStable();
+    const heading = el.querySelector('[role="heading"]')!;
+    expect(heading.className).toContain('text-xs');
+    expect(heading.className).toContain('text-fg-muted');
+    expect(el.textContent).toContain('1 of 2');
+  });
+
+  it('renders a deeper heading in the display font with the count', async () => {
+    const { el, fixture } = await renderGroup('act-1');
+    fixture.componentRef.setInput('depth', 2);
+    await fixture.whenStable();
+    expect(el.querySelector('[role="heading"]')!.className).toContain('font-display');
+    expect(el.textContent).toContain('0 of 2');
+  });
+
+  it('keeps Walkthrough a separate sibling button, never nested', async () => {
+    const { el, button } = await renderGroup('act-1');
+    expect(el.querySelectorAll('button button').length).toBe(0);
+    expect(button('Walkthrough for Act 1').className).toContain('text-accent');
   });
 });

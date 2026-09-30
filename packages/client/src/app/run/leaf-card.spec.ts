@@ -218,3 +218,30 @@ describe('LeafCard (§5.2)', () => {
     );
   });
 });
+
+describe('LeafCard plumbing (route)', () => {
+  it('shows the hint in place of the lock text', async () => {
+    const { el, fixture } = await renderCard('epilogue');
+    fixture.componentRef.setInput('hint', 'Opens after Somewhere');
+    await fixture.whenStable();
+    expect(el.textContent).toContain('Opens after Somewhere');
+    expect(el.textContent).not.toContain('Requires:');
+    expect(el.querySelector('[data-hint]')!.className).toContain('text-fg-muted');
+  });
+
+  it('with detailPane, header click emits select and does not expand; selected is highlighted', async () => {
+    const { el, fixture, layout } = await renderCard('marsh');
+    const selected: unknown[] = [];
+    fixture.componentInstance.select.subscribe(() => selected.push(true));
+    fixture.componentRef.setInput('detailPane', true);
+    fixture.componentRef.setInput('selected', true);
+    await fixture.whenStable();
+    (el.querySelector('button') as HTMLButtonElement).click();
+    expect(selected.length).toBe(1);
+    expect(layout.isExpanded('marsh')).toBe(false);
+    const section = el.querySelector('section')!;
+    expect(section.className).toContain('bg-surface-raised');
+    expect(section.className).toContain('rounded-l-panel');
+    expect(el.querySelector('.text-lamp.font-display')).not.toBeNull();
+  });
+});
