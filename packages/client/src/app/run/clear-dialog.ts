@@ -43,7 +43,7 @@ const capitalize = (s: string): string => s.charAt(0).toUpperCase() + s.slice(1)
       }
       <div class="flex justify-end gap-2 pt-1">
         <button type="button" class="btn" (click)="cancelled.emit()">Cancel</button>
-        <button type="button" class="btn-primary" (click)="confirmed.emit()">Clear anyway</button>
+        <button type="button" class="btn-danger" (click)="confirmed.emit()">Clear anyway</button>
       </div>
     </div>
   `,
