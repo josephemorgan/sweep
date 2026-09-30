@@ -1,6 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import type { DryRunUpdateResponseDto, GuideDiff } from '@sweep/core';
 import { ApiError } from '../api/api-error';
+import { Toasts } from '../shared/toasts';
 import { RUN_ID, lanternKeepPayload } from '../../testing/lantern-keep';
 import { setupRunStore } from '../../testing/run-store-harness';
 import { UpdateGuideSheet } from './update-guide-sheet';
@@ -123,6 +124,92 @@ describe('UpdateGuideSheet (§5.8)', () => {
     await fixture.whenStable();
     expect(api.applyUpdate).not.toHaveBeenCalled();
     expect(el.querySelector('[role="alert"]')?.textContent).toContain('unsaved');
+  });
+
+  it('re-runs every check when Try again retries a failed apply', async () => {
+    const { api, sheet, store, fixture, el, button } = await renderSheet();
+    api.dryRunUpdate.mockResolvedValue(PREVIEW);
+    api.applyUpdate.mockRejectedValue(new ApiError(503, 'http', 'Service unavailable.'));
+    await sheet.pick(file());
+    await sheet.apply();
+    await fixture.whenStable();
+    store.setTaskState('lost-cat', 'done');
+    await fixture.whenStable();
+    button('Try again')!.click();
+    await fixture.whenStable();
+    expect(api.applyUpdate).toHaveBeenCalledTimes(1);
+    expect(el.querySelector('[role="alert"]')?.textContent).toContain('unsaved');
+  });
+
+  it('keeps Cancel available after a problem or an empty preview', async () => {
+    const { api, sheet, fixture, events, button } = await renderSheet();
+    api.dryRunUpdate.mockRejectedValue(new ApiError(429, 'rate-limited', 'Busy.'));
+    await sheet.pick(file());
+    await fixture.whenStable();
+    button('Cancel')!.click();
+    expect(events).toEqual(['cancelled']);
+  });
+
+  it('when the refetch fails and the review is stale again, Try again reruns the cycle', async () => {
+    const { api, sheet, fixture, button } = await renderSheet();
+    api.dryRunUpdate
+      .mockResolvedValueOnce(PREVIEW)
+      .mockRejectedValueOnce(new ApiError(409, 'stale-version', 'Newer exists.'))
+      .mockResolvedValue(PREVIEW);
+    api.applyUpdate.mockRejectedValue(new ApiError(409, 'stale-version', 'Newer exists.'));
+    api.getRun.mockRejectedValue(new ApiError(0, 'network', 'offline'));
+    await sheet.pick(file());
+    await sheet.apply();
+    await fixture.whenStable();
+    expect(button('Try again')).toBeDefined();
+    api.getRun.mockResolvedValue(v2());
+    button('Try again')!.click();
+    await vi.waitFor(() =>
+      expect(api.dryRunUpdate).toHaveBeenLastCalledWith(RUN_ID, expect.any(File), 2),
+    );
+  });
+
+  it('keeps the file input disabled during the refetch of a 409', async () => {
+    const { api, sheet, el, fixture } = await renderSheet();
+    api.dryRunUpdate.mockResolvedValue(PREVIEW);
+    api.applyUpdate.mockRejectedValue(new ApiError(409, 'stale-version', 'Newer exists.'));
+    await sheet.pick(file());
+    let release!: (p: ReturnType<typeof v2>) => void;
+    api.getRun.mockImplementation(() => new Promise((r) => (release = r)));
+    api.getRun.mockClear();
+    const applying = sheet.apply();
+    await vi.waitFor(() => expect(api.getRun).toHaveBeenCalled());
+    fixture.detectChanges();
+    expect((el.querySelector('input[type="file"]') as HTMLInputElement).disabled).toBe(true);
+    release(v2());
+    await applying;
+  });
+
+  it('applies against the previewed baseVersion even if a refetch moved on', async () => {
+    const { api, sheet, store, button, events, fixture } = await renderSheet();
+    api.dryRunUpdate.mockResolvedValue(PREVIEW);
+    api.applyUpdate.mockResolvedValue(v2());
+    await sheet.pick(file());
+    await fixture.whenStable();
+    api.getRun.mockResolvedValue(v2());
+    await store.refetch();
+    await fixture.whenStable();
+    button('Apply')!.click();
+    await vi.waitFor(() => expect(events).toEqual(['done']));
+    expect(api.applyUpdate).toHaveBeenCalledWith(RUN_ID, expect.any(File), 1);
+  });
+
+  it('toasts after a successful apply', async () => {
+    const { api, sheet } = await renderSheet();
+    api.dryRunUpdate.mockResolvedValue(PREVIEW);
+    api.applyUpdate.mockResolvedValue(v2());
+    await sheet.pick(file());
+    await sheet.apply();
+    expect(
+      TestBed.inject(Toasts)
+        .toasts()
+        .map((t) => t.message),
+    ).toEqual(['Guide updated. Progress was kept.']);
   });
 
   it('clears the file input so the same file can be picked again', async () => {

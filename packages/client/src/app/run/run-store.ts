@@ -295,6 +295,7 @@ export class RunStore {
   /** After a guide update was applied: the new payload is the server copy. */
   replacePayload(payload: RunPayloadDto): void {
     if (payload.run.id !== this.runId()) return;
+    this.fetchGen += 1; // a GET already in flight may predate this payload: drop its result
     this.setPayload(payload);
     this.status.set(RunStatus.Ready);
   }

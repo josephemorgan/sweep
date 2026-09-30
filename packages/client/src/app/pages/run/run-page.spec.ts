@@ -246,7 +246,7 @@ describe('RunPage clear and pin (§5.4)', () => {
 
 describe('RunPage update guide (§5.8)', () => {
   it('opens the update sheet from the menu and closes it after an applied update', async () => {
-    const { el, fixture, api } = await renderPage();
+    const { el, fixture, api, store } = await renderPage();
     const press = (root: Element, name: string): void =>
       [...root.querySelectorAll('button')].find((b) => b.textContent?.trim() === name)!.click();
     el.querySelector<HTMLButtonElement>('button[aria-label="Run menu"]')!.click();
@@ -282,7 +282,13 @@ describe('RunPage update guide (§5.8)', () => {
       expect(api.dryRunUpdate).toHaveBeenCalledWith(RUN_ID, expect.any(File), 1),
     );
     await fixture.whenStable();
+    vi.mocked(Element.prototype.scrollIntoView).mockClear();
     press(sheet!, 'Apply');
     await vi.waitFor(() => expect(el.querySelector('app-update-guide-sheet')).toBeNull());
+    await vi.waitFor(() => expect(Element.prototype.scrollIntoView).toHaveBeenCalled());
+    const current = store.view()!.current!;
+    expect(
+      (vi.mocked(Element.prototype.scrollIntoView).mock.contexts.at(-1) as HTMLElement).id,
+    ).toBe(`section-${current}`);
   });
 });

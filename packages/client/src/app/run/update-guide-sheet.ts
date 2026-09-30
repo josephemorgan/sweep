@@ -62,14 +62,16 @@ interface Problem {
         @if (result.diff; as diff) {
           <app-diff-preview [diff]="diff" />
         }
-        @if (canApply()) {
-          <div class="flex justify-end gap-2">
-            <button type="button" class="btn" (click)="cancelled.emit()">Cancel</button>
+      }
+      @if (preview() || problem()) {
+        <div class="flex justify-end gap-2">
+          <button type="button" class="btn" (click)="cancelled.emit()">Cancel</button>
+          @if (canApply()) {
             <button type="button" class="btn-primary" [disabled]="busy()" (click)="apply()">
               Apply
             </button>
-          </div>
-        }
+          }
+        </div>
       }
     </div>
   `,
@@ -83,7 +85,8 @@ export class UpdateGuideSheet {
   private readonly toasts = inject(Toasts);
   private file: File | null = null;
   private baseVersion = 0;
-  private lastAction: (() => Promise<void>) | null = null;
+  /** What Try again runs. Apply retries go back through apply(), so every check re-runs. */
+  private retryAction: (() => Promise<void>) | null = null;
 
   protected readonly step = signal<'idle' | 'checking' | 'applying'>('idle');
   protected readonly preview = signal<DryRunUpdateResponseDto | null>(null);
@@ -114,17 +117,19 @@ export class UpdateGuideSheet {
       this.problem.set({ message: fileProblem, retry: false });
       return;
     }
+    this.retryAction = () => this.pick(file);
     await this.attempt(() => this.check(file));
   }
 
   async apply(): Promise<void> {
     const file = this.file;
     if (!file || !this.canApply() || this.busy()) return;
+    this.retryAction = () => this.apply();
     if (this.queue.size() > 0) {
       // §5.7: writes queued since the preview must save first.
       this.problem.set({
         message: 'Waiting for unsaved changes to save. Try Apply again in a moment.',
-        retry: false,
+        retry: true,
       });
       return;
     }
@@ -138,7 +143,7 @@ export class UpdateGuideSheet {
   }
 
   protected retry(): void {
-    if (this.lastAction) void this.attempt(this.lastAction);
+    if (this.retryAction) void this.retryAction();
   }
 
   private async check(file: File): Promise<void> {
@@ -150,7 +155,6 @@ export class UpdateGuideSheet {
   }
 
   private async attempt(action: () => Promise<void>, reviewOnStale = true): Promise<void> {
-    this.lastAction = action;
     this.problem.set(null);
     try {
       await action();
@@ -159,14 +163,21 @@ export class UpdateGuideSheet {
       const file = this.file;
       if (e.status === 409 && e.code === 'stale-version' && reviewOnStale && file) {
         // §5.8: a newer version exists. Refetch, then review again against it. Never applies silently.
-        this.step.set('idle');
+        this.step.set('checking');
         this.preview.set(null);
         await this.store.refetch();
         this.notice.set('A newer guide version was uploaded meanwhile. Review the update again.');
         await this.attempt(() => this.check(file), false);
         return;
       }
-      if (e.status === 422 && e.issues.length > 0) {
+      if (e.status === 409 && e.code === 'stale-version' && file) {
+        // The refetch didn't move us to the newer version: Try again re-runs the whole review cycle.
+        this.retryAction = async () => {
+          await this.store.refetch();
+          await this.pick(file);
+        };
+        this.problem.set({ message: e.message, retry: true });
+      } else if (e.status === 422 && e.issues.length > 0) {
         this.preview.set({ issues: [...e.issues], diff: null });
       } else {
         this.problem.set({ message: e.message, retry: isRetryable(e) });

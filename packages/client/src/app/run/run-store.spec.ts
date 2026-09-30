@@ -163,6 +163,22 @@ describe('RunStore', () => {
     expect(store.revalidating()).toBe(false);
   });
 
+  it('replacePayload drops a refetch that was already in flight', async () => {
+    const { store, api } = await setupRunStore();
+    type P = ReturnType<typeof lanternKeepPayload>;
+    let answer!: (p: P) => void;
+    api.getRun.mockImplementation(() => new Promise((resolve) => (answer = resolve)));
+    const refetching = store.refetch();
+    store.replacePayload({
+      ...lanternKeepPayload(),
+      run: { ...lanternKeepPayload().run, currentVersion: 2 },
+    });
+    answer(lanternKeepPayload());
+    await refetching;
+    expect(store.run()?.currentVersion).toBe(2);
+    expect(store.revalidating()).toBe(false);
+  });
+
   it('shares one revalidation between focus and visibilitychange', async () => {
     const { store, api } = await setupRunStore();
     api.getRun.mockClear();
