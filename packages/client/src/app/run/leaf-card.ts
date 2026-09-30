@@ -56,7 +56,8 @@ interface CardSource {
             @if (blurred()) {
               <span class="inline-flex items-center gap-2.5"
                 ><span aria-hidden="true" class="redaction" [style.width.px]="barWidth()"></span
-                ><span class="text-xs font-normal text-fg-muted">tap to reveal</span
+                ><span aria-hidden="true" class="text-xs font-normal text-fg-muted"
+                  >tap to reveal</span
                 ><span aria-hidden="true" class="sr-only select-none">{{ leaf().title }}</span
                 ><span class="sr-only">Hidden section</span></span
               >
@@ -84,6 +85,7 @@ interface CardSource {
               [text]="leaf().overview"
               [hidden]="blurred()"
               [revealKey]="revealKey()"
+              label="Hidden spoiler section. Tap to reveal."
             />
           </p>
           @if (leaf().walkthrough; as walkthrough) {

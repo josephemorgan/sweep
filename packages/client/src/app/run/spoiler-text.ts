@@ -17,7 +17,7 @@ import { Reveals } from './reveals';
     @if (blurred()) {
       <button
         type="button"
-        class="flex min-h-[42px] min-w-11 items-center gap-2.5 text-left"
+        class="flex min-h-[42px] w-full min-w-11 items-center gap-2.5 text-left"
         [attr.aria-label]="label()"
         (click)="reveal($event)"
       >

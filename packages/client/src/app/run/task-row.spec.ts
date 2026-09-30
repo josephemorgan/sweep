@@ -229,6 +229,19 @@ describe('TaskRow fix round 1', () => {
     expect(document.activeElement!.textContent).toContain("The keeper's lantern");
   });
 
+  it('moves focus to the revealed title element after tapping the redaction', async () => {
+    const { el, fixture } = await render('keepers-lantern', OPEN);
+    el.querySelector<HTMLButtonElement>(
+      'button[aria-label="Hidden spoiler task. Tap to reveal."]',
+    )!.click();
+    await fixture.whenStable();
+    const active = document.activeElement as HTMLElement;
+    expect(el.contains(active)).toBe(true);
+    expect(active.getAttribute('aria-label')).not.toBe('Hidden spoiler task. Tap to reveal.');
+    expect(active.textContent?.trim()).toBe("The keeper's lantern");
+    expect(active.closest('.min-w-0')).not.toBeNull();
+  });
+
   it('points the title at the how region while it exists, with unique ids', async () => {
     const a = await render('village-chest', OPEN);
     const b = await render('lost-cat', OPEN);

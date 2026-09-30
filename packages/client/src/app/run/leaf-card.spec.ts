@@ -203,4 +203,18 @@ describe('LeafCard (§5.2)', () => {
     expect(el.querySelector('section')!.getAttribute('aria-label')).toBe('Hidden section');
     expect(header.querySelector('.blur-md')).toBeNull();
   });
+
+  it('keeps the hint out of the toggle name and labels the locked overview as a section spoiler', async () => {
+    const { el, fixture, layout } = await renderCard('throne-room');
+    const toggle = el.querySelector('section > div button')!;
+    const hint = [...toggle.querySelectorAll('span')].find(
+      (n) => n.textContent === 'tap to reveal',
+    )!;
+    expect(hint.getAttribute('aria-hidden')).toBe('true');
+    layout.setExpanded('throne-room', true);
+    await fixture.whenStable();
+    expect(el.querySelector('p button')?.getAttribute('aria-label')).toBe(
+      'Hidden spoiler section. Tap to reveal.',
+    );
+  });
 });
