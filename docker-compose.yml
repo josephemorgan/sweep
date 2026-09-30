@@ -18,6 +18,7 @@ services:
 
   app:
     build: .
+    restart: unless-stopped
     environment:
       DATABASE_URL: postgres://sweep:sweep@postgres:5432/sweep
       BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:-dev-only-secret-change-me-0000000000}
