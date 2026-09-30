@@ -212,6 +212,42 @@ describe('UpdateGuideSheet (§5.8)', () => {
     ).toEqual(['Guide updated. Progress was kept.']);
   });
 
+  it('after a 409, a failed re-check offers a Try again that re-runs the check', async () => {
+    const { api, sheet, fixture, button } = await renderSheet();
+    api.dryRunUpdate
+      .mockResolvedValueOnce(PREVIEW)
+      .mockRejectedValueOnce(new ApiError(503, 'http', 'Service unavailable.'))
+      .mockResolvedValue(PREVIEW);
+    api.applyUpdate.mockRejectedValue(new ApiError(409, 'stale-version', 'Newer exists.'));
+    api.getRun.mockResolvedValue(v2());
+    await sheet.pick(file());
+    await sheet.apply();
+    await fixture.whenStable();
+    button('Try again')!.click();
+    await vi.waitFor(() => expect(api.dryRunUpdate).toHaveBeenCalledTimes(3));
+    expect(api.dryRunUpdate).toHaveBeenLastCalledWith(RUN_ID, expect.any(File), 2);
+  });
+
+  it('a double tap on the stale Try again starts one cycle', async () => {
+    const { api, sheet, fixture, button, store } = await renderSheet();
+    api.dryRunUpdate
+      .mockResolvedValueOnce(PREVIEW)
+      .mockRejectedValueOnce(new ApiError(409, 'stale-version', 'Newer exists.'))
+      .mockResolvedValue(PREVIEW);
+    api.applyUpdate.mockRejectedValue(new ApiError(409, 'stale-version', 'Newer exists.'));
+    api.getRun.mockRejectedValue(new ApiError(0, 'network', 'offline'));
+    await sheet.pick(file());
+    await sheet.apply();
+    await fixture.whenStable();
+    const refetch = vi.spyOn(store, 'refetch');
+    api.getRun.mockResolvedValue(v2());
+    const retry = button('Try again')!;
+    retry.click();
+    retry.click();
+    await fixture.whenStable();
+    expect(refetch).toHaveBeenCalledTimes(1);
+  });
+
   it('clears the file input so the same file can be picked again', async () => {
     const { api, fixture, el } = await renderSheet();
     api.dryRunUpdate.mockResolvedValue(PREVIEW);

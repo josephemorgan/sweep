@@ -146,6 +146,19 @@ export class UpdateGuideSheet {
     if (this.retryAction) void this.retryAction();
   }
 
+  /** The whole stale-version cycle again: refetch, then a fresh dry run. Busy at once, so a double tap can't start two. */
+  private async reviewAgain(file: File): Promise<void> {
+    if (this.busy()) return;
+    this.problem.set(null);
+    this.step.set('checking');
+    try {
+      await this.store.refetch();
+    } finally {
+      this.step.set('idle');
+    }
+    await this.pick(file);
+  }
+
   private async check(file: File): Promise<void> {
     this.step.set('checking');
     const base = this.store.run()!.currentVersion;
@@ -165,6 +178,7 @@ export class UpdateGuideSheet {
         // §5.8: a newer version exists. Refetch, then review again against it. Never applies silently.
         this.step.set('checking');
         this.preview.set(null);
+        this.retryAction = () => this.reviewAgain(file);
         await this.store.refetch();
         this.notice.set('A newer guide version was uploaded meanwhile. Review the update again.');
         await this.attempt(() => this.check(file), false);
@@ -172,10 +186,7 @@ export class UpdateGuideSheet {
       }
       if (e.status === 409 && e.code === 'stale-version' && file) {
         // The refetch didn't move us to the newer version: Try again re-runs the whole review cycle.
-        this.retryAction = async () => {
-          await this.store.refetch();
-          await this.pick(file);
-        };
+        this.retryAction = () => this.reviewAgain(file);
         this.problem.set({ message: e.message, retry: true });
       } else if (e.status === 422 && e.issues.length > 0) {
         this.preview.set({ issues: [...e.issues], diff: null });
