@@ -6,12 +6,16 @@ import { LeafCard } from './leaf-card';
 import { RunActions } from './run-actions';
 import { RunLayout } from './run-layout';
 
-async function renderCard(leafId: string, progress = {}) {
+async function renderCard(leafId: string, progress = {}, guide?: Guide) {
   const actions = { requestClear: vi.fn(), requestPin: vi.fn(), unpin: vi.fn() };
   const harness = await setupRunStore(progress, [
     RunLayout,
     { provide: RunActions, useValue: actions },
   ]);
+  if (guide) {
+    harness.api.getRun.mockResolvedValue({ ...lanternKeepPayload(progress), guide });
+    await harness.store.open(RUN_ID);
+  }
   const fixture = TestBed.createComponent(LeafCard);
   fixture.componentRef.setInput('leafId', leafId);
   await fixture.whenStable();
@@ -101,5 +105,92 @@ describe('LeafCard (§5.2)', () => {
     await fixture.whenStable();
     expect(el.textContent).toContain('a hidden section');
     expect(el.textContent).not.toContain('Throne Room');
+  });
+
+  const ALL_BUT_EPILOGUE = [
+    'village',
+    'marsh',
+    'keep-gate',
+    'east-tower',
+    'west-tower',
+    'throne-room',
+  ];
+  const CAT = 'input[aria-label="Find the elder\'s cat"]';
+
+  it('ends sticky rows when a refetch collapses the card and later re-expands it', async () => {
+    const { el, fixture, api, store } = await renderCard('epilogue', {
+      cleared: ALL_BUT_EPILOGUE,
+    });
+    expect(el.querySelector('section')?.getAttribute('data-state')).toBe('current');
+    expect(el.querySelector(CAT)).not.toBeNull();
+    api.getRun.mockResolvedValue(lanternKeepPayload({ cleared: ALL_BUT_EPILOGUE.slice(0, -1) }));
+    await store.refetch();
+    await fixture.whenStable();
+    expect(el.querySelector('section')?.getAttribute('data-state')).toBe('locked');
+    api.getRun.mockResolvedValue(
+      lanternKeepPayload({ cleared: ALL_BUT_EPILOGUE, tasks: { 'lost-cat': 'done' } }),
+    );
+    await store.refetch();
+    await fixture.whenStable();
+    expect(el.querySelector('section')?.getAttribute('data-state')).toBe('current');
+    expect(el.querySelector(CAT)).toBeNull();
+  });
+
+  it('survives a guide swap that removes a task shown on an expanded card', async () => {
+    const { el, fixture, api, store } = await renderCard('epilogue', {
+      cleared: ALL_BUT_EPILOGUE,
+    });
+    expect(el.querySelector(CAT)).not.toBeNull();
+    const guide = structuredClone(LANTERN_KEEP) as Guide;
+    guide.tasks = guide.tasks.filter((t) => t.id !== 'lost-cat');
+    const payload = lanternKeepPayload({ cleared: ALL_BUT_EPILOGUE });
+    api.getRun.mockResolvedValue({ ...payload, run: { ...payload.run, currentVersion: 2 }, guide });
+    await store.refetch();
+    await fixture.whenStable();
+    expect(el.querySelector(CAT)).toBeNull();
+    expect(el.textContent).toContain('Epilogue');
+  });
+
+  it('shows a cleared card collapsed and struck through', async () => {
+    const { el, button } = await renderCard('village', { cleared: ['village'] });
+    expect(el.querySelector('section')?.getAttribute('data-state')).toBe('cleared');
+    expect(el.querySelector('section > div button')?.getAttribute('aria-expanded')).toBe('false');
+    expect(el.querySelector('.line-through')?.textContent).toContain('Harrow Village');
+    expect(button('Reopen section')).toBeUndefined();
+  });
+
+  it('names an any-of requirement without spoiling hidden sections', async () => {
+    const guide = structuredClone(LANTERN_KEEP) as Guide;
+    guide.sections.find((s) => s.id === 'epilogue')!.requires = {
+      any: ['west-tower', 'throne-room'],
+    };
+    const { el } = await renderCard('epilogue', {}, guide);
+    expect(el.textContent).toContain('Requires one of: West Tower, a hidden section');
+  });
+
+  it('leaves untracked categories off the card', async () => {
+    const { el } = await renderCard('village', { tracked: { quests: false } });
+    const summaries = [...el.querySelectorAll('details > summary')].map((s) =>
+      s.textContent?.replace(/\s+/g, ' ').trim(),
+    );
+    expect(summaries).toEqual(['Walkthrough', 'Story 0/1', 'Loot 0/1']);
+  });
+
+  it('points the disclosure at the expanded body', async () => {
+    const { el, layout, fixture } = await renderCard('village');
+    const toggle = el.querySelector('section > div button') as HTMLButtonElement;
+    const id = toggle.getAttribute('aria-controls');
+    expect(id).toBeTruthy();
+    expect(el.querySelector(`#${id}`)).not.toBeNull();
+    layout.setExpanded('village', false);
+    await fixture.whenStable();
+    expect(toggle.getAttribute('aria-controls')).toBeNull();
+  });
+
+  it('blurs a hidden section title with the shared blur strength', async () => {
+    const { el } = await renderCard('throne-room');
+    expect(el.querySelector('section > div button span[aria-hidden]')?.className).toContain(
+      'blur-md',
+    );
   });
 });

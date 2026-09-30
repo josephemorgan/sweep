@@ -3,10 +3,20 @@ import type { CardCategory, CardRow, TaskStatus } from '@sweep/core';
 function stickyRows(
   shown: readonly CardRow[],
   next: readonly CardRow[],
-  statusOf: (id: string) => TaskStatus,
+  statusOf: (id: string) => TaskStatus | undefined,
 ): CardRow[] {
   const fresh = new Map(next.map((r) => [r.taskId, r]));
-  const kept = shown.map((r) => fresh.get(r.taskId) ?? { ...r, status: statusOf(r.taskId) });
+  const kept: CardRow[] = [];
+  for (const r of shown) {
+    const row = fresh.get(r.taskId);
+    if (row) {
+      kept.push(row);
+      continue;
+    }
+    // A task the guide no longer has cannot stay on screen.
+    const status = statusOf(r.taskId);
+    if (status) kept.push({ ...r, status });
+  }
   const seen = new Set(shown.map((r) => r.taskId));
   return [...kept, ...next.filter((r) => !seen.has(r.taskId))];
 }
@@ -19,7 +29,7 @@ function stickyRows(
 export function stickyCategories(
   shown: readonly CardCategory[],
   next: readonly CardCategory[],
-  statusOf: (taskId: string) => TaskStatus,
+  statusOf: (taskId: string) => TaskStatus | undefined,
   tracked: ReadonlySet<string>,
 ): CardCategory[] {
   const before = new Map(shown.map((c) => [c.categoryId, c]));

@@ -17,11 +17,12 @@ export class RunLayout {
   }
 
   setExpanded(leafId: string, expanded: boolean): void {
+    const before = this.isExpanded(leafId);
     this.leafOverrides.update((m) => new Map(m).set(leafId, expanded));
-    this.bump([leafId]);
+    if (this.isExpanded(leafId) !== before) this.bump([leafId]);
   }
 
-  /** §5.3: counts every collapse/expand of a card, so its sticky rows end when the card is toggled. */
+  /** §5.3: counts every change of a card's effective expansion made through this layout, so its sticky rows end when the card is toggled. */
   expansionEpoch(leafId: string): number {
     return this.epochs().get(leafId) ?? 0;
   }
@@ -48,12 +49,14 @@ export class RunLayout {
 
   /** These leaves follow their state again (§5.4: the cleared card collapses, the new current expands). */
   resetLeaves(ids: readonly (string | null)[]): void {
+    const leaves = ids.filter((id): id is string => id !== null);
+    const before = new Map(leaves.map((id) => [id, this.isExpanded(id)]));
     this.leafOverrides.update((m) => {
       const next = new Map(m);
       for (const id of ids) if (id !== null) next.delete(id);
       return next;
     });
-    this.bump(ids.filter((id): id is string => id !== null));
+    this.bump(leaves.filter((id) => this.isExpanded(id) !== before.get(id)));
   }
 
   scrollTo(sectionId: string): void {

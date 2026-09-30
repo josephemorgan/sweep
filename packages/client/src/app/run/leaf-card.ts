@@ -15,6 +15,7 @@ interface CardSource {
   card: CardView;
   expanded: boolean;
   epoch: number;
+  version: number | undefined;
 }
 
 @Component({
@@ -22,6 +23,8 @@ interface CardSource {
   imports: [MarkdownView, SpoilerText, TaskRow],
   host: { class: 'block' },
   template: `
+    <!-- Read on every render, collapsed or not, so the sticky snapshot ends when the card collapses (§5.3). -->
+    @let shownCategories = categories();
     <section
       [id]="'section-' + leafId()"
       [attr.aria-label]="blurred() ? 'Hidden section' : leaf().title"
@@ -40,6 +43,7 @@ interface CardSource {
           type="button"
           class="flex min-h-11 w-full items-center gap-2 px-3 text-left"
           [attr.aria-expanded]="expanded()"
+          [attr.aria-controls]="expanded() ? bodyId() : null"
           (click)="layout.setExpanded(leafId(), !expanded())"
         >
           @if (state() === 'locked') {
@@ -50,7 +54,7 @@ interface CardSource {
           }
           <span class="min-w-0 flex-1 font-medium" [class.line-through]="state() === 'cleared'">
             @if (blurred()) {
-              <span aria-hidden="true" class="select-none blur-sm">{{ leaf().title }}</span
+              <span aria-hidden="true" class="select-none blur-md">{{ leaf().title }}</span
               ><span class="sr-only">Hidden section</span>
             } @else {
               {{ leaf().title }}
@@ -70,7 +74,7 @@ interface CardSource {
         <p class="m-0 px-3 pb-2 text-sm">{{ text }}</p>
       }
       @if (expanded()) {
-        <div class="flex flex-col gap-2 px-3 pb-3">
+        <div [id]="bodyId()" class="flex flex-col gap-2 px-3 pb-3">
           <p class="m-0 text-sm text-fg-muted">
             <app-spoiler-text
               [text]="leaf().overview"
@@ -84,7 +88,7 @@ interface CardSource {
               <app-markdown-view class="block pb-2" [source]="walkthrough" />
             </details>
           }
-          @for (category of categories(); track category.categoryId) {
+          @for (category of shownCategories; track category.categoryId) {
             <details open class="rounded-control border border-border px-2">
               <summary class="flex min-h-11 cursor-pointer items-center gap-1">
                 {{ categoryName(category.categoryId) }} {{ category.done }}/{{ category.total }}
@@ -148,6 +152,7 @@ export class LeafCard {
   protected readonly pinned = computed(
     () => this.view().pinned && this.view().current === this.leafId(),
   );
+  protected readonly bodyId = computed(() => 'card-body-' + this.leafId());
   protected readonly revealKey = computed(() => sectionRevealKey(this.leafId()));
   protected readonly blurred = computed(() =>
     sectionBlurred(
@@ -168,13 +173,17 @@ export class LeafCard {
       card: this.view().cards.get(this.leafId())!,
       expanded: this.expanded(),
       epoch: this.layout.expansionEpoch(this.leafId()),
+      version: this.store.run()?.currentVersion,
     }),
     computation: (source, previous) =>
-      source.expanded && previous?.source.expanded && previous.source.epoch === source.epoch
+      source.expanded &&
+      previous?.source.expanded &&
+      previous.source.epoch === source.epoch &&
+      previous.source.version === source.version
         ? stickyCategories(
             previous.value,
             source.card.categories,
-            (id) => this.view().tasks.get(id)!,
+            (id) => this.view().tasks.get(id),
             this.view().tracked,
           )
         : source.card.categories,
