@@ -50,8 +50,8 @@ describe('RunsPage', () => {
     const link = el.querySelector('a[href="/runs/r1"]')!;
     expect(link.textContent).toContain('First playthrough');
     expect(link.textContent).toContain('Lantern Keep');
-    expect(link.textContent).toContain('2/7 sections cleared');
-    expect(link.textContent).toContain('3/7 tasks done');
+    expect(link.textContent).toContain('2 of 7 cleared');
+    expect(link.textContent).toContain('Lantern Keep · 2 of 7 cleared');
     expect(link.textContent).toContain('Last played');
     expect(el.querySelector('a[href="/runs/new"]')?.textContent).toContain('New run');
   });
@@ -150,5 +150,16 @@ describe('RunsPage', () => {
     expect(localStorage.getItem(resumeKey(TEST_USER.id))).toBeNull();
     finishSignOut();
     await vi.waitFor(() => expect(navigate).toHaveBeenCalledWith('/sign-in'));
+  });
+
+  it('renders hairline rows, not shadowed cards, under a display-font title', async () => {
+    const api = createRunsApiFake();
+    api.listRuns.mockResolvedValue([RUN]);
+    const { el } = await render(api);
+    expect(el.querySelector('h1')!.classList).toContain('font-display');
+    const row = el.querySelector('a[href="/runs/r1"]')!.closest('li')!;
+    expect(row.className).toContain('border-rule');
+    expect(row.className).not.toContain('shadow');
+    expect(row.className).not.toContain('rounded');
   });
 });

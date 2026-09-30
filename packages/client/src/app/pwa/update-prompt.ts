@@ -26,7 +26,7 @@ export const NOTE_MS = 1_500;
     <div role="status">
       @if (message(); as text) {
         <div
-          class="flex flex-wrap items-center justify-center gap-3 border-b border-border bg-surface-raised px-4 py-1 text-sm"
+          class="flex flex-wrap items-center justify-center gap-3 border-b border-rule bg-surface px-4 py-1 text-sm"
         >
           <span>{{ text }}</span>
           <button

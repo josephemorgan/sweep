@@ -13,7 +13,7 @@ function safeNext(next: string | null): string {
   imports: [FormField, FormRoot],
   template: `
     <main class="mx-auto flex min-h-dvh w-full max-w-sm flex-col justify-center gap-6 px-4 py-10">
-      <h1 class="m-0 text-2xl font-semibold">Sign in to Sweep</h1>
+      <h1 class="m-0 font-display font-semibold text-[22px] leading-7">Sign in to Sweep</h1>
       <form [formRoot]="signInForm" class="flex flex-col gap-4">
         <label class="flex flex-col gap-1 text-sm">
           Email

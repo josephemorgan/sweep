@@ -19,9 +19,9 @@ type LoadState = 'loading' | 'ready' | 'failed';
   imports: [ConfirmSheet, DatePipe, RouterLink, UnsavedBadge],
   template: `
     <header
-      class="sticky top-0 z-10 flex items-center gap-2 border-b border-border bg-surface-raised px-4 py-1"
+      class="sticky top-0 z-10 flex items-center gap-2 border-b border-rule bg-surface px-4 py-1"
     >
-      <h1 class="m-0 flex-1 text-lg font-semibold">Runs</h1>
+      <h1 class="m-0 flex-1 font-display font-semibold text-[22px] leading-7">Runs</h1>
       <app-unsaved-badge />
       <a routerLink="/runs/new" class="btn-primary">New run</a>
       <button type="button" class="btn-quiet" [disabled]="signingOut()" (click)="signOut()">
@@ -41,19 +41,14 @@ type LoadState = 'loading' | 'ready' | 'failed';
           @if (runs().length === 0) {
             <p class="text-fg-muted">No runs yet. Upload a guide to start one.</p>
           } @else {
-            <ul class="m-0 flex list-none flex-col gap-2 p-0">
+            <ul class="m-0 list-none p-0">
               @for (run of runs(); track run.id) {
-                <li>
-                  <a
-                    [routerLink]="['/runs', run.id]"
-                    class="block min-h-11 rounded-panel border border-border bg-surface-raised px-4 py-3"
-                  >
-                    <span class="block font-semibold">{{ run.name }}</span>
-                    <span class="block text-sm text-fg-muted">{{ run.game }}</span>
-                    <span class="mt-1 flex flex-wrap gap-x-4 text-sm text-fg-muted">
-                      <span>{{ run.leavesCleared }}/{{ run.leavesTotal }} sections cleared</span>
-                      <span>{{ run.tasksDone }}/{{ run.tasksTotal }} tasks done</span>
-                      <span>Last played {{ run.updatedAt | date: 'medium' }}</span>
+                <li class="border-b border-rule">
+                  <a [routerLink]="['/runs', run.id]" class="block min-h-11 py-3">
+                    <span class="block font-display text-[15px] font-semibold">{{ run.name }}</span>
+                    <span class="block text-xs text-fg-muted">
+                      {{ run.game }} · {{ run.leavesCleared }} of {{ run.leavesTotal }} cleared ·
+                      Last played {{ run.updatedAt | date: 'medium' }}
                     </span>
                   </a>
                 </li>

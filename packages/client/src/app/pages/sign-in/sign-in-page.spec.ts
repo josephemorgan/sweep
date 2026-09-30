@@ -88,4 +88,10 @@ describe('SignInPage', () => {
       );
     });
   });
+
+  it('uses the Route page title and primary button', async () => {
+    const { el } = await setup(vi.fn());
+    expect(el.querySelector('h1')!.classList).toContain('font-display');
+    expect(el.querySelector('button[type="submit"]')!.classList).toContain('btn-primary');
+  });
 });

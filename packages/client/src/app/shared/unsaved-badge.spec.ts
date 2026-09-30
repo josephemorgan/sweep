@@ -75,4 +75,14 @@ describe('UnsavedBadge', () => {
     await tick(500);
     expect(el.textContent).not.toContain('unsaved');
   });
+
+  it('is plain last-chance text, not a pill', async () => {
+    const { el, size, stalled, tick } = setup();
+    size.set(1);
+    stalled.set(true);
+    await tick();
+    const badge = el.querySelector('.text-last-chance')!;
+    expect(badge).not.toBeNull();
+    expect(el.innerHTML).not.toContain('rounded-full');
+  });
 });

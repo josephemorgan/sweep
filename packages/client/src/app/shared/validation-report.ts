@@ -19,24 +19,28 @@ export function issueLocation(issue: Issue): string {
         </div>
       }
       @if (errors().length > 0) {
-        <div role="alert" class="rounded-panel border border-missed p-3">
-          <p class="m-0 font-semibold text-missed">{{ headline() }}</p>
-          <ul class="m-0 mt-2 list-none p-0 text-sm">
-            @for (item of errors(); track $index) {
-              <li class="py-1">
-                <span class="font-mono text-fg-muted">{{ location(item) }}:</span>
-                {{ item.message }}
-                <span class="text-fg-muted">({{ item.code }})</span>
-              </li>
-            }
-          </ul>
+        <div role="alert">
+          <details open class="border-l-2 border-missed pl-3">
+            <summary class="flex min-h-11 cursor-pointer items-center font-semibold text-missed">
+              {{ headline() }}
+            </summary>
+            <ul class="m-0 list-none p-0 pb-2 text-sm">
+              @for (item of errors(); track $index) {
+                <li class="py-1">
+                  <span class="font-mono text-fg-muted">{{ location(item) }}:</span>
+                  {{ item.message }}
+                  <span class="text-fg-muted">({{ item.code }})</span>
+                </li>
+              }
+            </ul>
+          </details>
         </div>
       } @else if (summary()) {
         <p class="m-0 text-sm text-open">No errors.</p>
       }
       @if (warnings().length > 0) {
-        <details class="rounded-panel border border-border px-3">
-          <summary class="flex min-h-11 cursor-pointer items-center">
+        <details class="border-l-2 border-last-chance pl-3">
+          <summary class="flex min-h-11 cursor-pointer items-center text-last-chance">
             {{ warnings().length }} {{ warnings().length === 1 ? 'warning' : 'warnings' }}
           </summary>
           <ul class="m-0 list-none p-0 pb-2 text-sm">
