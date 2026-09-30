@@ -28,6 +28,7 @@ export class Toasts {
   readonly toasts: Signal<readonly Toast[]> = this.items.asReadonly();
   private nextId = 0;
   private readonly timers = new Map<number, ReturnType<typeof setTimeout>>();
+  private readonly remaining = new Map<number, { ms: number; startedAt: number }>();
 
   show(message: string, options: ToastOptions = {}): number {
     const key = options.key ?? null;
@@ -36,16 +37,14 @@ export class Toasts {
     }
     const id = ++this.nextId;
     this.items.update((list) => [...list, { id, message, action: options.action ?? null, key }]);
-    this.timers.set(
-      id,
-      setTimeout(() => this.dismiss(id), options.durationMs ?? TOAST_MS),
-    );
+    this.schedule(id, options.durationMs ?? TOAST_MS);
     return id;
   }
 
   dismiss(id: number): void {
     clearTimeout(this.timers.get(id));
     this.timers.delete(id);
+    this.remaining.delete(id);
     this.items.update((list) => list.filter((t) => t.id !== id));
   }
 
@@ -53,5 +52,29 @@ export class Toasts {
     const toast = this.items().find((t) => t.id === id);
     this.dismiss(id);
     toast?.action?.run();
+  }
+
+  /** Stops the auto-dismiss countdown (pointer hover or keyboard focus on the toast, WCAG 2.2.1). */
+  pause(id: number): void {
+    const entry = this.remaining.get(id);
+    if (!entry || !this.timers.has(id)) return;
+    clearTimeout(this.timers.get(id));
+    this.timers.delete(id);
+    this.remaining.set(id, { ms: entry.ms - (Date.now() - entry.startedAt), startedAt: 0 });
+  }
+
+  /** Restarts the countdown with the time that was left when it paused. */
+  resume(id: number): void {
+    const entry = this.remaining.get(id);
+    if (!entry || this.timers.has(id)) return;
+    this.schedule(id, Math.max(entry.ms, 0));
+  }
+
+  private schedule(id: number, ms: number): void {
+    this.remaining.set(id, { ms, startedAt: Date.now() });
+    this.timers.set(
+      id,
+      setTimeout(() => this.dismiss(id), ms),
+    );
   }
 }

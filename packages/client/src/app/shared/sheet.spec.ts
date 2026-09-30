@@ -37,6 +37,37 @@ describe('Sheet', () => {
     expect(dialog.hasAttribute('open')).toBe(false);
   });
 
+  it('syncs open back to false when the dialog closes natively (Escape)', async () => {
+    const fixture = TestBed.createComponent(Host);
+    fixture.componentInstance.open.set(true);
+    await fixture.whenStable();
+    const dialog = (fixture.nativeElement as HTMLElement).querySelector('dialog')!;
+    // Escape makes the browser close the dialog and fire `close`; jsdom does not model Escape.
+    dialog.dispatchEvent(new Event('close'));
+    await fixture.whenStable();
+    expect(fixture.componentInstance.open()).toBe(false);
+    expect(dialog.hasAttribute('open')).toBe(false);
+  });
+
+  it('opens with showModal (focus trap and focus move) where the browser supports it', async () => {
+    // jsdom has no showModal, so focus movement itself is native behaviour we cannot observe here.
+    const showModal = vi.fn(function (this: HTMLDialogElement) {
+      this.setAttribute('open', '');
+    });
+    Object.defineProperty(HTMLDialogElement.prototype, 'showModal', {
+      configurable: true,
+      value: showModal,
+    });
+    try {
+      const fixture = TestBed.createComponent(Host);
+      fixture.componentInstance.open.set(true);
+      await fixture.whenStable();
+      expect(showModal).toHaveBeenCalledTimes(1);
+    } finally {
+      delete (HTMLDialogElement.prototype as { showModal?: unknown }).showModal;
+    }
+  });
+
   it('confirm sheet emits confirmed and closes', async () => {
     const fixture = TestBed.createComponent(Host);
     fixture.componentInstance.confirmOpen.set(true);
