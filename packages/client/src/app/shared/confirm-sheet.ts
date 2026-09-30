@@ -1,0 +1,37 @@
+import { Component, input, model, output } from '@angular/core';
+import { Sheet } from './sheet';
+
+@Component({
+  selector: 'app-confirm-sheet',
+  imports: [Sheet],
+  template: `
+    <app-sheet [heading]="heading()" [(open)]="open">
+      <div class="flex flex-col gap-4 p-4">
+        <p class="m-0">{{ message() }}</p>
+        <div class="flex justify-end gap-2">
+          <button type="button" class="btn" (click)="open.set(false)">Cancel</button>
+          <button
+            type="button"
+            [class]="danger() ? 'btn-danger' : 'btn-primary'"
+            (click)="confirm()"
+          >
+            {{ confirmLabel() }}
+          </button>
+        </div>
+      </div>
+    </app-sheet>
+  `,
+})
+export class ConfirmSheet {
+  readonly heading = input.required<string>();
+  readonly message = input.required<string>();
+  readonly confirmLabel = input.required<string>();
+  readonly danger = input(false);
+  readonly open = model(false);
+  readonly confirmed = output<void>();
+
+  protected confirm(): void {
+    this.open.set(false);
+    this.confirmed.emit();
+  }
+}
