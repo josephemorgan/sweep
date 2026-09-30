@@ -38,12 +38,22 @@ const MAX_NAME = 100;
   template: `
     <button
       type="button"
-      class="btn-quiet"
+      class="flex size-11 shrink-0 items-center justify-center text-fg"
       aria-label="Run menu"
       aria-haspopup="dialog"
       (click)="sheet.set('menu')"
     >
-      <span aria-hidden="true">☰</span>
+      <svg
+        viewBox="0 0 24 24"
+        class="size-6"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.75"
+        stroke-linecap="round"
+        aria-hidden="true"
+      >
+        <path d="M4 7h16M4 12h16M4 17h16" />
+      </svg>
     </button>
     <app-sheet heading="Run menu" [open]="sheet() === 'menu'" (openChange)="closed($event, 'menu')">
       <ul class="m-0 flex list-none flex-col p-2">
