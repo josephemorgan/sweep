@@ -70,7 +70,7 @@ describe('Session', () => {
     expect(session.user()).toEqual(ANA);
   });
 
-  it('expired() routes to sign in with a link back (Review Focus 4)', async () => {
+  it('expired() routes to sign in with a link back', async () => {
     const session = TestBed.inject(Session);
     session.user.set(ANA);
     vi.spyOn(TestBed.inject(Router), 'url', 'get').mockReturnValue('/runs/abc');

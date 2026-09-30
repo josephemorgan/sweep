@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 import { FormField, FormRoot, email, form, required } from '@angular/forms/signals';
 import { ActivatedRoute, Router } from '@angular/router';
 import { toApiError } from '../../api/api-error';
@@ -22,10 +22,13 @@ function safeNext(next: string | null): string {
             autocomplete="username"
             class="field"
             [formField]="signInForm.email"
+            [attr.aria-describedby]="showEmailError() ? 'email-error' : null"
           />
         </label>
-        @if (signInForm.email().touched() && signInForm.email().invalid()) {
-          <p class="-mt-2 text-sm text-missed">{{ signInForm.email().errors()[0]?.message }}</p>
+        @if (showEmailError()) {
+          <p id="email-error" class="-mt-2 text-sm text-missed">
+            {{ signInForm.email().errors()[0]?.message }}
+          </p>
         }
         <label class="flex flex-col gap-1 text-sm">
           Password
@@ -34,10 +37,13 @@ function safeNext(next: string | null): string {
             autocomplete="current-password"
             class="field"
             [formField]="signInForm.password"
+            [attr.aria-describedby]="showPasswordError() ? 'password-error' : null"
           />
         </label>
-        @if (signInForm.password().touched() && signInForm.password().invalid()) {
-          <p class="-mt-2 text-sm text-missed">{{ signInForm.password().errors()[0]?.message }}</p>
+        @if (showPasswordError()) {
+          <p id="password-error" class="-mt-2 text-sm text-missed">
+            {{ signInForm.password().errors()[0]?.message }}
+          </p>
         }
         @if (error(); as message) {
           <p role="alert" class="m-0 text-sm text-missed">{{ message }}</p>
@@ -63,6 +69,13 @@ export class SignInPage {
       required(p.password, { message: 'Enter your password.' });
     },
     { submission: { action: async () => this.submit() } },
+  );
+
+  protected readonly showEmailError = computed(
+    () => this.signInForm.email().touched() && this.signInForm.email().invalid(),
+  );
+  protected readonly showPasswordError = computed(
+    () => this.signInForm.password().touched() && this.signInForm.password().invalid(),
   );
 
   private async submit(): Promise<void> {
