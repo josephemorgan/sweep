@@ -1,4 +1,5 @@
 import { writeFileSync } from 'node:fs';
+import { longGuide } from './support/long-guide';
 import { expect, expectAccessible, expectNoHorizontalScroll, test } from './support/fixtures';
 
 test("checks a task and uses don't care", async ({ page, runs }, testInfo) => {
@@ -110,37 +111,6 @@ test('an expanded card with Markdown links and a not-chosen row is accessible', 
   await expectAccessible(page);
   await expectNoHorizontalScroll(page);
 });
-
-function longGuide(): string {
-  const leaves = Array.from(
-    { length: 30 },
-    (_, i) => `      - id: leaf-${i + 1}
-        title: Room ${i + 1}
-        overview: Room number ${i + 1}.`,
-  ).join('\n');
-  return `sweep: 1
-game: Long
-title: Many rooms
-categories:
-  loot:
-    name: Loot
-    about: Items.
-sections:
-  - id: chapter
-    title: Chapter One
-    overview: All the rooms.
-    walkthrough: |
-      Start at the first room and keep going.
-    sections:
-${leaves}
-tasks:
-  - id: coin
-    title: Coin
-    category: loot
-    windows:
-      - from: leaf-30
-`;
-}
 
 test('opens on the current card below the fold, and a group walkthrough sheet is accessible', async ({
   page,

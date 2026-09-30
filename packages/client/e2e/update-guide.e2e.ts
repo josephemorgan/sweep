@@ -29,6 +29,13 @@ test('updates the guide with a rename and keeps progress', async ({ page, runs }
     .getByRole('region', { name: 'Harrow Village' })
     .getByRole('checkbox', { name: 'Chest behind the mill' });
   await expect(chest).toBeChecked();
+  await expect
+    .poll(async () => {
+      const res = await page.request.get(`/api/runs/${runId}`);
+      const body = (await res.json()) as { progress: { tasks: Record<string, string> } };
+      return body.progress.tasks;
+    })
+    .toEqual({ 'mill-chest': 'done' });
   await page.reload();
   await expect(chest).toBeChecked();
 

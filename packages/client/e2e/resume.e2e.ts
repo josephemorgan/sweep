@@ -1,16 +1,28 @@
+import { writeFileSync } from 'node:fs';
 import { expect, test } from './support/fixtures';
+import { longGuide } from './support/long-guide';
 
-test('launch reopens the last run at current, from cache, before the server answers', async ({
+test('launch reopens the last run scrolled to current, from cache, before the server answers', async ({
   page,
   runs,
 }, testInfo) => {
-  const runId = await runs.create(`Resume ${testInfo.project.name}`);
-  await runs.clear(runId, ['village', 'marsh']);
-  await page.goto(`/runs/${runId}`);
-  await expect(page.getByRole('region', { name: 'Keep Gate' })).toHaveAttribute(
-    'data-state',
-    'current',
+  // Room 26 is current and below the fold at both viewports.
+  const file = testInfo.outputPath('long.yaml');
+  writeFileSync(file, longGuide());
+  const runId = await runs.create(`Resume ${testInfo.project.name}`, file);
+  await runs.clear(
+    runId,
+    Array.from({ length: 25 }, (_, i) => `leaf-${i + 1}`),
   );
+  const current = page.getByRole('region', { name: 'Room 26' });
+  const scrolledToCurrent = async (): Promise<void> => {
+    await expect(current).toHaveAttribute('data-state', 'current');
+    await expect(current).toBeInViewport();
+    await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(0);
+  };
+
+  await page.goto(`/runs/${runId}`);
+  await scrolledToCurrent();
   await page.goto('/runs');
 
   let release!: () => void;
@@ -21,13 +33,11 @@ test('launch reopens the last run at current, from cache, before the server answ
   });
   await page.goto('/');
   await expect(page).toHaveURL(new RegExp(`/runs/${runId}$`));
-  const gate = page.getByRole('region', { name: 'Keep Gate' });
-  await expect(gate).toHaveAttribute('data-state', 'current');
-  await expect(gate).toBeInViewport();
+  await scrolledToCurrent();
   release();
   await page.unrouteAll({ behavior: 'wait' });
 
   // A reload on the deep link resumes too.
   await page.reload();
-  await expect(page.getByRole('region', { name: 'Keep Gate' })).toBeInViewport();
+  await scrolledToCurrent();
 });

@@ -13,6 +13,13 @@ test('checks a task offline and syncs on reconnect', async ({ page, context, run
 
   await context.setOffline(false);
   await expect(page.getByText('1 unsaved', { exact: true })).toHaveCount(0);
+  await expect
+    .poll(async () => {
+      const res = await page.request.get(`/api/runs/${runId}`);
+      const body = (await res.json()) as { progress: { tasks: Record<string, string> } };
+      return body.progress.tasks['ferry-passage'];
+    })
+    .toBe('done');
   await page.reload();
   await expect(
     page
