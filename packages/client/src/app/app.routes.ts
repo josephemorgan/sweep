@@ -1,5 +1,6 @@
 import type { Routes } from '@angular/router';
 import { signedInGuard, signedOutGuard } from './auth/guards';
+import { resumeGuard } from './run/resume.guard';
 
 export const routes: Routes = [
   {
@@ -12,7 +13,7 @@ export const routes: Routes = [
     path: '',
     canActivate: [signedInGuard],
     children: [
-      { path: '', pathMatch: 'full', redirectTo: 'runs' },
+      { path: '', pathMatch: 'full', canActivate: [resumeGuard], children: [] },
       {
         path: 'runs',
         title: 'Runs · Sweep',

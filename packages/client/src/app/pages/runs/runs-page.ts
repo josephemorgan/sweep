@@ -1,22 +1,28 @@
 import { DatePipe } from '@angular/common';
-import { Component, inject, signal } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { FORMAT_VERSION, type RunSummaryDto } from '@sweep/core';
 import { toApiError } from '../../api/api-error';
 import { RunsApi } from '../../api/runs-api';
 import { Session } from '../../auth/session';
+import { ResumeCache } from '../../run/resume-cache';
+import { RunStore } from '../../run/run-store';
+import { ConfirmSheet } from '../../shared/confirm-sheet';
 import { Toasts } from '../../shared/toasts';
+import { UnsavedBadge } from '../../shared/unsaved-badge';
+import { WriteQueue } from '../../sync/write-queue';
 
 type LoadState = 'loading' | 'ready' | 'failed';
 
 @Component({
   selector: 'app-runs-page',
-  imports: [DatePipe, RouterLink],
+  imports: [ConfirmSheet, DatePipe, RouterLink, UnsavedBadge],
   template: `
     <header
       class="sticky top-0 z-10 flex items-center gap-2 border-b border-border bg-surface-raised px-4 py-1"
     >
       <h1 class="m-0 flex-1 text-lg font-semibold">Runs</h1>
+      <app-unsaved-badge />
       <a routerLink="/runs/new" class="btn-primary">New run</a>
       <button type="button" class="btn-quiet" (click)="signOut()">Sign out</button>
     </header>
@@ -56,6 +62,13 @@ type LoadState = 'loading' | 'ready' | 'failed';
       }
     </main>
     <footer class="px-4 py-2 text-xs text-fg-muted">Guide format v{{ formatVersion }}</footer>
+    <app-confirm-sheet
+      heading="Sign out?"
+      [message]="unsavedMessage()"
+      confirmLabel="Sign out anyway"
+      [(open)]="confirmSignOut"
+      (confirmed)="finishSignOut()"
+    />
   `,
 })
 export class RunsPage {
@@ -63,10 +76,19 @@ export class RunsPage {
   private readonly session = inject(Session);
   private readonly router = inject(Router);
   private readonly toasts = inject(Toasts);
+  private readonly queue = inject(WriteQueue);
+  private readonly resume = inject(ResumeCache);
+  private readonly runStore = inject(RunStore);
   protected readonly formatVersion = FORMAT_VERSION;
   protected readonly state = signal<LoadState>('loading');
   protected readonly runs = signal<readonly RunSummaryDto[]>([]);
   protected readonly error = signal('');
+  protected readonly confirmSignOut = signal(false);
+  protected readonly unsavedMessage = computed(() => {
+    const n = this.queue.size();
+    const what = n === 1 ? "1 change hasn't" : `${n} changes haven't`;
+    return `${what} been saved yet. They stay on this device and are sent the next time you sign in here.`;
+  });
 
   constructor() {
     void this.load();
@@ -83,7 +105,21 @@ export class RunsPage {
     }
   }
 
+  /** Retry queue rule 12: flush, confirm if writes remain, then drop the resume cache and sign out. */
   protected async signOut(): Promise<void> {
+    await this.queue.flush();
+    if (this.queue.size() > 0) {
+      this.confirmSignOut.set(true);
+      return;
+    }
+    await this.finishSignOut();
+  }
+
+  protected async finishSignOut(): Promise<void> {
+    // Close the run store first: it flushes its debounced cache write, which clear() must follow.
+    // The cache holds guide content, so an explicit sign-out deletes it.
+    this.runStore.close();
+    this.resume.clear();
     try {
       await this.session.signOut();
       await this.router.navigateByUrl('/sign-in');

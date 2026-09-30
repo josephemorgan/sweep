@@ -246,6 +246,35 @@ describe('RunStore', () => {
     expect(store.revalidating()).toBe(false);
   });
 
+  it("a slow fetch of a previous run can't leave revalidating stuck on", async () => {
+    const { store, api } = await setupRunStore();
+    store.close();
+    let answerA!: (p: ReturnType<typeof lanternKeepPayload>) => void;
+    api.getRun.mockReturnValueOnce(new Promise((resolve) => (answerA = resolve)));
+    void store.open('run-a');
+    expect(store.revalidating()).toBe(true);
+    api.getRun.mockResolvedValueOnce(lanternKeepPayload());
+    await store.open(RUN_ID);
+    expect(store.revalidating()).toBe(false);
+    answerA(lanternKeepPayload());
+    await settle();
+    expect(store.revalidating()).toBe(false);
+    expect(store.runId()).toBe(RUN_ID);
+  });
+
+  it("a fetch of a previous run doesn't hide a later run's fetch still in flight", async () => {
+    const { store, api } = await setupRunStore();
+    store.close();
+    let answerA!: (p: ReturnType<typeof lanternKeepPayload>) => void;
+    api.getRun.mockReturnValueOnce(new Promise((resolve) => (answerA = resolve)));
+    void store.open('run-a');
+    api.getRun.mockReturnValueOnce(new Promise(() => undefined));
+    void store.open(RUN_ID);
+    answerA(lanternKeepPayload());
+    await settle();
+    expect(store.revalidating()).toBe(true);
+  });
+
   it('clearing the pinned leaf queues pin: null first (rule 3)', async () => {
     const { store, queue } = await setupRunStore({ pin: 'village' });
     store.setCleared('village', true);

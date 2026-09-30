@@ -55,6 +55,8 @@ export class RunStore {
   private cacheDue: RunPayloadDto | null = null;
   private cacheTimer: ReturnType<typeof setTimeout> | null = null;
   private fetchGen = 0;
+  /** Bumped when the open run changes or closes: fetches of an earlier run no longer count. */
+  private runEpoch = 0;
   private activeFetches = 0;
   /** Writes the server accepted while a refetch was in flight (that GET may predate them). */
   private appliedLog: QueuedWrite[] = [];
@@ -150,6 +152,7 @@ export class RunStore {
   async open(runId: string): Promise<void> {
     if (this.runId() !== runId) {
       this.flushCache();
+      this.resetFetches();
       this.runId.set(runId);
       this.payload.set(null);
       this.categoryFilter.set(null);
@@ -171,7 +174,7 @@ export class RunStore {
     const runId = this.runId();
     if (runId === null || this.status() === RunStatus.NotFound) return;
     const gen = ++this.fetchGen;
-    const logStart = this.appliedLog.length;
+    const epoch = this.runEpoch;
     this.activeFetches += 1;
     this.revalidating.set(true);
     const current = (): boolean => this.runId() === runId && this.fetchGen === gen;
@@ -179,7 +182,6 @@ export class RunStore {
       const fetched = await this.api.getRun(runId);
       if (!current()) return;
       const fresh = this.appliedLog
-        .slice(logStart)
         .filter((w) => w.runId === runId)
         .reduce(applyToPayload, fetched);
       this.setPayload(fresh);
@@ -198,8 +200,7 @@ export class RunStore {
         else this.toasts.show(`Couldn't refresh this run. ${e.message}`, { key: 'refresh' });
       }
     } finally {
-      this.activeFetches -= 1;
-      if (this.activeFetches === 0) {
+      if (epoch === this.runEpoch && --this.activeFetches === 0) {
         this.appliedLog = [];
         this.revalidating.set(false);
       }
@@ -222,6 +223,7 @@ export class RunStore {
 
   close(): void {
     this.flushCache();
+    this.resetFetches();
     this.runId.set(null);
     this.payload.set(null);
     this.status.set(RunStatus.Idle);
@@ -290,6 +292,13 @@ export class RunStore {
     if (payload.run.id !== this.runId()) return;
     this.setPayload(payload);
     this.status.set(RunStatus.Ready);
+  }
+
+  private resetFetches(): void {
+    this.runEpoch += 1;
+    this.activeFetches = 0;
+    this.appliedLog = [];
+    this.revalidating.set(false);
   }
 
   private metricTasksFor(category: string | null): MetricTasks | null {

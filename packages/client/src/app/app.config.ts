@@ -4,12 +4,14 @@ import { provideRouter, withComponentInputBinding } from '@angular/router';
 import { provideServiceWorker } from '@angular/service-worker';
 import { routes } from './app.routes';
 import { unauthorizedInterceptor } from './auth/unauthorized.interceptor';
+import { provideQueueSession } from './sync/queue-session';
 
 export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
     provideHttpClient(withInterceptors([unauthorizedInterceptor])),
     provideRouter(routes, withComponentInputBinding()),
+    provideQueueSession(),
     provideServiceWorker('ngsw-worker.js', {
       enabled: !isDevMode(),
       registrationStrategy: 'registerWhenStable:30000',

@@ -61,6 +61,34 @@ describe('Session', () => {
     expect(localStorage.getItem(LAST_USER_KEY)).toBeNull();
   });
 
+  it('a slow background check after a manual sign-out does not bring the user back', async () => {
+    localStorage.setItem(LAST_USER_KEY, JSON.stringify(ANA));
+    let answer!: (u: SessionUser | null) => void;
+    auth.getSession.mockReturnValue(new Promise((resolve) => (answer = resolve)));
+    auth.signOut.mockResolvedValue(undefined);
+    const session = TestBed.inject(Session);
+    await session.ensure();
+    await session.signOut();
+    answer(ANA);
+    await new Promise((r) => setTimeout(r, 0));
+    expect(session.user()).toBeNull();
+    expect(localStorage.getItem(LAST_USER_KEY)).toBeNull();
+    expect(navigate).not.toHaveBeenCalled();
+  });
+
+  it('a failing background check after a manual sign-out does not bring the user back', async () => {
+    localStorage.setItem(LAST_USER_KEY, JSON.stringify(ANA));
+    let fail!: (e: unknown) => void;
+    auth.getSession.mockReturnValue(new Promise((_, reject) => (fail = reject)));
+    auth.signOut.mockResolvedValue(undefined);
+    const session = TestBed.inject(Session);
+    await session.ensure();
+    await session.signOut();
+    fail(new ApiError(0, 'network', 'offline'));
+    await new Promise((r) => setTimeout(r, 0));
+    expect(session.user()).toBeNull();
+  });
+
   it('keeps the cached user while the server is unreachable (offline resume)', async () => {
     localStorage.setItem(LAST_USER_KEY, JSON.stringify(ANA));
     auth.getSession.mockRejectedValue(new ApiError(0, 'network', 'offline'));

@@ -23,6 +23,9 @@ export class Session {
   private readonly router = inject(Router);
   private readonly toasts = inject(Toasts);
 
+  /** Bumped by every sign-in/sign-out: a slower background check() from before must not win. */
+  private epoch = 0;
+
   readonly user = signal<SessionUser | null | undefined>(undefined);
 
   ensure(): Promise<SessionUser | null> {
@@ -57,12 +60,16 @@ export class Session {
   }
 
   private async check(): Promise<SessionUser | null> {
+    const epoch = this.epoch;
+    const superseded = (): boolean => this.epoch !== epoch;
     try {
       const user = await this.auth.getSession();
+      if (superseded()) return this.user() ?? null;
       if (user) this.remember(user);
       else if (this.user() === undefined) this.forget();
       return user;
     } catch {
+      if (superseded()) return this.user() ?? null;
       // No answer (offline) or a server error is not "signed out": keep a cached user (offline
       // resume). A real sign-out shows up as a 401 on the next API call.
       const cached = this.storage.read<unknown>(LAST_USER_KEY);
@@ -76,11 +83,13 @@ export class Session {
   }
 
   private remember(user: SessionUser): void {
+    this.epoch += 1;
     this.user.set(user);
     this.storage.write(LAST_USER_KEY, user);
   }
 
   private forget(): void {
+    this.epoch += 1;
     this.user.set(null);
     this.storage.remove(LAST_USER_KEY);
   }
