@@ -49,4 +49,49 @@ describe('ToastHost', () => {
       vi.useRealTimers();
     }
   });
+
+  it('keeps the countdown paused on mouseleave while keyboard focus is inside the toast', () => {
+    vi.useFakeTimers();
+    try {
+      const fixture = TestBed.createComponent(ToastHost);
+      document.body.append(fixture.nativeElement as HTMLElement);
+      const toasts = TestBed.inject(Toasts);
+      toasts.show('Focus', { durationMs: 1000, action: { label: 'Undo', run: vi.fn() } });
+      fixture.detectChanges();
+      const root = fixture.nativeElement as HTMLElement;
+      const toast = root.querySelector('p')!.parentElement!;
+      root.querySelector('button')!.focus();
+      toast.dispatchEvent(new FocusEvent('focusin', { bubbles: true }));
+      toast.dispatchEvent(new MouseEvent('mouseenter'));
+      toast.dispatchEvent(new MouseEvent('mouseleave'));
+      vi.advanceTimersByTime(5000);
+      expect(toasts.toasts()).toHaveLength(1);
+      // The pointer already left, so losing focus now resumes the countdown.
+      toast.dispatchEvent(
+        new FocusEvent('focusout', { bubbles: true, relatedTarget: document.body }),
+      );
+      vi.advanceTimersByTime(1000);
+      expect(toasts.toasts()).toEqual([]);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('keeps the countdown paused on focusout while the pointer is over the toast', () => {
+    vi.useFakeTimers();
+    try {
+      const fixture = TestBed.createComponent(ToastHost);
+      const toasts = TestBed.inject(Toasts);
+      toasts.show('Hover', { durationMs: 1000 });
+      fixture.detectChanges();
+      const toast = (fixture.nativeElement as HTMLElement).querySelector('p')!.parentElement!;
+      toast.dispatchEvent(new MouseEvent('mouseenter'));
+      toast.dispatchEvent(new FocusEvent('focusin', { bubbles: true }));
+      toast.dispatchEvent(new FocusEvent('focusout', { bubbles: true, relatedTarget: null }));
+      vi.advanceTimersByTime(5000);
+      expect(toasts.toasts()).toHaveLength(1);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
 });

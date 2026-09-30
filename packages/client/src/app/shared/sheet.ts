@@ -1,4 +1,15 @@
-import { Component, ElementRef, effect, input, model, viewChild } from '@angular/core';
+import {
+  Component,
+  DestroyRef,
+  ElementRef,
+  effect,
+  inject,
+  input,
+  model,
+  viewChild,
+} from '@angular/core';
+import { SheetStack } from './sheet-stack';
+import { ToastHost } from './toast-host';
 
 let nextSheetId = 0;
 
@@ -9,6 +20,7 @@ let nextSheetId = 0;
  */
 @Component({
   selector: 'app-sheet',
+  imports: [ToastHost],
   template: `
     <dialog #dialog class="sheet" [attr.aria-labelledby]="headingId" (close)="open.set(false)">
       <div class="flex items-center gap-2 border-b border-border py-1 pl-4 pr-1">
@@ -18,6 +30,9 @@ let nextSheetId = 0;
         </button>
       </div>
       <div class="sheet-body"><ng-content /></div>
+      @if (stack.isTop(this)) {
+        <app-toast-host [inSheet]="true" />
+      }
     </dialog>
   `,
 })
@@ -25,9 +40,15 @@ export class Sheet {
   readonly heading = input.required<string>();
   readonly open = model(false);
   protected readonly headingId = `sheet-${++nextSheetId}`;
+  protected readonly stack = inject(SheetStack);
   private readonly dialog = viewChild.required<ElementRef<HTMLDialogElement>>('dialog');
 
   constructor() {
+    inject(DestroyRef).onDestroy(() => this.stack.remove(this));
+    effect(() => {
+      if (this.open()) this.stack.push(this);
+      else this.stack.remove(this);
+    });
     effect(() => {
       const el = this.dialog().nativeElement;
       if (this.open() && !el.open) {

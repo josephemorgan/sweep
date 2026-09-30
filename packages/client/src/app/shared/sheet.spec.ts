@@ -2,6 +2,8 @@ import { Component, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { ConfirmSheet } from './confirm-sheet';
 import { Sheet } from './sheet';
+import { ToastHost } from './toast-host';
+import { Toasts } from './toasts';
 
 @Component({
   imports: [Sheet, ConfirmSheet],
@@ -77,5 +79,47 @@ describe('Sheet', () => {
     await fixture.whenStable();
     expect(fixture.componentInstance.confirmed()).toBe(true);
     expect(fixture.componentInstance.confirmOpen()).toBe(false);
+  });
+});
+
+@Component({
+  imports: [Sheet, ConfirmSheet, ToastHost],
+  template: `
+    <app-toast-host />
+    <app-sheet heading="Menu" [(open)]="menuOpen"><p>menu</p></app-sheet>
+    <app-confirm-sheet heading="Sure?" message="Sure?" confirmLabel="Yes" [(open)]="confirmOpen" />
+  `,
+})
+class ToastHostFixture {
+  readonly menuOpen = signal(false);
+  readonly confirmOpen = signal(false);
+}
+
+describe('Sheet toasts', () => {
+  it('moves toasts into the topmost open sheet and back to the root host', async () => {
+    const fixture = TestBed.createComponent(ToastHostFixture);
+    const root = fixture.nativeElement as HTMLElement;
+    TestBed.inject(Toasts).show('Undo me', { durationMs: 60_000 });
+    await fixture.whenStable();
+    const dialogs = () => [...root.querySelectorAll('dialog')];
+    const rootHost = () =>
+      [...root.querySelectorAll('app-toast-host')].find((h) => !h.closest('dialog'));
+    expect(rootHost()?.textContent).toContain('Undo me');
+
+    fixture.componentInstance.menuOpen.set(true);
+    await fixture.whenStable();
+    expect(rootHost()?.textContent).not.toContain('Undo me');
+    expect(dialogs()[0]?.querySelector('app-toast-host')?.textContent).toContain('Undo me');
+
+    fixture.componentInstance.confirmOpen.set(true);
+    await fixture.whenStable();
+    expect(dialogs()[0]?.querySelector('app-toast-host')).toBeNull();
+    expect(dialogs()[1]?.querySelector('app-toast-host')?.textContent).toContain('Undo me');
+
+    fixture.componentInstance.confirmOpen.set(false);
+    fixture.componentInstance.menuOpen.set(false);
+    await fixture.whenStable();
+    expect(dialogs().every((d) => d.querySelector('app-toast-host') === null)).toBe(true);
+    expect(rootHost()?.textContent).toContain('Undo me');
   });
 });

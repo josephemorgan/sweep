@@ -70,6 +70,11 @@ export class Toasts {
     this.schedule(id, Math.max(entry.ms, 0));
   }
 
+  /** Restarts every paused countdown (a toast host went away while its toast was hovered or focused). */
+  resumeAll(): void {
+    for (const id of [...this.remaining.keys()]) this.resume(id);
+  }
+
   private schedule(id: number, ms: number): void {
     this.remaining.set(id, { ms, startedAt: Date.now() });
     this.timers.set(
