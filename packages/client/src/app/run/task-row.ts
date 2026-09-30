@@ -56,7 +56,8 @@ let nextId = 0;
               type="button"
               class="min-h-11 w-full text-left"
               [class.line-through]="done()"
-              [class.text-fg-muted]="resolved()"
+              [class.text-fg-muted]="resolved() && !notChosen()"
+              [class.text-not-chosen]="notChosen()"
               [attr.aria-expanded]="howOpen()"
               [attr.aria-controls]="howOpen() ? howId : null"
               (click)="howOpen.set(!howOpen())"
@@ -69,7 +70,8 @@ let nextId = 0;
               tabindex="-1"
               class="flex min-h-11 items-center"
               [class.line-through]="done()"
-              [class.text-fg-muted]="resolved()"
+              [class.text-fg-muted]="resolved() && !notChosen()"
+              [class.text-not-chosen]="notChosen()"
               >{{ task().title }}</span
             >
           }

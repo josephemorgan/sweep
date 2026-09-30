@@ -37,10 +37,18 @@ import { SpoilerText } from './spoiler-text';
         </p>
       </div>
       <span class="pt-2 text-sm text-fg-muted"
-        >{{ progress().cleared }}/{{ progress().total }}</span
+        ><span aria-hidden="true">{{ progress().cleared }}/{{ progress().total }}</span
+        ><span class="sr-only"
+          >{{ progress().cleared }} of {{ progress().total }} leaves cleared</span
+        ></span
       >
       @if (group().walkthrough) {
-        <button type="button" class="btn-quiet" (click)="walkthroughOpen.set(true)">
+        <button
+          type="button"
+          class="btn-quiet"
+          [attr.aria-label]="'Walkthrough for ' + (blurred() ? 'a hidden section' : group().title)"
+          (click)="walkthroughOpen.set(true)"
+        >
           Walkthrough
         </button>
       }

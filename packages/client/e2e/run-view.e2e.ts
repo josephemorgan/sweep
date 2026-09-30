@@ -55,6 +55,10 @@ test('shows a long run name truncated in the top bar without horizontal scroll',
   await expect(heading).toBeVisible();
   await expect(heading).toHaveAttribute('title', name);
   expect((await heading.boundingBox())!.width).toBeGreaterThan(80);
+  expect(await heading.evaluate((h) => getComputedStyle(h).textOverflow)).toBe('ellipsis');
+  if (testInfo.project.name === 'phone') {
+    expect(await heading.evaluate((h) => h.scrollWidth > h.clientWidth)).toBe(true);
+  }
   await expectNoHorizontalScroll(page);
 });
 
@@ -105,4 +109,58 @@ test('an expanded card with Markdown links and a not-chosen row is accessible', 
   await expect(hall.getByText('Not chosen')).toBeVisible();
   await expectAccessible(page);
   await expectNoHorizontalScroll(page);
+});
+
+function longGuide(): string {
+  const leaves = Array.from(
+    { length: 30 },
+    (_, i) => `      - id: leaf-${i + 1}
+        title: Room ${i + 1}
+        overview: Room number ${i + 1}.`,
+  ).join('\n');
+  return `sweep: 1
+game: Long
+title: Many rooms
+categories:
+  loot:
+    name: Loot
+    about: Items.
+sections:
+  - id: chapter
+    title: Chapter One
+    overview: All the rooms.
+    walkthrough: |
+      Start at the first room and keep going.
+    sections:
+${leaves}
+tasks:
+  - id: coin
+    title: Coin
+    category: loot
+    windows:
+      - from: leaf-30
+`;
+}
+
+test('opens on the current card below the fold, and a group walkthrough sheet is accessible', async ({
+  page,
+  runs,
+}, testInfo) => {
+  const file = testInfo.outputPath('long.yaml');
+  writeFileSync(file, longGuide());
+  const runId = await runs.create(`Long ${testInfo.project.name}`, file);
+  await runs.clear(
+    runId,
+    Array.from({ length: 25 }, (_, i) => `leaf-${i + 1}`),
+  );
+  await page.goto(`/runs/${runId}`);
+  const current = page.getByRole('region', { name: 'Room 26' });
+  await expect(current.getByRole('button', { name: 'Clear section' })).toBeVisible();
+  await expect(current).toBeInViewport();
+  await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(0);
+  await expectNoHorizontalScroll(page);
+
+  await page.getByRole('button', { name: 'Walkthrough for Chapter One' }).click();
+  await expect(page.getByRole('dialog')).toContainText('Start at the first room');
+  await expectAccessible(page);
 });

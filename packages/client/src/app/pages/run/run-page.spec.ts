@@ -45,6 +45,25 @@ describe('RunPage', () => {
     );
   });
 
+  it('scrolls once on open even when the server copy changes the view and a task is toggled', async () => {
+    Element.prototype.scrollIntoView = vi.fn();
+    const { store, api } = await setupRunStore();
+    store.close();
+    TestBed.inject(ResumeCache).write(lanternKeepPayload({ cleared: ['village'] }));
+    let resolve!: (p: ReturnType<typeof lanternKeepPayload>) => void;
+    api.getRun.mockReturnValue(new Promise((r) => (resolve = r)));
+    const fixture = TestBed.createComponent(RunPage);
+    fixture.componentRef.setInput('runId', RUN_ID);
+    await fixture.whenStable();
+    await vi.waitFor(() => expect(Element.prototype.scrollIntoView).toHaveBeenCalledTimes(1));
+    resolve(lanternKeepPayload({ cleared: ['village', 'marsh'] }));
+    await fixture.whenStable();
+    await vi.waitFor(() => expect(store.view()?.current).toBe('keep-gate'));
+    store.setTaskState('marsh-herbs', 'done');
+    await fixture.whenStable();
+    expect(Element.prototype.scrollIntoView).toHaveBeenCalledTimes(1);
+  });
+
   it('renders no section list while there is no view', async () => {
     Element.prototype.scrollIntoView = vi.fn();
     const { store, api } = await setupRunStore();

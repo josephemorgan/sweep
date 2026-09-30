@@ -60,6 +60,17 @@ describe('TaskRow', () => {
     expect(el.textContent).toContain('Not chosen');
   });
 
+  it('dims a not-chosen row through the text-not-chosen token, not opacity', async () => {
+    const { el } = await render('moonshield', { kind: 'not-chosen' });
+    const title = [...el.querySelectorAll('span, button')].find(
+      (n) => n.textContent?.trim() === 'Moonshield',
+    )!;
+    expect(title.classList.contains('text-not-chosen')).toBe(true);
+    expect(el.querySelector('.opacity-60')).toBeNull();
+    const badge = [...el.querySelectorAll('span')].find((n) => n.textContent === 'Not chosen')!;
+    expect(badge.classList.contains('text-not-chosen')).toBe(true);
+  });
+
   it('shows missed with its 2nd chance', async () => {
     const { el } = await render(
       'lost-cat',
