@@ -10,6 +10,7 @@ import {
 import { firstValueFrom } from 'rxjs';
 import { ApiError } from '../api/api-error';
 import { AuthApi, type SessionUser } from '../api/auth-api';
+import { Reveals } from '../run/reveals';
 import { signedInGuard } from './guards';
 import { LAST_USER_KEY, Session } from './session';
 import { unauthorizedInterceptor } from './unauthorized.interceptor';
@@ -116,6 +117,16 @@ describe('Session', () => {
     await session.signOut();
     expect(session.user()).toBeNull();
     expect(localStorage.getItem(LAST_USER_KEY)).toBeNull();
+  });
+
+  it('clears session-only reveals when the session ends', async () => {
+    auth.signOut.mockResolvedValue(undefined);
+    const session = TestBed.inject(Session);
+    session.user.set(ANA);
+    const reveals = TestBed.inject(Reveals);
+    reveals.reveal('task:a');
+    await session.signOut();
+    expect(reveals.has('task:a')).toBe(false);
   });
 
   it.each([400, 401])(

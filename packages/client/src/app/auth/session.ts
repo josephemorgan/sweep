@@ -2,6 +2,7 @@ import { Service, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { isRetryable, toApiError, type ApiError } from '../api/api-error';
 import { AuthApi, type SessionUser } from '../api/auth-api';
+import { Reveals } from '../run/reveals';
 import { SafeStorage } from '../shared/safe-storage';
 import { Toasts } from '../shared/toasts';
 
@@ -27,6 +28,7 @@ export class Session {
   private readonly storage = inject(SafeStorage);
   private readonly router = inject(Router);
   private readonly toasts = inject(Toasts);
+  private readonly reveals = inject(Reveals);
 
   /** Bumped by every sign-in/sign-out: a slower background check() from before must not win. */
   private epoch = 0;
@@ -102,6 +104,7 @@ export class Session {
   private forget(): void {
     this.epoch += 1;
     this.user.set(null);
+    this.reveals.clear();
     this.storage.remove(LAST_USER_KEY);
   }
 }

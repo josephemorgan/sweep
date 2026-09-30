@@ -12,4 +12,9 @@ export class Reveals {
   reveal(key: string): void {
     if (!this.has(key)) this.keys.update((keys) => new Set(keys).add(key));
   }
+
+  /** Forget every reveal (sign-out, session expiry, user change). */
+  clear(): void {
+    this.keys.set(new Set());
+  }
 }
