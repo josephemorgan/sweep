@@ -55,6 +55,14 @@ describe('groupByHome stability (§5.3)', () => {
 });
 
 describe('BottomBar (§5.5)', () => {
+  it('stays pinned to the bottom of the viewport', async () => {
+    const { el } = await renderBar();
+    const nav = el.querySelector('nav')!;
+    expect(nav.classList).toContain('sticky');
+    expect(nav.classList).toContain('bottom-0');
+    expect(nav.classList).toContain('z-20');
+  });
+
   it('shows the four metrics, emphasizing Closing and highlighting Last chance', async () => {
     const { metric } = await renderBar();
     expect(

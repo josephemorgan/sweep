@@ -21,6 +21,15 @@ describe('ToastHost', () => {
     expect(live.querySelectorAll('button')).toHaveLength(0);
   });
 
+  it('sits above the 64px bottom bar on phone and near the edge on handheld', async () => {
+    const fixture = TestBed.createComponent(ToastHost);
+    TestBed.inject(Toasts).show('Pos', { durationMs: 60_000 });
+    await fixture.whenStable();
+    const layer = (fixture.nativeElement as HTMLElement).querySelector('[role="status"] > div')!;
+    expect(layer.classList).toContain('bottom-[72px]');
+    expect(layer.classList).toContain('handheld:bottom-4');
+  });
+
   it('dismisses from the dismiss button', async () => {
     const fixture = TestBed.createComponent(ToastHost);
     TestBed.inject(Toasts).show('Saved', { durationMs: 60_000 });

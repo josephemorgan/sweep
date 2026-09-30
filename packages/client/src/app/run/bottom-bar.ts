@@ -10,7 +10,7 @@ import { RunStore } from './run-store';
   template: `
     <nav
       aria-label="Run metrics"
-      class="flex h-16 shrink-0 items-stretch border-t border-rule bg-surface"
+      class="sticky bottom-0 z-20 flex h-16 shrink-0 items-stretch border-t border-rule bg-surface"
     >
       @for (m of metrics; track m) {
         <button
