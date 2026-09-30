@@ -24,7 +24,7 @@ import { Reveals } from './reveals';
         <span aria-hidden="true" class="select-none blur-md">{{ text() }}</span>
       </button>
     } @else {
-      <span #shown tabindex="-1" class="outline-none">{{ text() }}</span>
+      <span #shown tabindex="-1">{{ text() }}</span>
     }
   `,
 })
