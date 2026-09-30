@@ -41,11 +41,12 @@ export function groupByHome(
 ): HomeGroup[] {
   const groups = new Map<string, string[]>();
   for (const id of taskIds) {
-    const status = view.tasks.get(id);
     const windows = view.windows.get(id) ?? [];
+    // Window statuses only: a row must not change heading when its own state changes (§5.3).
+    const open = windows.indexOf('open');
     const w =
-      status?.kind === 'open'
-        ? status.window
+      open !== -1
+        ? open
         : Math.max(
             0,
             windows.findIndex((s) => s !== 'closed'),

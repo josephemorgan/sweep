@@ -1,5 +1,6 @@
 import { Component } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
+import { lanternKeepPayload } from '../../testing/lantern-keep';
 import { setupRunStore } from '../../testing/run-store-harness';
 import { Sheet } from '../shared/sheet';
 import { MetricSheet } from './metric-sheet';
@@ -40,6 +41,22 @@ describe('MetricSheet (§5.5)', () => {
   it('says so when a metric is empty', async () => {
     const { el } = await renderSheet('lastChance', { tasks: { 'ferry-passage': 'done' } });
     expect(el.textContent).toContain('Nothing here right now.');
+  });
+
+  it('drops rows whose task is gone when a new guide version arrives', async () => {
+    const { el, fixture, store } = await renderSheet('now');
+    expect(el.querySelector('input[aria-label="Pay the ferryman"]')).not.toBeNull();
+    const payload = lanternKeepPayload();
+    store.replacePayload({
+      ...payload,
+      guide: {
+        ...payload.guide,
+        tasks: payload.guide.tasks.filter((t) => t.id !== 'ferry-passage'),
+      },
+    });
+    await fixture.whenStable();
+    expect(el.querySelector('input[aria-label="Pay the ferryman"]')).toBeNull();
+    expect(el.querySelector('input[aria-label="Chest behind the mill"]')).not.toBeNull();
   });
 
   it('never exposes a hidden spoiler title in accessible text, aria-label or title', async () => {

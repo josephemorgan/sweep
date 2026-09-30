@@ -45,8 +45,14 @@ export class MetricSheet {
       const tasks = this.store.metricTasks();
       return tasks ? metricTaskIds(tasks, this.metric()) : [];
     },
-    computation: (next, previous) =>
-      previous ? [...previous.value, ...next.filter((id) => !previous.value.includes(id))] : next,
+    computation: (next, previous) => {
+      const tasks = this.store.index()?.tasks;
+      const merged = previous
+        ? [...previous.value, ...next.filter((id) => !previous.value.includes(id))]
+        : next;
+      // A new guide version may have dropped a task the open sheet still lists.
+      return merged.filter((id) => tasks?.has(id));
+    },
   });
   protected readonly groups = computed(() =>
     groupByHome(this.ids(), this.store.index()!, this.store.view()!),

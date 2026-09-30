@@ -28,7 +28,11 @@ test('metrics, the NOW sheet and the category filter', async ({ page, runs }, te
   await page.keyboard.press('Escape');
   await expect(sheet.getByRole('button', { name: "Don't care" })).toBeHidden();
   await expect(sheet).toBeVisible();
+  // A second Escape closes the sheet (the native dialog cancel).
+  await page.keyboard.press('Escape');
+  await expect(sheet).toBeHidden();
 
+  await bar.getByRole('button', { name: 'NOW 3' }).click();
   await sheet.getByRole('checkbox', { name: 'Pay the ferryman' }).check();
   await expect(sheet.getByRole('checkbox', { name: 'Pay the ferryman' })).toBeChecked();
   await sheet.getByRole('button', { name: 'Close' }).click();

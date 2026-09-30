@@ -1,5 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import { deriveRun, emptyProgress, indexGuide } from '@sweep/core';
+import { deriveRun, emptyProgress, indexGuide, type RunView, type TaskStatus } from '@sweep/core';
 import { LANTERN_KEEP } from '../../testing/lantern-keep';
 import { setupRunStore } from '../../testing/run-store-harness';
 import { BottomBar } from './bottom-bar';
@@ -27,6 +27,30 @@ describe('groupByHome', () => {
       { leafId: 'village', taskIds: ['lost-cat', 'ferry-passage'] },
       { leafId: 'marsh', taskIds: ['marsh-herbs'] },
     ]);
+  });
+});
+
+describe('groupByHome stability (§5.3)', () => {
+  const index = indexGuide(LANTERN_KEEP);
+  const base = deriveRun(LANTERN_KEEP, emptyProgress());
+  const homeOf = (status: TaskStatus): string | undefined => {
+    const view = {
+      ...base,
+      tasks: new Map(base.tasks).set('lost-cat', status),
+      windows: new Map(base.windows).set('lost-cat', ['upcoming', 'open']),
+    } as RunView;
+    return groupByHome(['lost-cat'], index, view)[0]?.leafId;
+  };
+
+  it('keeps a task under its open window home once it is done', () => {
+    const open = homeOf({ kind: 'open', window: 1, secondChance: true });
+    expect(open).toBe('epilogue');
+    expect(homeOf({ kind: 'done' })).toBe(open);
+  });
+
+  it('keeps a task under the same home when it becomes not-chosen or dont-care', () => {
+    expect(homeOf({ kind: 'not-chosen' })).toBe('epilogue');
+    expect(homeOf({ kind: 'dont-care' })).toBe('epilogue');
   });
 });
 
@@ -65,12 +89,15 @@ describe('BottomBar (§5.5)', () => {
     const { el, fixture, metric, store } = await renderBar({ tracked: { quests: false } });
     expect(metric('HERE').getAttribute('aria-haspopup')).toBe('dialog');
     const select = el.querySelector('select')!;
-    store.categoryFilter.set('quests');
-    await fixture.whenStable();
-    expect(select.value).toBe('');
     store.categoryFilter.set('loot');
     await fixture.whenStable();
     expect(select.value).toBe('loot');
+    // Untracked while selected (stale filter): the chip falls back to "All tracked".
+    store.setTracked('loot', false);
+    store.categoryFilter.set('loot');
+    await fixture.whenStable();
+    expect(select.selectedIndex).toBe(0);
+    expect(select.selectedOptions[0]?.text.trim()).toBe('All tracked');
   });
 
   it('opens a sheet listing the metric tasks grouped by home section', async () => {
