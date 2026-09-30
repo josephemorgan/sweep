@@ -10,6 +10,7 @@ describe('public contract', () => {
       'deriveRun',
       'deriveCore',
       'clearImpact',
+      'deriveMetricTasks',
       'deriveMetrics',
       'diffGuides',
       'migrateProgress',

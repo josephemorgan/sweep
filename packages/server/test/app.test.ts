@@ -167,3 +167,33 @@ describe('error handling', () => {
     }
   });
 });
+
+describe('client serving from a dist dir under a dot-directory', () => {
+  // A checkout under e.g. .claude/worktrees has a dot segment in the absolute dist path;
+  // sendFile with an absolute path treats that as a dotfile and 404s.
+  const handle = createDb('postgres://sweep:sweep@127.0.0.1:1/sweep');
+  const base = mkdtempSync(join(tmpdir(), '.sweep-client-'));
+  const clientDir = join(base, 'dist');
+  mkdirSync(clientDir);
+  writeFileSync(join(clientDir, 'index.html'), '<!doctype html><app-root></app-root>');
+  writeFileSync(join(clientDir, 'main-ABCD2345.js'), '// main');
+  const app = offlineApp(handle.db, { clientDistDir: clientDir });
+
+  afterAll(async () => {
+    await handle.pool.end();
+    rmSync(base, { recursive: true, force: true });
+  });
+
+  it('falls back to index.html for a deep link, uncached', async () => {
+    const res = await request(app).get('/runs/abc');
+    expect(res.status).toBe(200);
+    expect(res.text).toContain('<app-root>');
+    expect(res.headers['cache-control']).toBe('no-cache');
+  });
+
+  it('serves a fingerprinted asset as immutable', async () => {
+    const res = await request(app).get('/main-ABCD2345.js');
+    expect(res.status).toBe(200);
+    expect(res.headers['cache-control']).toBe('public, max-age=31536000, immutable');
+  });
+});

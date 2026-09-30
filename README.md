@@ -10,7 +10,7 @@ You upload a **guide** file describing a game's sections, tasks and walkthroughs
 
 Sweep is meant to be glanced at when you enter a new area and then put away, so you're not glued to a full guide. Spoiler control is built in.
 
-> **Status: early development.** The guide parser, validator and engine (`@sweep/core`) and the API with accounts (`@sweep/server`) are in place. The UI (`@sweep/client`) is being built next. See the [delivery plan](docs/superpowers/specs/2026-09-28-sweep-design.md#10-delivery-plan).
+> **Status: early development.** The guide parser, validator and engine (`@sweep/core`), the API with accounts (`@sweep/server`) and the client (`@sweep/client`, session D) are in place. The client has every §5 screen, the offline-tolerant retry queue, resume at current, the PWA update prompt, and Playwright e2e at both viewports. See the [delivery plan](docs/superpowers/specs/2026-09-28-sweep-design.md#10-delivery-plan).
 
 ## Highlights (v1 goals)
 

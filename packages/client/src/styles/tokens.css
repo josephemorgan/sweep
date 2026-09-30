@@ -13,12 +13,15 @@
   --color-fg: #e8e9ee;
   --color-fg-muted: #a3a6b3;
   --color-accent: #6cc4d9;
+  --color-on-accent: #14151b;
+  /* Modal backdrop behind sheets and dialogs. */
+  --color-scrim: rgb(0 0 0 / 0.6);
 
   /* Task status (spec §4.7, §5.2) */
   --color-open: #7fd49a;
   --color-missed: #f07a7a;
   --color-last-chance: #f2b45e;
-  --color-not-chosen: #6e7180;
+  --color-not-chosen: #8a8d9b;
 
   /* Spacing base and radii */
   --spacing: 0.25rem;

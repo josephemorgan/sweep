@@ -1,12 +1,11 @@
 import { Component } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
-import { FORMAT_VERSION } from '@sweep/core';
+import { UpdatePrompt } from './pwa/update-prompt';
+import { ToastHost } from './shared/toast-host';
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet],
-  templateUrl: './app.html',
+  imports: [RouterOutlet, ToastHost, UpdatePrompt],
+  template: `<app-update-prompt /><router-outlet /><app-toast-host />`,
 })
-export class App {
-  protected readonly formatVersion = FORMAT_VERSION;
-}
+export class App {}

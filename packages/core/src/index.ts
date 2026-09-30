@@ -43,15 +43,18 @@ export type {
 } from './engine/cards.js';
 export { clearImpact } from './engine/clear-impact.js';
 export type { ClearImpact, ClosingTask } from './engine/clear-impact.js';
-export { deriveMetrics } from './engine/metrics.js';
-export type { Metrics } from './engine/metrics.js';
+export { deriveMetricTasks, deriveMetrics } from './engine/metrics.js';
+export type { MetricTasks, Metrics } from './engine/metrics.js';
 export { indexGuide, isLeaf, windowRange } from './engine/structure.js';
 export type { GuideIndex, LeafRange } from './engine/structure.js';
 export { guideSummary } from './engine/summary.js';
 export { ProgressKind, diffGuides } from './diff/diff-guides.js';
 export type {
+  CategoryLabel,
+  DiffLabels,
   Edited,
   GuideDiff,
+  ItemLabel,
   KindDiff,
   ProgressDiff,
   ProgressMigration,

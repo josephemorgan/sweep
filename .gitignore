@@ -19,6 +19,7 @@ __screenshots__/
 # Playwright
 packages/client/playwright-report/
 packages/client/test-results/
+packages/client/e2e/.auth/
 packages/client/blob-report/
 
 # Editors (keep the client's shared VS Code files)
