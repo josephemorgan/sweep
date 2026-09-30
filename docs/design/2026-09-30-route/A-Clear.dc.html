@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Route clear impact</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,600;12..96,700&family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0a0f11;font-family:'Atkinson Hyperlegible',system-ui,sans-serif;color:#e9f1ee}
+a{color:#5fe0c0}a:hover{color:#8beed6}
+button{font:inherit;color:inherit;cursor:pointer}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; position: relative; overflow: hidden; background: #0a0f11">
+  <div aria-hidden="true" style="position: absolute; inset: 0; padding: 12px 12px; opacity: 0.35; display: flex; flex-direction: column; gap: 12px">
+    <div style="display: flex; align-items: center; gap: 8px; border-bottom: 1px solid #1f2d30; padding-bottom: 8px"><div style="width: 40px; height: 40px"></div><div style="font-family: 'Bricolage Grotesque', sans-serif; font-weight: 600; font-size: 17px">Final Fantasy VIII</div></div>
+    <div style="position: absolute; left: 19px; top: 60px; bottom: 0; width: 1.5px; background: #1f2d30"></div>
+    <div style="margin-left: 26px; font-size: 14px; color: #6f827f; text-decoration: line-through">Dollet: the escape</div>
+    <div style="margin-left: 26px; font-size: 14px; color: #6f827f; text-decoration: line-through">Balamb Garden: results and the party</div>
+    <div style="margin-left: 26px; background: #121a1c; border-radius: 6px 0 0 6px; padding: 12px 14px; height: 300px; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 21px; color: #f6f1e4">Balamb Garden: mission prep</div>
+  </div>
+  <div aria-hidden="true" style="position: absolute; inset: 0; background: rgba(3, 6, 7, 0.6)"></div>
+
+  <section role="dialog" aria-labelledby="a-clear-title" style="position: absolute; left: 0; right: 0; bottom: 0; background: #121a1c; border-top: 1px solid #2a3d41; padding: 20px 20px 20px 20px; display: flex; flex-direction: column; gap: 12px">
+    <h2 id="a-clear-title" style="margin: 0; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 22px; line-height: 26px; color: #f6f1e4">Leave mission prep behind?</h2>
+    <p style="margin: 0; font-size: 15px; line-height: 21px">Clearing this section closes 2 open tasks. They have no second chance.</p>
+
+    <div style="display: flex; flex-direction: column; gap: 0; border-top: 1px solid #1f2d30">
+      <div style="display: flex; align-items: center; gap: 12px; min-height: 48px; border-bottom: 1px solid #1f2d30">
+        <div style="width: 8px; height: 8px; border-radius: 999px; background: #ffb547; flex-shrink: 0"></div>
+        <div style="flex-grow: 1; display: flex; flex-direction: column"><span style="font-size: 15px">Magical Lamp</span><span style="font-size: 12px; color: #8ea6a1">Items · here</span></div>
+        <span style="font-size: 12px; font-weight: 700; color: #ffb547">Gone for good</span>
+      </div>
+      <div style="display: flex; align-items: center; gap: 12px; min-height: 48px; border-bottom: 1px solid #1f2d30">
+        <div style="width: 8px; height: 8px; border-radius: 999px; background: #ffb547; flex-shrink: 0"></div>
+        <div style="flex-grow: 1; display: flex; flex-direction: column"><span style="font-size: 15px">Battle Meter</span><span style="font-size: 12px; color: #8ea6a1">Items · Balamb Garden: results and the party</span></div>
+        <span style="font-size: 12px; font-weight: 700; color: #ffb547">Gone for good</span>
+      </div>
+    </div>
+    <p style="margin: 0; font-size: 13px; line-height: 18px; color: #8ea6a1">Everything else here stays open. Seifer card has a second chance later.</p>
+
+    <div style="display: flex; gap: 8px; justify-content: flex-end; padding-top: 4px">
+      <button type="button" style="min-height: 44px; padding: 0 16px; border: 1px solid #2a3d41; border-radius: 4px; background: transparent; font-size: 14px; color: #e9f1ee">Stay here</button>
+      <button type="button" style="min-height: 44px; padding: 0 18px; border: 0; border-radius: 4px; background: #f6f1e4; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 600; font-size: 14px; color: #0a0f11">Clear anyway</button>
+    </div>
+  </section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
