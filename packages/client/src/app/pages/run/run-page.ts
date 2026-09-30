@@ -24,13 +24,23 @@ import { lockReason } from '../../run/lock-reason';
 import { Reveals } from '../../run/reveals';
 import { RunActions } from '../../run/run-actions';
 import { RunLayout } from '../../run/run-layout';
+import { RunMenu } from '../../run/run-menu';
 import { RunStore } from '../../run/run-store';
 import { SectionList } from '../../run/section-list';
 import { sectionLabel } from '../../run/spoiler';
 
 @Component({
   selector: 'app-run-page',
-  imports: [RouterLink, SectionList, UnsavedBadge, BottomBar, ClearDialog, ConfirmSheet, Sheet],
+  imports: [
+    RouterLink,
+    SectionList,
+    UnsavedBadge,
+    BottomBar,
+    ClearDialog,
+    ConfirmSheet,
+    RunMenu,
+    Sheet,
+  ],
   providers: [RunLayout, { provide: RunActions, useExisting: forwardRef(() => RunPage) }],
   template: `
     <div class="flex min-h-dvh flex-col">
@@ -47,10 +57,7 @@ import { sectionLabel } from '../../run/spoiler';
           {{ store.run()?.name ?? 'Run' }}
         </h1>
         <app-unsaved-badge />
-        <!-- The menu (Update guide, categories, rename) arrives with a later task. -->
-        <button type="button" class="btn-quiet" aria-label="Menu" disabled>
-          <span aria-hidden="true">☰</span>
-        </button>
+        <app-run-menu />
       </header>
       <main class="mx-auto w-full max-w-[720px] flex-1 px-3 pb-36 pt-2 handheld:pb-16">
         @if (store.view()) {

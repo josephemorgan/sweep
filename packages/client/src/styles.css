@@ -108,3 +108,6 @@
     padding: 0.25rem 0.5rem;
   }
 }
+@utility menu-item {
+  @apply flex min-h-11 w-full items-center gap-2 rounded-control px-3 text-left disabled:opacity-50;
+}
