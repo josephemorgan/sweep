@@ -34,3 +34,4 @@ packages/client/blob-report/
 # OS
 .DS_Store
 Thumbs.db
+packages/client/e2e/.auth/

@@ -1,4 +1,4 @@
-import { basename, join, resolve } from 'node:path';
+import { basename, resolve } from 'node:path';
 import { toNodeHandler } from 'better-auth/node';
 import express, { type Express } from 'express';
 import type { Auth } from './auth.js';
@@ -131,7 +131,7 @@ export function createApp(options: AppOptions): Express {
     // SPA fallback: every other GET gets index.html (the /api handlers above run first).
     app.get('/{*splat}', (_req, res) => {
       res.setHeader('Cache-Control', 'no-cache');
-      res.sendFile(join(root, 'index.html'));
+      res.sendFile('index.html', { root });
     });
   }
 
