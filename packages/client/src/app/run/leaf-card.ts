@@ -66,7 +66,7 @@ interface CardSource {
             }
           </span>
           <span class="min-w-0 flex-1 py-1">
-            <span class="block text-sm" [class]="titleClasses()">
+            <span class="block" [class]="titleClasses()">
               @if (state() === 'locked') {
                 <span class="sr-only">Locked:</span>
               }
@@ -196,18 +196,14 @@ export class LeafCard {
   protected readonly pinned = computed(
     () => this.view().pinned && this.view().current === this.leafId(),
   );
-  /** Compact current row of the two-pane layout. */
+  /** Highlighted (selected) row of the two-pane layout. */
   private readonly compact = computed(
-    () =>
-      this.variant() === 'row' &&
-      this.detailPane() &&
-      (this.selected() || this.state() === 'current'),
+    () => this.variant() === 'row' && this.detailPane() && this.selected(),
   );
   protected readonly node = computed<'lamp' | 'cleared' | 'locked' | 'unlocked'>(() => {
     const state = this.state();
     if (state === 'cleared') return 'cleared';
-    if (this.detailPane() ? this.selected() || state === 'current' : state === 'current')
-      return 'lamp';
+    if (state === 'current') return 'lamp';
     return state === 'locked' ? 'locked' : 'unlocked';
   });
   protected readonly cardClasses = computed(() => {
@@ -243,8 +239,12 @@ export class LeafCard {
     if (this.compact() || (this.variant() === 'panel' && this.selected()))
       return 'font-display font-semibold text-[15px] text-lamp truncate';
     if (this.variant() === 'panel')
-      return this.state() === 'cleared' ? 'font-medium line-through' : 'font-medium';
-    return this.state() === 'cleared' ? 'truncate line-through decoration-rail-dot' : 'truncate';
+      return this.state() === 'cleared'
+        ? 'text-sm font-medium line-through'
+        : 'text-sm font-medium';
+    return this.state() === 'cleared'
+      ? 'text-sm truncate line-through decoration-rail-dot'
+      : 'text-sm truncate';
   });
   protected readonly bodyId = computed(() => 'card-body-' + this.leafId());
   protected readonly revealKey = computed(() => sectionRevealKey(this.leafId()));

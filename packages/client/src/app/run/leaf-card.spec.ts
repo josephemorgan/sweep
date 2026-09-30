@@ -330,11 +330,13 @@ describe('LeafCard rows (route)', () => {
     fixture.componentRef.setInput('selected', true);
     await fixture.whenStable();
     expect(row(el).className).toContain('h-11');
-    expect(node(el).className).toContain('bg-lamp');
+    expect(node(el).className).toContain('border-rail-ring');
+    expect(node(el).className).not.toContain('bg-lamp');
     const title = el.querySelector('.font-display')!;
     expect(title.className).toContain('font-semibold');
     expect(title.className).toContain('text-[15px]');
     expect(title.className).toContain('text-lamp');
+    expect(title.className).not.toContain('text-sm');
   });
 
   it('expands a cleared row to a panel with Reopen and no lamp, then collapses', async () => {
