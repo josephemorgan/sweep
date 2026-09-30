@@ -133,6 +133,119 @@ describe('RunStore', () => {
     expect(store.view()?.tasks.get('lost-cat')).toEqual({ kind: 'done' });
   });
 
+  it('keeps a write the server accepted while a refetch was in flight (rule 4)', async () => {
+    const { store, api, sender } = await setupRunStore();
+    store.setTaskState('lost-cat', 'done');
+    let answer!: (p: ReturnType<typeof lanternKeepPayload>) => void;
+    api.getRun.mockReturnValue(new Promise((resolve) => (answer = resolve)));
+    const refetching = store.refetch();
+    sender.sent[0]!.resolve();
+    await settle();
+    answer(lanternKeepPayload()); // read before the write committed
+    await refetching;
+    expect(store.view()?.tasks.get('lost-cat')).toEqual({ kind: 'done' });
+  });
+
+  it('applies only the newest of two overlapping refetches', async () => {
+    const { store, api } = await setupRunStore();
+    type P = ReturnType<typeof lanternKeepPayload>;
+    const answers: ((p: P) => void)[] = [];
+    api.getRun.mockImplementation(() => new Promise((resolve) => answers.push(resolve)));
+    const older = store.refetch();
+    const newer = store.refetch();
+    answers[1]!(lanternKeepPayload({ cleared: ['village', 'marsh'] }));
+    await newer;
+    expect(store.view()?.current).toBe('keep-gate');
+    expect(store.revalidating()).toBe(true); // the older one is still out
+    answers[0]!(lanternKeepPayload());
+    await older;
+    expect(store.view()?.current).toBe('keep-gate');
+    expect(store.revalidating()).toBe(false);
+  });
+
+  it('shares one revalidation between focus and visibilitychange', async () => {
+    const { store, api } = await setupRunStore();
+    api.getRun.mockClear();
+    const first = store.revalidate();
+    const second = store.revalidate();
+    expect(second).toBe(first);
+    await first;
+    expect(api.getRun).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not let a late fetch of the previous run overwrite the current one', async () => {
+    const { store, api } = await setupRunStore();
+    store.close();
+    type P = ReturnType<typeof lanternKeepPayload>;
+    let answerA!: (p: P) => void;
+    api.getRun.mockReturnValueOnce(new Promise((resolve) => (answerA = resolve)));
+    const openingA = store.open('run-a');
+    api.getRun.mockResolvedValueOnce(lanternKeepPayload({ cleared: ['village'] }));
+    await store.open(RUN_ID);
+    answerA(lanternKeepPayload());
+    await openingA;
+    expect(store.runId()).toBe(RUN_ID);
+    expect(store.view()?.current).toBe('marsh');
+  });
+
+  it('stays on the cached copy, offline, when the network fails on open', async () => {
+    const { store, api } = await setupRunStore();
+    store.close();
+    TestBed.inject(ResumeCache).write(lanternKeepPayload({ cleared: ['village'] }));
+    api.getRun.mockRejectedValue(new ApiError(0, 'network', 'offline'));
+    await store.open(RUN_ID);
+    expect(store.offline()).toBe(true);
+    expect(store.status()).toBe('ready');
+    expect(store.view()?.current).toBe('marsh');
+  });
+
+  it('after a 404: discards the run queued writes, ignores writes and revalidation', async () => {
+    const { store, api, queue, sender } = await setupRunStore();
+    store.setTaskState('lost-cat', 'done'); // in flight
+    store.setPin('marsh'); // queued behind it
+    api.getRun.mockRejectedValue(new ApiError(404, 'not-found', 'No such run.'));
+    await store.refetch();
+    expect(store.status()).toBe('not-found');
+    expect(queue.pending().map((w) => w.kind)).toEqual(['task']); // only the one in flight remains
+    sender.sent[0]!.resolve();
+    await settle();
+    expect(queue.size()).toBe(0);
+    store.setTaskState('lost-cat', 'done');
+    store.setCleared('village', true);
+    store.setPin('marsh');
+    store.setTracked('loot', false);
+    store.rename('x');
+    expect(queue.size()).toBe(0);
+    api.getRun.mockClear();
+    await store.revalidate();
+    await store.refetch();
+    expect(api.getRun).not.toHaveBeenCalled();
+  });
+
+  it('forgets the cache of another run whose write is dropped with 404 (rule 7)', async () => {
+    const { store, sender } = await setupRunStore();
+    const cache = TestBed.inject(ResumeCache);
+    store.setTaskState('lost-cat', 'done');
+    store.close();
+    cache.write(lanternKeepPayload());
+    sender.sent[0]!.reject(new ApiError(404, 'not-found', 'No such run.'));
+    await settle();
+    expect(cache.lastRunId()).toBeNull();
+  });
+
+  it('close() resets revalidating and offline', async () => {
+    const { store, api } = await setupRunStore();
+    api.getRun.mockRejectedValue(new ApiError(0, 'network', 'offline'));
+    await store.refetch();
+    expect(store.offline()).toBe(true);
+    api.getRun.mockReturnValue(new Promise(() => undefined));
+    void store.refetch();
+    expect(store.revalidating()).toBe(true);
+    store.close();
+    expect(store.offline()).toBe(false);
+    expect(store.revalidating()).toBe(false);
+  });
+
   it('clearing the pinned leaf queues pin: null first (rule 3)', async () => {
     const { store, queue } = await setupRunStore({ pin: 'village' });
     store.setCleared('village', true);

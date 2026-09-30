@@ -54,6 +54,11 @@ export class RunStore {
   private readonly payload = signal<RunPayloadDto | null>(null);
   private cacheDue: RunPayloadDto | null = null;
   private cacheTimer: ReturnType<typeof setTimeout> | null = null;
+  private fetchGen = 0;
+  private activeFetches = 0;
+  /** Writes the server accepted while a refetch was in flight (that GET may predate them). */
+  private appliedLog: QueuedWrite[] = [];
+  private revalidation: Promise<void> | null = null;
 
   readonly runId = signal<string | null>(null);
   readonly status = signal<RunStatus>(RunStatus.Idle);
@@ -112,6 +117,7 @@ export class RunStore {
   constructor() {
     const stop = this.queue.listen({
       applied: (write) => {
+        if (this.activeFetches > 0) this.appliedLog.push(write);
         const p = this.payload();
         if (p && write.runId === p.run.id) this.setPayload(applyToPayload(p, write));
       },
@@ -155,19 +161,32 @@ export class RunStore {
     await this.refetch();
   }
 
-  /** Replaces only the server copy; pending writes stay folded on top (rule 4). */
+  /**
+   * Replaces only the server copy; pending writes stay folded on top (rule 4). Writes accepted
+   * while the GET was in flight are folded onto the fresh copy too: the server may have read it
+   * before they committed (writes are absolute, so replaying them is safe). Only the latest
+   * refetch applies.
+   */
   async refetch(): Promise<void> {
     const runId = this.runId();
-    if (runId === null) return;
+    if (runId === null || this.status() === RunStatus.NotFound) return;
+    const gen = ++this.fetchGen;
+    const logStart = this.appliedLog.length;
+    this.activeFetches += 1;
     this.revalidating.set(true);
+    const current = (): boolean => this.runId() === runId && this.fetchGen === gen;
     try {
-      const fresh = await this.api.getRun(runId);
-      if (this.runId() !== runId) return;
+      const fetched = await this.api.getRun(runId);
+      if (!current()) return;
+      const fresh = this.appliedLog
+        .slice(logStart)
+        .filter((w) => w.runId === runId)
+        .reduce(applyToPayload, fetched);
       this.setPayload(fresh);
       this.offline.set(false);
       this.status.set(RunStatus.Ready);
     } catch (err) {
-      if (this.runId() !== runId) return;
+      if (!current()) return;
       const e = toApiError(err);
       if (e.status === 404) {
         this.gone(runId);
@@ -179,15 +198,26 @@ export class RunStore {
         else this.toasts.show(`Couldn't refresh this run. ${e.message}`, { key: 'refresh' });
       }
     } finally {
-      if (this.runId() === runId) this.revalidating.set(false);
+      this.activeFetches -= 1;
+      if (this.activeFetches === 0) {
+        this.appliedLog = [];
+        this.revalidating.set(false);
+      }
     }
   }
 
-  /** Spec §5.7 "Multiple devices": flush the queue, then refetch. */
-  async revalidate(): Promise<void> {
-    if (this.runId() === null || this.revalidating()) return;
-    await this.queue.flush();
-    await this.refetch();
+  /** Spec §5.7 "Multiple devices": flush the queue, then refetch. Overlapping calls share one. */
+  revalidate(): Promise<void> {
+    if (this.revalidation) return this.revalidation;
+    if (this.runId() === null || this.status() === RunStatus.NotFound || this.revalidating()) {
+      return Promise.resolve();
+    }
+    const done = (async (): Promise<void> => {
+      await this.queue.flush();
+      await this.refetch();
+    })().finally(() => (this.revalidation = null));
+    this.revalidation = done;
+    return done;
   }
 
   close(): void {
@@ -195,15 +225,19 @@ export class RunStore {
     this.runId.set(null);
     this.payload.set(null);
     this.status.set(RunStatus.Idle);
+    this.revalidating.set(false);
+    this.offline.set(false);
   }
 
   setTaskState(taskId: string, state: TaskState | null): void {
-    this.queue.enqueue({ kind: 'task', runId: this.requireRun(), taskId, state });
+    const runId = this.writableRun();
+    if (runId !== null) this.queue.enqueue({ kind: 'task', runId, taskId, state });
   }
 
   /** Clearing the pinned leaf queues `pin: null` first, so coalescing can't leave the pin behind (rule 3). */
   setCleared(leafId: string, cleared: boolean): void {
-    const runId = this.requireRun();
+    const runId = this.writableRun();
+    if (runId === null) return;
     if (cleared && this.progress()?.pin === leafId) {
       this.queue.enqueue({ kind: 'pin', runId, sectionId: null });
     }
@@ -211,12 +245,14 @@ export class RunStore {
   }
 
   setPin(leafId: string | null): void {
-    this.queue.enqueue({ kind: 'pin', runId: this.requireRun(), sectionId: leafId });
+    const runId = this.writableRun();
+    if (runId !== null) this.queue.enqueue({ kind: 'pin', runId, sectionId: leafId });
   }
 
   /** Stores an override only when it differs from the guide default (null resets). */
   setTracked(categoryId: string, tracked: boolean): void {
-    const runId = this.requireRun();
+    const runId = this.writableRun();
+    if (runId === null) return;
     const fallback = this.guide()?.categories.find((c) => c.id === categoryId)?.tracked;
     this.queue.enqueue({
       kind: 'category',
@@ -228,7 +264,8 @@ export class RunStore {
   }
 
   rename(name: string): void {
-    this.queue.enqueue({ kind: 'run-name', runId: this.requireRun(), name });
+    const runId = this.writableRun();
+    if (runId !== null) this.queue.enqueue({ kind: 'run-name', runId, name });
   }
 
   /** clearImpact, filtered to tracked categories (spec §5.4). */
@@ -288,6 +325,7 @@ export class RunStore {
 
   private onDropped(write: QueuedWrite, error: ApiError): void {
     if (write.runId !== this.runId()) {
+      if (error.status === 404) this.cache.forget(write.runId);
       this.toasts.show(`A change to another run couldn't be saved. ${error.message}`, {
         key: 'dropped',
       });
@@ -315,9 +353,10 @@ export class RunStore {
     void this.router.navigateByUrl('/runs');
   }
 
-  private requireRun(): string {
+  /** The open run's ID; null once it was found to be deleted (writes are then ignored). */
+  private writableRun(): string | null {
     const runId = this.runId();
     if (runId === null) throw new Error('RunStore: no run is open');
-    return runId;
+    return this.status() === RunStatus.NotFound ? null : runId;
   }
 }
