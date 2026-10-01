@@ -50,21 +50,18 @@ test.describe('with the service worker', () => {
         timeout: 30_000,
       })
       .toBe(true);
-    // ngsw prefetches the app group asynchronously after activation; wait until the font is cached.
+    // ngsw prefetches the app group asynchronously after activation; wait until every file of
+    // it (shell, scripts, styles, fonts) is in Cache Storage before cutting the network.
     await expect
       .poll(
         () =>
           page.evaluate(async () => {
-            for (const key of await caches.keys()) {
-              const cache = await caches.open(key);
-              const keys = await cache.keys();
-              if (
-                keys.some((r) => decodeURI(new URL(r.url).pathname).includes('BricolageGrotesque'))
-              ) {
-                return true;
-              }
-            }
-            return false;
+            const manifest = (await (await fetch('/ngsw.json')).json()) as {
+              assetGroups: { name: string; urls: string[] }[];
+            };
+            const urls = manifest.assetGroups.find((g) => g.name === 'app')?.urls ?? [];
+            const hits = await Promise.all(urls.map((u) => caches.match(u)));
+            return urls.length > 0 && hits.every((h) => h !== undefined);
           }),
         { timeout: 30_000 },
       )
@@ -72,11 +69,16 @@ test.describe('with the service worker', () => {
 
     await context.setOffline(true);
     await page.reload();
-    const loaded = await page.evaluate(async () => {
-      const faces = await document.fonts.load("600 17px 'Bricolage Grotesque'");
-      return faces.length > 0 && faces.every((f) => f.status === 'loaded');
-    });
-    expect(loaded).toBe(true);
+    // The app shell came from the service worker (not a browser offline error page).
+    await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
+    await expect
+      .poll(() =>
+        page.evaluate(async () => {
+          const faces = await document.fonts.load("600 17px 'Bricolage Grotesque'");
+          return faces.map((f) => f.status).join(',');
+        }),
+      )
+      .toBe('loaded');
     await context.setOffline(false);
   });
 });
