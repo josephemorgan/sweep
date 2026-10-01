@@ -1,14 +1,16 @@
-import { expect, test } from './support/fixtures';
+import { expect, leafPanel, routeRow, test } from './support/fixtures';
 
 test('checks a task offline and syncs on reconnect', async ({ page, context, runs }, testInfo) => {
   const runId = await runs.create(`Offline ${testInfo.project.name}`);
   await page.goto(`/runs/${runId}`);
-  const village = page.getByRole('region', { name: 'Harrow Village' });
-  await expect(village).toHaveAttribute('data-state', 'current');
+  const village = leafPanel(page, 'Harrow Village');
+  await expect(routeRow(page, 'Harrow Village')).toHaveAttribute('data-state', 'current');
 
   await context.setOffline(true);
   await village.getByRole('checkbox', { name: 'Pay the ferryman' }).check();
-  await expect(village.getByText('Story 1/1')).toBeVisible();
+  await expect(
+    village.locator('[data-category-header]').filter({ hasText: 'Story' }),
+  ).toContainText('1 of 1');
   await expect(page.getByText('1 unsaved', { exact: true })).toBeVisible();
 
   await context.setOffline(false);
@@ -22,8 +24,11 @@ test('checks a task offline and syncs on reconnect', async ({ page, context, run
     .toBe('done');
   await page.reload();
   await expect(
-    page
-      .getByRole('region', { name: 'Harrow Village' })
-      .getByRole('checkbox', { name: 'Pay the ferryman' }),
+    leafPanel(page, 'Harrow Village').getByRole('checkbox', { name: 'Pay the ferryman' }),
   ).toBeChecked();
+  // The self-hosted display face is available after the reload (R10).
+  await page.evaluate(() => document.fonts.ready);
+  expect(await page.evaluate(() => document.fonts.check("600 17px 'Bricolage Grotesque'"))).toBe(
+    true,
+  );
 });
