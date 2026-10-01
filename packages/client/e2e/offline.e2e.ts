@@ -26,9 +26,27 @@ test('checks a task offline and syncs on reconnect', async ({ page, context, run
   await expect(
     leafPanel(page, 'Harrow Village').getByRole('checkbox', { name: 'Pay the ferryman' }),
   ).toBeChecked();
-  // The self-hosted display face is available after the reload (R10).
+
+  // The self-hosted display face still loads after an offline reload, served by
+  // the service worker (Review Focus 1, R10).
+  await page.evaluate(async () => {
+    await navigator.serviceWorker.ready;
+  });
+  await expect
+    .poll(() => page.evaluate(() => navigator.serviceWorker.controller !== null))
+    .toBe(true);
+  await context.setOffline(true);
+  await page.reload();
+  await expect(routeRow(page, 'Harrow Village')).toBeVisible();
   await page.evaluate(() => document.fonts.ready);
+  const bricolageLoaded = await page.evaluate(() =>
+    [...document.fonts].some(
+      (f) => f.family.replace(/["']/g, '') === 'Bricolage Grotesque' && f.status === 'loaded',
+    ),
+  );
+  expect(bricolageLoaded).toBe(true);
   expect(await page.evaluate(() => document.fonts.check("600 17px 'Bricolage Grotesque'"))).toBe(
     true,
   );
+  await context.setOffline(false);
 });
