@@ -29,7 +29,7 @@ interface CardSource {
       [id]="'section-' + leafId()"
       [attr.aria-label]="blurred() ? 'Hidden section' : leaf().title"
       [attr.data-state]="state()"
-      class="scroll-mt-14 rounded-card border"
+      class="scroll-mt-14 rounded-panel border"
       [class]="
         state() === 'current'
           ? 'border-accent bg-surface-raised'

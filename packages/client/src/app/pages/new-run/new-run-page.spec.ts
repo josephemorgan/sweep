@@ -184,4 +184,9 @@ describe('NewRunPage', () => {
     await vi.waitFor(() => expect(navigate).toHaveBeenCalledWith('/runs/r1'));
     expect(api.createRun).toHaveBeenLastCalledWith(expect.any(File), 'Renamed');
   });
+
+  it('uses the Route page title', async () => {
+    const { el } = await setup(createRunsApiFake());
+    expect(el.querySelector('h1')!.classList).toContain('font-display');
+  });
 });

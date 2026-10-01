@@ -31,7 +31,7 @@ export function isEmptyDiff(diff: GuideDiff): boolean {
         @if (diff().likelyRegenerated) {
           <p
             role="alert"
-            class="m-0 rounded-card border border-last-chance p-3 font-semibold text-last-chance"
+            class="m-0 rounded-panel border border-last-chance p-3 font-semibold text-last-chance"
           >
             Most IDs changed. Was this guide regenerated? Progress for {{ orphaned() }}
             {{ orphaned() === 1 ? 'item' : 'items' }} will be orphaned.

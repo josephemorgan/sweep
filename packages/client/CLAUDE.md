@@ -14,7 +14,7 @@ Angular 22.2 PWA: standalone components and signals, no NgModules, no SSR. Tailw
 
 - Import only `@sweep/core` (main entry). **Never `@sweep/core/parse`**; lint fails if you do. Upload validation happens on the server.
 - Wrap the core engine in `computed()` signals (spec §4.12).
-- **No raw colors.** Use only the tokens in `src/styles/tokens.css` (`bg-surface`, `text-fg-muted`, `text-missed`, `rounded-card` …). Tailwind's default palette is disabled on purpose.
+- **No raw colors.** Use only the tokens in `src/styles/tokens.css` (`bg-surface`, `text-fg-muted`, `text-missed`, `rounded-panel` …). Tailwind's default palette is disabled on purpose.
 - Phone portrait is primary (touch targets ≥ 44px). 4:3 landscape uses `(orientation: landscape) and (max-height: 800px)`. Never allow horizontal page scroll.
 - Prose is Markdown → sanitized HTML via DOMPurify (spec §6.4). Never bind unsanitized HTML.
 - The service worker caches the app shell only, never `/api/*` (`ngsw-config.json` has no `dataGroups`).

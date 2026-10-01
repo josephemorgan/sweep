@@ -72,4 +72,14 @@ describe('ValidationReport', () => {
     expect(details.querySelector('summary')?.textContent).toContain('1 warning');
     expect(el.textContent).toContain('No errors.');
   });
+
+  it('colors errors and warnings by text, collapsible, with no filled backgrounds', async () => {
+    const el = await render(
+      [issue({}), issue({ severity: 'warning', message: 'Careful.' })],
+      SUMMARY,
+    );
+    expect(el.querySelector('details .text-missed')).not.toBeNull();
+    expect(el.querySelector('details .text-last-chance')).not.toBeNull();
+    expect(el.innerHTML).not.toMatch(/\sbg-/);
+  });
 });

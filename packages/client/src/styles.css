@@ -1,6 +1,25 @@
 @import 'tailwindcss';
 @import './styles/tokens.css';
 
+@font-face {
+  font-family: 'Bricolage Grotesque';
+  src: url('/fonts/BricolageGrotesque[opsz,wght].woff2') format('woff2');
+  font-weight: 500 700;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Atkinson Hyperlegible';
+  src: url('/fonts/AtkinsonHyperlegible-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Atkinson Hyperlegible';
+  src: url('/fonts/AtkinsonHyperlegible-Bold.woff2') format('woff2');
+  font-weight: 700;
+  font-display: swap;
+}
+
 /* Spec §5.9: the 4:3 handheld layout. */
 @custom-variant handheld (@media (orientation: landscape) and (max-height: 800px));
 
@@ -10,11 +29,11 @@
   }
 
   body {
-    @apply bg-surface text-fg antialiased;
+    @apply bg-surface text-fg font-body antialiased;
   }
 
   :focus-visible {
-    outline: 2px solid var(--color-accent);
+    outline: 2px solid var(--color-lamp);
     outline-offset: 2px;
   }
 
@@ -25,19 +44,65 @@
 }
 
 @utility btn {
-  @apply inline-flex min-h-11 min-w-11 items-center justify-center gap-2 rounded-control border border-border bg-surface-raised px-3 text-sm font-medium text-fg disabled:opacity-50;
+  @apply inline-flex min-h-11 min-w-11 items-center justify-center gap-2 rounded-control border border-border bg-transparent px-3.5 text-sm text-fg disabled:opacity-50;
 }
 @utility btn-primary {
-  @apply inline-flex min-h-11 min-w-11 items-center justify-center gap-2 rounded-control border border-accent bg-accent px-3 text-sm font-semibold text-on-accent disabled:opacity-50;
+  @apply inline-flex min-h-11 min-w-11 items-center justify-center gap-2 rounded-control bg-lamp px-4 font-display text-sm font-semibold text-on-lamp disabled:opacity-50;
 }
 @utility btn-danger {
-  @apply inline-flex min-h-11 min-w-11 items-center justify-center gap-2 rounded-control border border-missed bg-missed px-3 text-sm font-semibold text-on-accent disabled:opacity-50;
+  @apply inline-flex min-h-11 min-w-11 items-center justify-center gap-2 rounded-control bg-missed px-4 font-display text-sm font-semibold text-on-lamp disabled:opacity-50;
 }
 @utility btn-quiet {
   @apply inline-flex min-h-11 min-w-11 items-center justify-center gap-1 rounded-control px-2 text-sm text-fg-muted;
 }
 @utility field {
   @apply min-h-11 w-full rounded-control border border-border bg-surface px-3 text-fg;
+}
+/* 22px circular checkbox. The :checked/::after/:disabled states live inside the utility so they
+   always share its layer and cannot lose to it. */
+@utility ck {
+  appearance: none;
+  position: relative;
+  width: 22px;
+  height: 22px;
+  margin: 0;
+  flex-shrink: 0;
+  border: 1.5px solid var(--color-rail-ring);
+  border-radius: 999px;
+  background: transparent;
+  &:checked {
+    background: var(--color-accent);
+    border-color: var(--color-accent);
+  }
+  &:checked::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: var(--color-on-accent);
+    -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12l5 5 9-10'/%3E%3C/svg%3E")
+      center / 14px 14px no-repeat;
+    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12l5 5 9-10'/%3E%3C/svg%3E")
+      center / 14px 14px no-repeat;
+  }
+  &:disabled {
+    opacity: 0.4;
+  }
+  @media (forced-colors: active) {
+    &:checked {
+      background: SelectedItem;
+      border-color: SelectedItem;
+    }
+    &:checked::after {
+      background: SelectedItemText;
+    }
+  }
+}
+@utility redaction {
+  display: inline-block;
+  height: 13px;
+  border-radius: 2px;
+  background: var(--color-redaction);
+  vertical-align: middle;
 }
 
 @layer components {
@@ -49,8 +114,9 @@
     max-width: none;
     max-height: 85dvh;
     padding: 0;
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-card) var(--radius-card) 0 0;
+    border: 0;
+    border-top: 1px solid var(--color-border);
+    border-radius: 0;
     background: var(--color-surface-raised);
     color: var(--color-fg);
   }
@@ -71,7 +137,7 @@
       height: 100dvh;
       max-height: none;
       max-width: 480px;
-      border-radius: var(--radius-card) 0 0 var(--radius-card);
+      border-left: 1px solid var(--color-border);
     }
   }
 }
