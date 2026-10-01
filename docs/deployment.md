@@ -34,8 +34,11 @@ Database migrations run when the server starts, so a deploy is only "start the n
 ## Deploying
 
 `scripts/deploy.sh` does the whole thing: fast-forwards the clone (for compose file changes),
-pulls the image, and restarts the app only if the image changed. Run it by hand, or on a
-systemd timer so a push deploys itself a few minutes later:
+pulls the image, restarts the app only if the image changed, and removes the superseded Sweep
+images (only those, matched by label). A `docker-compose.override.yml` beside the compose
+files, for server-local settings such as a proxy network, is applied last. The clone must be
+on `master` with its upstream set, or the fast-forward is skipped and the compose files go
+stale. Run it by hand, or on a systemd timer so a push deploys itself a few minutes later:
 
 ```ini
 # /etc/systemd/system/sweep-deploy.service

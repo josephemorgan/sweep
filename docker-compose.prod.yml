@@ -6,4 +6,3 @@ services:
     image: ghcr.io/josephemorgan/sweep:${SWEEP_IMAGE_TAG:-latest}
     build: !reset null
     pull_policy: always
-    restart: unless-stopped
