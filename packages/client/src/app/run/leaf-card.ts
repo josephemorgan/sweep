@@ -89,7 +89,7 @@ interface CardSource {
       </section>
     } @else {
       <section
-        [id]="'section-' + leafId()"
+        [id]="(detailPane() ? 'detail-section-' : 'section-') + leafId()"
         [attr.aria-label]="panelLabel()"
         [attr.data-state]="state()"
         class="mt-0.5 flex scroll-mt-14 gap-2.5 pl-3 pt-1"

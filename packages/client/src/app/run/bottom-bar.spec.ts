@@ -55,12 +55,52 @@ describe('groupByHome stability (§5.3)', () => {
 });
 
 describe('BottomBar (§5.5)', () => {
-  it('stays pinned to the bottom of the viewport', async () => {
+  it('is hidden on handheld, where the compact bar replaces it', async () => {
     const { el } = await renderBar();
     const nav = el.querySelector('nav')!;
-    expect(nav.classList).toContain('sticky');
-    expect(nav.classList).toContain('bottom-0');
-    expect(nav.classList).toContain('z-20');
+    expect(nav.classList).toContain('handheld:hidden');
+    expect(nav.classList).not.toContain('sticky');
+  });
+
+  describe('compact', () => {
+    async function renderCompact(progress = {}) {
+      const harness = await setupRunStore(progress, [
+        RunLayout,
+        { provide: RunActions, useValue: {} },
+      ]);
+      const fixture = TestBed.createComponent(BottomBar);
+      fixture.componentRef.setInput('compact', true);
+      await fixture.whenStable();
+      const el = fixture.nativeElement as HTMLElement;
+      const buttons = [...el.querySelectorAll<HTMLButtonElement>('nav button')];
+      return { ...harness, el, buttons };
+    }
+
+    it('renders number and label inline, and the filter button', async () => {
+      const { el, buttons } = await renderCompact();
+      expect(el.querySelector('nav')!.classList).toContain('handheld:flex');
+      const here = buttons[0]!;
+      expect(here.classList).toContain('items-baseline');
+      expect(here.classList).toContain('gap-1.5');
+      const [num, label] = [...here.querySelectorAll('span')];
+      expect(num!.textContent?.trim()).toBe('3');
+      expect(num!.classList).toContain('text-xl');
+      expect(label!.textContent?.trim()).toBe('Here');
+      expect(label!.classList).toContain('text-[13px]');
+      expect(buttons.at(-1)!.getAttribute('aria-label')).toBe('Filter categories: all tracked');
+      expect(buttons.at(-1)!.classList).toContain('size-11');
+    });
+
+    it('draws the amber border only when Last chance is above zero', async () => {
+      const { buttons } = await renderCompact();
+      const last = buttons.find((b) => b.textContent?.includes('Last chance'))!;
+      expect(last.classList).toContain('border-b-2');
+      expect(last.classList).toContain('border-last-chance');
+      expect(last.classList).toContain('text-last-chance');
+      for (const b of buttons.filter((x) => x !== last && !x.hasAttribute('aria-label'))) {
+        expect(b.classList).not.toContain('border-last-chance');
+      }
+    });
   });
 
   it('shows the four metrics, emphasizing Closing and highlighting Last chance', async () => {
