@@ -26,6 +26,7 @@ import { WriteQueue } from '../sync/write-queue';
 import { CategoriesSheet } from './categories-sheet';
 import { JumpSheet } from './jump-sheet';
 import { ResumeCache } from './resume-cache';
+import { HANDHELD_QUERY } from './run-layout';
 import { RunStore } from './run-store';
 
 export type MenuSheet = 'menu' | 'jump' | 'categories' | 'rename' | 'delete';
@@ -190,10 +191,13 @@ export class RunMenu {
   protected onJumped(sectionId: string): void {
     this.sheet.set(null);
     afterNextRender(
-      () =>
-        this.doc
-          .querySelector<HTMLElement>(`#section-${sectionId} button[aria-expanded]`)
-          ?.focus({ preventScroll: true }),
+      () => {
+        const handheld = this.doc.defaultView?.matchMedia?.(HANDHELD_QUERY)?.matches === true;
+        const selector = handheld
+          ? `aside[aria-label="Route"] #section-${sectionId} [role="heading"] button`
+          : `#section-${sectionId} button[aria-expanded]`;
+        this.doc.querySelector<HTMLElement>(selector)?.focus({ preventScroll: true });
+      },
       { injector: this.injector },
     );
   }

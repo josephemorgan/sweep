@@ -82,7 +82,10 @@ describe('BottomBar (§5.5)', () => {
       const here = buttons[0]!;
       expect(here.classList).toContain('items-baseline');
       expect(here.classList).toContain('gap-1.5');
-      const [num, label] = [...here.querySelectorAll('span')];
+      // Label first in the DOM so the name reads "Here 3"; flex-row-reverse puts the number first.
+      expect(here.classList).toContain('flex-row-reverse');
+      expect(here.textContent).toContain('Here 3');
+      const [label, num] = [...here.querySelectorAll('span')];
       expect(num!.textContent?.trim()).toBe('3');
       expect(num!.classList).toContain('text-xl');
       expect(label!.textContent?.trim()).toBe('Here');

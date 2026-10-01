@@ -1,6 +1,9 @@
 import { Injectable, inject, signal } from '@angular/core';
 import { RunStore } from './run-store';
 
+/** The 4:3 handheld layout (spec §5.9). */
+export const HANDHELD_QUERY = '(orientation: landscape) and (max-height: 800px)';
+
 /** Page-scoped view state: which cards are expanded, which groups collapsed, where to scroll. */
 @Injectable()
 export class RunLayout {

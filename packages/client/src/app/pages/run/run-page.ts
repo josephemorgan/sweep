@@ -25,15 +25,13 @@ import { ClearDialog } from '../../run/clear-dialog';
 import { lockReason } from '../../run/lock-reason';
 import { Reveals } from '../../run/reveals';
 import { RunActions } from '../../run/run-actions';
-import { RunLayout } from '../../run/run-layout';
+import { HANDHELD_QUERY, RunLayout } from '../../run/run-layout';
 import { RunMenu } from '../../run/run-menu';
 import { RunStore } from '../../run/run-store';
 import { UpdateGuideSheet } from '../../run/update-guide-sheet';
 import { LeafCard } from '../../run/leaf-card';
 import { SectionList } from '../../run/section-list';
 import { sectionLabel } from '../../run/spoiler';
-
-const HANDHELD_QUERY = '(orientation: landscape) and (max-height: 800px)';
 
 @Component({
   selector: 'app-run-page',
@@ -119,11 +117,11 @@ const HANDHELD_QUERY = '(orientation: landscape) and (max-height: 800px)';
           </section>
         </main>
       } @else {
-        <main class="grow overflow-y-auto px-3 pb-2 pt-2">
+        <main class="grow overflow-y-auto pb-2 pt-2">
           @if (store.view()) {
             @if (store.offline()) {
               <p
-                class="m-0 mb-2 rounded-control border border-border px-3 py-2 text-sm text-fg-muted"
+                class="m-0 mx-3 mb-2 rounded-control border border-border px-3 py-2 text-sm text-fg-muted"
               >
                 Offline. Showing the last saved copy; changes are queued.
               </p>

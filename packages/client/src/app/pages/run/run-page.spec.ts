@@ -354,6 +354,8 @@ describe('RunPage update guide (§5.8)', () => {
       expect(el.querySelector('aside')).toBeNull();
       const main = el.querySelector('main')!;
       expect(main.classList).not.toContain('max-w-[720px]');
+      // The rows carry their own padding and the rail sits at 19px: the list is flush.
+      expect(main.classList).not.toContain('px-3');
       expect(main.querySelector('app-bottom-bar')).toBeNull();
       expect(main.nextElementSibling?.tagName.toLowerCase()).toBe('app-bottom-bar');
       expect(el.querySelector('header app-bottom-bar')).toBeNull();

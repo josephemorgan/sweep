@@ -39,7 +39,7 @@ import { RunStore } from './run-store';
         @for (m of metrics; track m) {
           <button
             type="button"
-            class="flex min-h-11 items-baseline gap-1.5 border-0 bg-transparent px-3"
+            class="flex min-h-11 flex-row-reverse items-baseline gap-1.5 border-0 bg-transparent px-3"
             [class.font-semibold]="m === 'closing'"
             [class.border-b-2]="highlighted(m)"
             [class.border-last-chance]="highlighted(m)"
@@ -47,8 +47,9 @@ import { RunStore } from './run-store';
             aria-haspopup="dialog"
             (click)="open.set(m)"
           >
-            <span class="font-display text-xl font-bold tabular-nums">{{ value(m) }}</span>
-            <span class="text-[13px]" [class.text-fg-muted]="!highlighted(m)">{{ labels[m] }}</span>
+            <span class="text-[13px]" [class.text-fg-muted]="!highlighted(m)">{{ labels[m] }}</span
+            >{{ ' '
+            }}<span class="font-display text-xl font-bold tabular-nums">{{ value(m) }}</span>
           </button>
         }
         <ng-container
