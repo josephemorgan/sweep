@@ -364,3 +364,26 @@ describe('TaskRow route styling (B5)', () => {
     expect(el.querySelector('.redaction')).not.toBeNull();
   });
 });
+
+describe('TaskRow how text and title (B5 fix)', () => {
+  it('renders how below the flex row, not inside it', async () => {
+    const { el, fixture } = await render('village-chest', OPEN);
+    el.querySelector<HTMLButtonElement>('button[aria-expanded]')!.click();
+    await fixture.whenStable();
+    const how = el.querySelector('app-markdown-view')!;
+    expect(how).not.toBeNull();
+    expect(how.closest('.min-h-\\[42px\\]')).toBeNull();
+  });
+
+  it('styles a title button with how', async () => {
+    const open = await render('village-chest', OPEN);
+    const title = open.el.querySelector('button[aria-expanded]')!;
+    expect(title.classList).toContain('text-[15px]');
+    expect(title.classList).toContain('leading-5');
+    expect(title.classList).not.toContain('line-through');
+    const done = await render('village-chest', { kind: 'done' });
+    const doneTitle = done.el.querySelector('button[aria-expanded]')!;
+    expect(doneTitle.classList).toContain('line-through');
+    expect(doneTitle.classList).toContain('decoration-rail-dot');
+  });
+});

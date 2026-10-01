@@ -85,11 +85,6 @@ let nextId = 0;
             }
           </div>
         }
-        @if (task().how; as how) {
-          @if (howOpen() && !blurred()) {
-            <app-markdown-view [id]="howId" class="block pb-2 text-fg-muted" [source]="how" />
-          }
-        }
       </div>
       <div #wrap class="relative shrink-0">
         <button
@@ -121,6 +116,15 @@ let nextId = 0;
         }
       </div>
     </div>
+    @if (task().how; as how) {
+      @if (howOpen() && !blurred()) {
+        <app-markdown-view
+          [id]="howId"
+          class="block pb-2 pl-14 pr-11 text-fg-muted"
+          [source]="how"
+        />
+      }
+    }
   `,
 })
 export class TaskRow {
