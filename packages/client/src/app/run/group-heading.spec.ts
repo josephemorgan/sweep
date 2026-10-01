@@ -62,6 +62,13 @@ describe('GroupHeading (§5.2)', () => {
     expect(el.textContent).toContain('▸');
   });
 
+  it('keeps the collapse toggle a 44px touch target even for a short title', async () => {
+    const { button } = await renderGroup('act-1');
+    const classes = button('Collapse Act 1').classList;
+    expect(classes.contains('min-h-11')).toBe(true);
+    expect(classes.contains('min-w-11')).toBe(true);
+  });
+
   it('opens the walkthrough in a sheet, labelled with the group', async () => {
     const { el, fixture, button } = await renderGroup('act-1');
     expect(el.querySelector('app-markdown-view')).toBeNull();

@@ -26,7 +26,7 @@ import { SpoilerText } from './spoiler-text';
       >
         <button
           type="button"
-          class="flex min-h-11 min-w-0 items-center gap-2 text-left"
+          class="flex min-h-11 min-w-11 items-center gap-2 text-left"
           [class.flex-1]="depth() > 1"
           [attr.aria-expanded]="!collapsed()"
           [attr.aria-label]="
