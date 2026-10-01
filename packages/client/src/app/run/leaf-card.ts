@@ -43,7 +43,7 @@ interface CardSource {
         [id]="'section-' + leafId()"
         [attr.aria-label]="blurred() ? 'Hidden section' : leaf().title"
         [attr.data-state]="state()"
-        class="scroll-mt-14"
+        class="scroll-mt-2"
         [class]="cardClasses()"
       >
         <div role="heading" [attr.aria-level]="level()">
@@ -92,7 +92,7 @@ interface CardSource {
         [id]="(detailPane() ? 'detail-section-' : 'section-') + leafId()"
         [attr.aria-label]="panelLabel()"
         [attr.data-state]="state()"
-        class="mt-0.5 flex scroll-mt-14 gap-2.5 pl-3 pt-1"
+        class="mt-0.5 flex scroll-mt-2 gap-2.5 pl-3 pt-1"
       >
         <div
           data-node

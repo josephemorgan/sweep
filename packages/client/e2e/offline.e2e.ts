@@ -26,27 +26,37 @@ test('checks a task offline and syncs on reconnect', async ({ page, context, run
   await expect(
     leafPanel(page, 'Harrow Village').getByRole('checkbox', { name: 'Pay the ferryman' }),
   ).toBeChecked();
+});
 
-  // The self-hosted display face still loads after an offline reload, served by
-  // the service worker (Review Focus 1, R10).
-  await page.evaluate(async () => {
-    await navigator.serviceWorker.ready;
+test.describe('with the service worker', () => {
+  // The suite blocks service workers (playwright.config.ts); this check needs the real one.
+  test.use({ serviceWorkers: 'allow' });
+
+  test('keeps the self-hosted display font after an offline reload', async ({
+    page,
+    context,
+    runs,
+  }, testInfo) => {
+    // Review Focus 1, R10: fonts are in the ngsw app group, so they load offline.
+    const runId = await runs.create(`Offline font ${testInfo.project.name}`);
+    await page.goto(`/runs/${runId}`);
+    await expect(routeRow(page, 'Harrow Village')).toBeVisible();
+    await page.evaluate(async () => {
+      await navigator.serviceWorker.ready;
+    });
+    await expect
+      .poll(() => page.evaluate(() => navigator.serviceWorker.controller !== null), {
+        timeout: 30_000,
+      })
+      .toBe(true);
+
+    await context.setOffline(true);
+    await page.reload();
+    const loaded = await page.evaluate(async () => {
+      const faces = await document.fonts.load("600 17px 'Bricolage Grotesque'");
+      return faces.length > 0 && faces.every((f) => f.status === 'loaded');
+    });
+    expect(loaded).toBe(true);
+    await context.setOffline(false);
   });
-  await expect
-    .poll(() => page.evaluate(() => navigator.serviceWorker.controller !== null))
-    .toBe(true);
-  await context.setOffline(true);
-  await page.reload();
-  await expect(routeRow(page, 'Harrow Village')).toBeVisible();
-  await page.evaluate(() => document.fonts.ready);
-  const bricolageLoaded = await page.evaluate(() =>
-    [...document.fonts].some(
-      (f) => f.family.replace(/["']/g, '') === 'Bricolage Grotesque' && f.status === 'loaded',
-    ),
-  );
-  expect(bricolageLoaded).toBe(true);
-  expect(await page.evaluate(() => document.fonts.check("600 17px 'Bricolage Grotesque'"))).toBe(
-    true,
-  );
-  await context.setOffline(false);
 });
