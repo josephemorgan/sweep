@@ -50,6 +50,25 @@ test.describe('with the service worker', () => {
         timeout: 30_000,
       })
       .toBe(true);
+    // ngsw prefetches the app group asynchronously after activation; wait until the font is cached.
+    await expect
+      .poll(
+        () =>
+          page.evaluate(async () => {
+            for (const key of await caches.keys()) {
+              const cache = await caches.open(key);
+              const keys = await cache.keys();
+              if (
+                keys.some((r) => decodeURI(new URL(r.url).pathname).includes('BricolageGrotesque'))
+              ) {
+                return true;
+              }
+            }
+            return false;
+          }),
+        { timeout: 30_000 },
+      )
+      .toBe(true);
 
     await context.setOffline(true);
     await page.reload();
