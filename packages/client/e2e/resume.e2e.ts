@@ -1,5 +1,5 @@
 import { writeFileSync } from 'node:fs';
-import { expect, test } from './support/fixtures';
+import { expect, routeRow, routeScrollTop, test } from './support/fixtures';
 import { longGuide } from './support/long-guide';
 
 test('launch reopens the last run scrolled to current, from cache, before the server answers', async ({
@@ -14,11 +14,11 @@ test('launch reopens the last run scrolled to current, from cache, before the se
     runId,
     Array.from({ length: 25 }, (_, i) => `leaf-${i + 1}`),
   );
-  const current = page.getByRole('region', { name: 'Room 26' });
+  const current = routeRow(page, 'Room 26');
   const scrolledToCurrent = async (): Promise<void> => {
     await expect(current).toHaveAttribute('data-state', 'current');
     await expect(current).toBeInViewport();
-    await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(0);
+    await expect.poll(() => routeScrollTop(page)).toBeGreaterThan(0);
   };
 
   await page.goto(`/runs/${runId}`);

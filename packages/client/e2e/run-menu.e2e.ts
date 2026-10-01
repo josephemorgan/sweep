@@ -1,4 +1,4 @@
-import { expect, expectAccessible, test } from './support/fixtures';
+import { expect, expectAccessible, leafPanel, metric, routeRow, test } from './support/fixtures';
 
 test('renames, toggles a category and jumps to a section', async ({ page, runs }, testInfo) => {
   const runId = await runs.create(`Menu ${testInfo.project.name}`);
@@ -16,17 +16,17 @@ test('renames, toggles a category and jumps to a section', async ({ page, runs }
   );
 
   await menu.click();
-  await page.getByRole('button', { name: 'Categories' }).click();
+  await page.getByRole('button', { name: 'Categories', exact: true }).click();
   await expectAccessible(page);
   await page.getByRole('switch', { name: /Side quests/ }).uncheck();
   await page
     .getByRole('dialog', { name: 'Categories' })
     .getByRole('button', { name: 'Close' })
     .click();
+  await expect(leafPanel(page, 'Harrow Village').getByText('Side quests')).toHaveCount(0);
   await expect(
-    page.getByRole('region', { name: 'Harrow Village' }).getByText('Side quests'),
-  ).toHaveCount(0);
-  await expect(page.getByRole('button', { name: 'HERE 2' })).toBeVisible();
+    metric(page.getByRole('navigation', { name: 'Run metrics' }), 'Here', 2),
+  ).toBeVisible();
 
   await menu.click();
   await page.getByRole('button', { name: 'Jump to section' }).click();
@@ -36,8 +36,8 @@ test('renames, toggles a category and jumps to a section', async ({ page, runs }
   await expect(jump.getByRole('button', { name: 'Throne Room' })).toHaveCount(0);
   await expect(jump.getByRole('button', { name: 'Hidden section' })).toHaveCount(1);
   await jump.getByRole('button', { name: 'Epilogue' }).click();
-  await expect(page.getByRole('region', { name: 'Epilogue' })).toBeInViewport();
-  await expect(page.getByRole('button', { name: /Epilogue/ }).first()).toBeFocused();
+  await expect(routeRow(page, 'Epilogue')).toBeInViewport();
+  await expect(routeRow(page, 'Epilogue').getByRole('button').first()).toBeFocused();
 
   await page.goto('/runs');
   await expect(

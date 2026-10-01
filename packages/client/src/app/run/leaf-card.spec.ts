@@ -253,6 +253,19 @@ describe('LeafCard plumbing (route)', () => {
     expect(section.classList.contains('rounded-panel')).toBe(false);
     expect(el.querySelector('.text-lamp.font-display')).not.toBeNull();
   });
+
+  it('positions the panel node above the rail line (R23)', async () => {
+    const { el } = await renderCard('village');
+    expect(el.querySelector('[data-node]')!.classList.contains('relative')).toBe(true);
+  });
+
+  it('draws no rail node on the detail-pane panel (R23)', async () => {
+    const { el, fixture } = await renderCard('village');
+    fixture.componentRef.setInput('detailPane', true);
+    await fixture.whenStable();
+    expect(el.querySelector('section[id="detail-section-village"]')).not.toBeNull();
+    expect(el.querySelector('[data-node]')).toBeNull();
+  });
 });
 
 describe('LeafCard rows (route)', () => {

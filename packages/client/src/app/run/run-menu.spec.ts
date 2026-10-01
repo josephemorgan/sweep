@@ -48,6 +48,33 @@ function accessibleText(root: Element): string {
 }
 
 describe('RunMenu (§5.2 ☰ menu)', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    document.body.querySelector('[data-test-route]')?.remove();
+  });
+
+  it('after a jump on handheld, focuses the route row heading button', async () => {
+    vi.stubGlobal(
+      'matchMedia',
+      vi.fn().mockImplementation((query: string) => ({
+        matches: true,
+        media: query,
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+      })),
+    );
+    const host = document.createElement('div');
+    host.dataset['testRoute'] = '';
+    host.innerHTML =
+      '<aside aria-label="Route"><section id="section-epilogue"><div role="heading"><button type="button">Epilogue</button></div></section></aside>';
+    document.body.append(host);
+    const { openItem, fixture } = await renderMenu();
+    const sheet = await openItem('Jump to section');
+    click(sheet, 'Epilogue');
+    await fixture.whenStable();
+    expect(document.activeElement).toBe(host.querySelector('button'));
+  });
+
   it('jumps to a section and marks current', async () => {
     const { openItem, layout, fixture, el } = await renderMenu();
     const sheet = await openItem('Jump to section');

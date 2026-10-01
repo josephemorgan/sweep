@@ -14,7 +14,7 @@ import { SpoilerText } from './spoiler-text';
   template: `
     <div
       [id]="'section-' + groupId()"
-      class="flex scroll-mt-14 items-center gap-2 pl-[38px] pr-4 pt-4"
+      class="flex scroll-mt-2 items-center gap-2 pl-[38px] pr-4 pt-4"
     >
       <div
         role="heading"

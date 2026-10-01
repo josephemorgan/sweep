@@ -1,6 +1,9 @@
 import { Injectable, inject, signal } from '@angular/core';
 import { RunStore } from './run-store';
 
+/** The 4:3 handheld layout (spec §5.9). */
+export const HANDHELD_QUERY = '(orientation: landscape) and (max-height: 800px)';
+
 /** Page-scoped view state: which cards are expanded, which groups collapsed, where to scroll. */
 @Injectable()
 export class RunLayout {
@@ -10,6 +13,13 @@ export class RunLayout {
   private readonly epochs = signal<ReadonlyMap<string, number>>(new Map());
   private seq = 0;
   readonly scrollRequest = signal<{ id: string; seq: number } | null>(null);
+
+  /** A jump-sheet pick of a leaf; the handheld run page shows it in the detail pane. */
+  readonly jumpedTo = signal<{ id: string; seq: number } | null>(null);
+
+  jumpTo(leafId: string): void {
+    this.jumpedTo.set({ id: leafId, seq: ++this.seq });
+  }
 
   /** §5.2: the current card starts expanded, every other card collapsed; any card can be toggled. */
   isExpanded(leafId: string): boolean {

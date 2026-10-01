@@ -72,8 +72,7 @@ describe('MetricSheet (§5.5)', () => {
       expect(n.getAttribute('aria-label') ?? '').not.toContain(secret);
       expect(n.getAttribute('title') ?? '').not.toContain(secret);
     }
-    // TODO(G3): once Section B's redaction spoiler-text is merged, also assert
-    // el.querySelector('.redaction') is not null (Review Focus 3).
+    expect(el.querySelector('.redaction')).not.toBeNull();
   });
 
   it('heads groups with a muted home label and separates rows with hairlines', async () => {

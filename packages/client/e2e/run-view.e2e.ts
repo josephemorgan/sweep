@@ -1,7 +1,16 @@
 import { writeFileSync } from 'node:fs';
 import { longGuide } from './support/long-guide';
 import type { Locator } from '@playwright/test';
-import { expect, expectAccessible, expectNoHorizontalScroll, test } from './support/fixtures';
+import {
+  expect,
+  expectAccessible,
+  expectNoHorizontalScroll,
+  leafPanel,
+  openLeaf,
+  routeRow,
+  routeScrollTop,
+  test,
+} from './support/fixtures';
 
 /** The category header row of an expanded card, e.g. `Story` ... `1 of 1`. */
 function categoryHeader(card: Locator, name: string): Locator {
@@ -11,10 +20,12 @@ function categoryHeader(card: Locator, name: string): Locator {
 test("checks a task and uses don't care", async ({ page, runs }, testInfo) => {
   const runId = await runs.create(`Tasks ${testInfo.project.name}`);
   await page.goto(`/runs/${runId}`);
-  const village = page.getByRole('region', { name: 'Harrow Village' });
+  const village = leafPanel(page, 'Harrow Village');
   await expect(village.getByRole('button', { name: 'Clear section' })).toBeVisible();
   // §5.2 "On open": the current card is scrolled into view.
-  await expect(village).toBeInViewport();
+  await expect(routeRow(page, 'Harrow Village')).toBeInViewport();
+  // The leaf after current says what opens it.
+  await expect(routeRow(page, 'Whisper Marsh')).toContainText('Opens after Harrow Village');
   await expectAccessible(page);
   await expectNoHorizontalScroll(page);
 
@@ -27,7 +38,7 @@ test("checks a task and uses don't care", async ({ page, runs }, testInfo) => {
   await expect(page.getByText(/unsaved/)).toHaveCount(0);
 
   await page.reload();
-  const reloaded = page.getByRole('region', { name: 'Harrow Village' });
+  const reloaded = leafPanel(page, 'Harrow Village');
   await expect(reloaded.getByRole('checkbox', { name: 'Pay the ferryman' })).toBeChecked();
   await expect(reloaded.getByText("Don't care", { exact: true })).toBeVisible();
 });
@@ -36,8 +47,8 @@ test('makes an exclusive choice and switches it back', async ({ page, runs }, te
   const runId = await runs.create(`Exclusive ${testInfo.project.name}`);
   await runs.clear(runId, ['village', 'marsh', 'keep-gate']);
   await page.goto(`/runs/${runId}`);
-  const west = page.getByRole('region', { name: 'West Tower' });
-  await west.getByRole('button', { name: /West Tower/ }).click();
+  const west = leafPanel(page, 'West Tower');
+  await openLeaf(page, 'West Tower');
   await west.getByRole('checkbox', { name: 'Sunblade' }).check();
   await expect(west.getByRole('checkbox', { name: 'Moonshield' })).toBeDisabled();
   await expect(west.getByText('Not chosen')).toBeVisible();
@@ -107,7 +118,7 @@ test('an expanded card with Markdown links and a not-chosen row is accessible', 
   writeFileSync(file, LINKED_GUIDE);
   const runId = await runs.create(`Links ${testInfo.project.name}`, file);
   await page.goto(`/runs/${runId}`);
-  const hall = page.getByRole('region', { name: 'Great Hall' });
+  const hall = leafPanel(page, 'Great Hall');
   await hall.getByRole('checkbox', { name: 'Axe' }).check();
   await hall.getByRole('button', { name: 'Bow', exact: true }).click();
   await hall.getByText('Walkthrough').click();
@@ -130,13 +141,25 @@ test('opens on the current card below the fold, and a group walkthrough sheet is
     Array.from({ length: 25 }, (_, i) => `leaf-${i + 1}`),
   );
   await page.goto(`/runs/${runId}`);
-  const current = page.getByRole('region', { name: 'Room 26' });
+  const current = leafPanel(page, 'Room 26');
   await expect(current.getByRole('button', { name: 'Clear section' })).toBeVisible();
-  await expect(current).toBeInViewport();
-  await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(0);
+  await expect(routeRow(page, 'Room 26')).toBeInViewport();
+  await expect.poll(() => routeScrollTop(page)).toBeGreaterThan(0);
   await expectNoHorizontalScroll(page);
 
   await page.getByRole('button', { name: 'Walkthrough for Chapter One' }).click();
   await expect(page.getByRole('dialog')).toContainText('Start at the first room');
+  await expectAccessible(page);
+});
+
+test('a spoiler task is redacted until tapped', async ({ page, runs }, testInfo) => {
+  const runId = await runs.create(`Spoiler ${testInfo.project.name}`);
+  await runs.clear(runId, ['village', 'marsh', 'keep-gate', 'east-tower', 'west-tower']);
+  await page.goto(`/runs/${runId}`);
+  const throne = leafPanel(page, 'Throne Room');
+  await expect(throne.getByRole('checkbox', { name: "The keeper's lantern" })).toHaveCount(0);
+  await expect(throne.locator('.redaction').first()).toBeVisible();
+  await throne.getByRole('button', { name: /Tap to reveal/ }).click();
+  await expect(throne.getByText("The keeper's lantern").first()).toBeVisible();
   await expectAccessible(page);
 });

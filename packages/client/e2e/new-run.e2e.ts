@@ -4,6 +4,7 @@ import {
   expect,
   expectAccessible,
   expectNoHorizontalScroll,
+  routeRow,
   test,
 } from './support/fixtures';
 
@@ -33,10 +34,10 @@ test('uploads Lantern Keep, shows the report and creates a run', async ({
   await page.getByRole('button', { name: 'Create' }).click();
   await expect(page).toHaveURL(/\/runs\/[0-9a-f-]{36}$/);
   await expect(page.getByRole('heading', { level: 1, name: runName })).toBeVisible();
-  await expect(page.getByRole('region', { name: 'Harrow Village' })).toBeVisible();
+  await expect(routeRow(page, 'Harrow Village')).toBeVisible();
   await page.goto('/runs');
   await expect(page.getByRole('link', { name: new RegExp(runName) })).toContainText(
-    '0/7 sections cleared',
+    '0 of 7 cleared',
   );
 });
 

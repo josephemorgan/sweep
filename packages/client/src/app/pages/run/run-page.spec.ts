@@ -1,9 +1,13 @@
+import type { DebugElement } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { SheetStack } from '../../shared/sheet-stack';
 import { Toasts } from '../../shared/toasts';
 import { RUN_ID, lanternKeepPayload } from '../../../testing/lantern-keep';
 import { ResumeCache } from '../../run/resume-cache';
 import { setupRunStore } from '../../../testing/run-store-harness';
+import { By } from '@angular/platform-browser';
+import { SectionList } from '../../run/section-list';
+import { RunLayout } from '../../run/run-layout';
 import { RunPage } from './run-page';
 
 async function renderPage(progress = {}) {
@@ -327,5 +331,148 @@ describe('RunPage update guide (§5.8)', () => {
     expect(
       (vi.mocked(Element.prototype.scrollIntoView).mock.contexts.at(-1) as HTMLElement).id,
     ).toBe(`section-${current}`);
+  });
+
+  describe('layouts', () => {
+    function stubMedia(matches: boolean): void {
+      vi.stubGlobal(
+        'matchMedia',
+        vi.fn().mockImplementation((query: string) => ({
+          matches,
+          media: query,
+          addEventListener: vi.fn(),
+          removeEventListener: vi.fn(),
+        })),
+      );
+    }
+    afterEach(() => vi.unstubAllGlobals());
+    const title = (el: HTMLElement): string | undefined =>
+      el.querySelector('[id^="detail-section-"] [role="heading"]')?.textContent?.trim();
+
+    it('phone: no aside, list without detail pane, bar after main', async () => {
+      stubMedia(false);
+      const { el } = await renderPage({ cleared: ['village'] });
+      expect(el.querySelector('aside')).toBeNull();
+      const main = el.querySelector('main')!;
+      expect(main.classList).not.toContain('max-w-[720px]');
+      // The rows carry their own padding and the rail sits at 19px: the list is flush.
+      expect(main.classList).not.toContain('px-3');
+      expect(main.querySelector('app-bottom-bar')).toBeNull();
+      expect(main.nextElementSibling?.tagName.toLowerCase()).toBe('app-bottom-bar');
+      expect(el.querySelector('header app-bottom-bar')).toBeNull();
+    });
+
+    it('handheld: route aside, detail pane following current, selection and snap back', async () => {
+      stubMedia(true);
+      const { el, fixture, store } = await renderPage({ cleared: ['village'] });
+      const aside = el.querySelector('aside[aria-label="Route"]')!;
+      expect(aside.classList).toContain('w-[340px]');
+      expect(el.querySelector('main')!.contains(aside)).toBe(true);
+      expect(el.querySelector('header app-bottom-bar')).not.toBeNull();
+      expect(title(el)).toContain('Marsh');
+      const current = store.view()!.current!;
+      expect(current).toBe('marsh');
+      const row = aside.querySelector<HTMLButtonElement>('#section-village button')!;
+      row.click();
+      await fixture.whenStable();
+      expect(title(el)).toContain('Harrow Village');
+      store.setCleared('marsh', true);
+      await fixture.whenStable();
+      const next = store.view()!.current!;
+      expect(next).not.toBe('village');
+      expect(el.querySelector(`#detail-section-${next}`)).not.toBeNull();
+    });
+
+    it('handheld: keeps the selected leaf when a task on it changes and current stays put', async () => {
+      stubMedia(true);
+      const { el, fixture, store } = await renderPage({ cleared: ['village'] });
+      el.querySelector<HTMLButtonElement>('aside #section-village button')!.click();
+      await fixture.whenStable();
+      store.setTaskState('lost-cat', 'done');
+      await fixture.whenStable();
+      expect(store.view()!.current).toBe('marsh');
+      expect(title(el)).toContain('Harrow Village');
+    });
+
+    it('handheld: the route aside never scrolls sideways', async () => {
+      stubMedia(true);
+      const { el } = await renderPage();
+      const aside = el.querySelector('aside[aria-label="Route"]')!;
+      expect(aside.classList).toContain('overflow-y-auto');
+      expect(aside.classList).toContain('overflow-x-hidden');
+    });
+
+    it('handheld: a guide update that removes the selected leaf falls back to current, no throw', async () => {
+      stubMedia(true);
+      const { el, fixture, store, api } = await renderPage({ cleared: ['village'] });
+      el.querySelector<HTMLButtonElement>('aside #section-keep-gate button')!.click();
+      await fixture.whenStable();
+      expect(title(el)).toContain('Keep Gate');
+      const payload = lanternKeepPayload({ cleared: ['village'] });
+      const act2 = payload.guide.sections.find((s) => s.id === 'act-2')!;
+      const without = {
+        ...payload.guide,
+        sections: payload.guide.sections.map((s) =>
+          s.id === 'act-2'
+            ? { ...act2, children: act2.children.filter((c) => c.id !== 'keep-gate') }
+            : s,
+        ),
+        tasks: payload.guide.tasks.filter((t) => !JSON.stringify(t).includes('keep-gate')),
+      };
+      api.getRun.mockResolvedValue({ ...payload, guide: without });
+      await store.refetch();
+      await fixture.whenStable();
+      expect(store.index()?.sections.has('keep-gate')).toBe(false);
+      expect(store.view()!.current).toBe('marsh');
+      expect(el.querySelector('#detail-section-marsh')).not.toBeNull();
+    });
+
+    it('handheld: a layout jump to a leaf shows it in the detail pane', async () => {
+      stubMedia(true);
+      const { el, fixture } = await renderPage({ cleared: ['village'] });
+      expect(title(el)).toContain('Marsh');
+      fixture.debugElement.injector.get(RunLayout).jumpTo('keep-gate');
+      await fixture.whenStable();
+      expect(el.querySelector('#detail-section-keep-gate')).not.toBeNull();
+    });
+
+    it('binds section-list detailPane by layout', async () => {
+      const detailPane = (fixture: { debugElement: DebugElement }): unknown =>
+        fixture.debugElement.query(By.directive(SectionList)).componentInstance.detailPane();
+      stubMedia(true);
+      expect(detailPane((await renderPage()).fixture)).toBe(true);
+      TestBed.resetTestingModule();
+      stubMedia(false);
+      expect(detailPane((await renderPage()).fixture)).toBe(false);
+    });
+
+    it('handheld: after a clear, focus lands on the new current route row, not a Clear button', async () => {
+      stubMedia(true);
+      const { el, fixture, store } = await renderPage({ cleared: ['village'] });
+      document.body.append(el);
+      fixture.componentInstance.requestClear('marsh');
+      await fixture.whenStable();
+      const confirm = [...document.querySelectorAll<HTMLButtonElement>('button')].find(
+        (b) => b.textContent?.trim() === 'Clear anyway',
+      );
+      confirm?.click();
+      await fixture.whenStable();
+      const next = store.view()!.current!;
+      await vi.waitFor(() => {
+        const active = document.activeElement as HTMLElement;
+        expect(active).toBe(el.querySelector(`aside #section-${next} [role="heading"] button`));
+      });
+      expect((document.activeElement as HTMLElement).textContent).not.toContain('Clear');
+      el.remove();
+    });
+
+    it('handheld: no duplicate ids', async () => {
+      stubMedia(true);
+      const { el } = await renderPage({ cleared: ['village'] });
+      const ids = [...el.querySelectorAll('[id]')].map((n) => n.id);
+      expect(ids.length).toBeGreaterThan(0);
+      expect(new Set(ids).size).toBe(ids.length);
+      expect(el.querySelector('#detail-section-marsh')).not.toBeNull();
+    });
   });
 });

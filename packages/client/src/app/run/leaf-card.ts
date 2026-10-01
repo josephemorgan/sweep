@@ -43,7 +43,7 @@ interface CardSource {
         [id]="'section-' + leafId()"
         [attr.aria-label]="blurred() ? 'Hidden section' : leaf().title"
         [attr.data-state]="state()"
-        class="scroll-mt-14"
+        class="scroll-mt-2"
         [class]="cardClasses()"
       >
         <div role="heading" [attr.aria-level]="level()">
@@ -89,19 +89,22 @@ interface CardSource {
       </section>
     } @else {
       <section
-        [id]="'section-' + leafId()"
+        [id]="(detailPane() ? 'detail-section-' : 'section-') + leafId()"
         [attr.aria-label]="panelLabel()"
         [attr.data-state]="state()"
-        class="mt-0.5 flex scroll-mt-14 gap-2.5 pl-3 pt-1"
+        class="mt-0.5 flex scroll-mt-2 gap-2.5 pl-3 pt-1"
       >
-        <div
-          data-node
-          aria-hidden="true"
-          class="flex w-4 shrink-0 justify-center"
-          [class]="node() === 'lamp' ? 'pt-4' : 'pt-[19px]'"
-        >
-          <ng-container [ngTemplateOutlet]="nodeTpl" />
-        </div>
+        @if (!detailPane()) {
+          <!-- relative: paint the node above section-list's absolutely positioned rail line. -->
+          <div
+            data-node
+            aria-hidden="true"
+            class="relative flex w-4 shrink-0 justify-center"
+            [class]="node() === 'lamp' ? 'pt-4' : 'pt-[19px]'"
+          >
+            <ng-container [ngTemplateOutlet]="nodeTpl" />
+          </div>
+        }
         <div
           class="flex min-w-0 grow flex-col gap-2 rounded-l-panel bg-surface-raised px-4 py-3 pl-3.5"
         >

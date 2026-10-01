@@ -112,7 +112,7 @@ describe('ClearDialog (§5.4)', () => {
     const { el, accessibleText, attributeNames } = await renderDialog('throne-room', {
       cleared: ['village', 'marsh', 'keep-gate', 'east-tower', 'west-tower'],
     });
-    // TODO(G3): assert a .redaction bar once Section B's spoiler-text lands
+    expect(el.querySelector('ul .redaction')).not.toBeNull();
     expect(accessibleText()).not.toContain("The keeper's lantern");
     expect(attributeNames()).not.toContain("The keeper's lantern");
     expect(el.textContent).toContain("The keeper's lantern");

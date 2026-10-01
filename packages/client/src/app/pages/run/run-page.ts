@@ -1,5 +1,6 @@
 import {
   Component,
+  DestroyRef,
   DOCUMENT,
   Injector,
   afterNextRender,
@@ -8,6 +9,7 @@ import {
   forwardRef,
   inject,
   input,
+  linkedSignal,
   signal,
   untracked,
 } from '@angular/core';
@@ -23,10 +25,11 @@ import { ClearDialog } from '../../run/clear-dialog';
 import { lockReason } from '../../run/lock-reason';
 import { Reveals } from '../../run/reveals';
 import { RunActions } from '../../run/run-actions';
-import { RunLayout } from '../../run/run-layout';
+import { HANDHELD_QUERY, RunLayout } from '../../run/run-layout';
 import { RunMenu } from '../../run/run-menu';
 import { RunStore } from '../../run/run-store';
 import { UpdateGuideSheet } from '../../run/update-guide-sheet';
+import { LeafCard } from '../../run/leaf-card';
 import { SectionList } from '../../run/section-list';
 import { sectionLabel } from '../../run/spoiler';
 
@@ -35,6 +38,7 @@ import { sectionLabel } from '../../run/spoiler';
   imports: [
     RouterLink,
     SectionList,
+    LeafCard,
     UnsavedBadge,
     BottomBar,
     ClearDialog,
@@ -45,9 +49,9 @@ import { sectionLabel } from '../../run/spoiler';
   ],
   providers: [RunLayout, { provide: RunActions, useExisting: forwardRef(() => RunPage) }],
   template: `
-    <div class="flex min-h-dvh flex-col">
+    <div class="flex h-dvh flex-col">
       <header
-        class="sticky top-0 z-20 flex h-14 items-center gap-1 border-b border-rule bg-surface pl-1 pr-2 pt-1.5"
+        class="z-20 flex h-14 shrink-0 items-center gap-1 border-b border-rule bg-surface pl-1 pr-2 pt-1.5 handheld:h-[52px] handheld:border-b-0 handheld:pt-0"
       >
         <a
           routerLink="/runs"
@@ -78,37 +82,72 @@ import { sectionLabel } from '../../run/spoiler';
             </p>
           }
         </div>
+        @if (handheld()) {
+          <app-bottom-bar [compact]="true" />
+        }
         <app-unsaved-badge />
         <app-run-menu (updateGuide)="updating.set(true)" />
       </header>
-      <main class="mx-auto w-full max-w-[720px] flex-1 px-3 pb-2 pt-2">
+      @if (store.view() && handheld()) {
+        <main class="flex grow overflow-hidden">
+          <aside
+            aria-label="Route"
+            class="relative w-[340px] shrink-0 overflow-y-auto overflow-x-hidden border-r border-rule"
+          >
+            @if (store.guide(); as guide) {
+              <app-section-list
+                [sections]="guide.sections"
+                [depth]="0"
+                [detailPane]="true"
+                (selectLeaf)="selectedLeaf.set($event)"
+              />
+            }
+          </aside>
+          <section class="min-w-0 grow overflow-y-auto px-6 py-3">
+            @if (store.offline()) {
+              <p
+                class="m-0 mx-3 mb-2 rounded-control border border-border px-3 py-2 text-sm text-fg-muted"
+              >
+                Offline. Showing the last saved copy; changes are queued.
+              </p>
+            }
+            @if (detailLeaf(); as leafId) {
+              <app-leaf-card variant="panel" [detailPane]="true" [columns]="2" [leafId]="leafId" />
+            }
+          </section>
+        </main>
+      } @else {
+        <main class="grow overflow-y-auto pb-2 pt-2">
+          @if (store.view()) {
+            @if (store.offline()) {
+              <p
+                class="m-0 mx-3 mb-2 rounded-control border border-border px-3 py-2 text-sm text-fg-muted"
+              >
+                Offline. Showing the last saved copy; changes are queued.
+              </p>
+            }
+            @if (store.guide(); as guide) {
+              <app-section-list [sections]="guide.sections" [depth]="0" [detailPane]="false" />
+            }
+          } @else {
+            @switch (store.status()) {
+              @case ('not-found') {
+                <p>This run no longer exists.</p>
+              }
+              @case ('failed') {
+                <p role="alert" class="text-missed">Couldn't load this run.</p>
+                <button type="button" class="btn" (click)="store.refetch()">Try again</button>
+              }
+              @default {
+                <p class="text-fg-muted">Loading run…</p>
+              }
+            }
+          }
+        </main>
         @if (store.view()) {
-          @if (store.offline()) {
-            <p
-              class="m-0 mb-2 rounded-control border border-border px-3 py-2 text-sm text-fg-muted"
-            >
-              Offline. Showing the last saved copy; changes are queued.
-            </p>
-          }
-          @if (store.guide(); as guide) {
-            <app-section-list [sections]="guide.sections" [depth]="0" />
-          }
           <app-bottom-bar />
-        } @else {
-          @switch (store.status()) {
-            @case ('not-found') {
-              <p>This run no longer exists.</p>
-            }
-            @case ('failed') {
-              <p role="alert" class="text-missed">Couldn't load this run.</p>
-              <button type="button" class="btn" (click)="store.refetch()">Try again</button>
-            }
-            @default {
-              <p class="text-fg-muted">Loading run…</p>
-            }
-          }
         }
-      </main>
+      }
       <app-sheet
         [heading]="clearHeading()"
         [open]="pendingClear() !== null"
@@ -149,8 +188,26 @@ export class RunPage implements RunActions {
   private readonly injector = inject(Injector);
   private scrolledFor: string | null = null;
 
+  /** The 4:3 handheld layout (spec §5.9); one layout renders at a time. */
+  protected readonly handheld = signal(false);
+  /** R5: the leaf shown in the detail pane; snaps back to current whenever current changes. */
+  private readonly current = computed(() => this.store.view()?.current ?? null);
+  protected readonly selectedLeaf = linkedSignal<string | null>(() => this.current());
+  /** A selection that a guide update removed would crash the card, so fall back to current. */
+  protected readonly detailLeaf = computed(() => {
+    const id = this.selectedLeaf();
+    return id && this.store.index()?.sections.has(id) ? id : this.current();
+  });
+
   constructor() {
     const title = inject(Title);
+    const query = this.doc.defaultView?.matchMedia?.(HANDHELD_QUERY);
+    if (query) {
+      this.handheld.set(query.matches);
+      const onChange = (e: MediaQueryListEvent): void => this.handheld.set(e.matches);
+      query.addEventListener?.('change', onChange);
+      inject(DestroyRef).onDestroy(() => query.removeEventListener?.('change', onChange));
+    }
     effect(() => {
       const id = this.runId();
       untracked(() => void this.store.open(id));
@@ -167,6 +224,11 @@ export class RunPage implements RunActions {
       this.scrolledFor = id;
       const current = view.current;
       if (current) untracked(() => this.layout.scrollTo(current));
+    });
+    // The jump sheet picked a leaf: show it in the handheld detail pane.
+    effect(() => {
+      const jump = this.layout.jumpedTo();
+      if (jump) untracked(() => this.selectedLeaf.set(jump.id));
     });
     effect(() => {
       const request = this.layout.scrollRequest();
@@ -232,7 +294,8 @@ export class RunPage implements RunActions {
   /** §5.8: the new guide version is in; close the sheet and return to the current card. */
   protected onUpdated(): void {
     this.updating.set(false);
-    const current = this.store.view()?.current;
+    const current = this.store.view()?.current ?? null;
+    this.selectedLeaf.set(current);
     if (current) this.layout.scrollTo(current);
   }
 
@@ -283,10 +346,12 @@ export class RunPage implements RunActions {
   /** The clicked button vanishes when its card collapses, so focus would fall to <body>. */
   private focusHeader(sectionId: string): void {
     afterNextRender(
-      () =>
-        this.doc
-          .querySelector<HTMLElement>(`#section-${sectionId} button[aria-expanded]`)
-          ?.focus({ preventScroll: true }),
+      () => {
+        const selector = this.handheld()
+          ? `aside #section-${sectionId} [role="heading"] button`
+          : `#section-${sectionId} button[aria-expanded]`;
+        this.doc.querySelector<HTMLElement>(selector)?.focus({ preventScroll: true });
+      },
       { injector: this.injector },
     );
   }

@@ -107,8 +107,10 @@ export class JumpSheet {
   }
 
   protected jump(section: Section): void {
-    if (section.children.length === 0) this.layout.setExpanded(section.id, true);
-    else this.layout.setCollapsed(section.id, false);
+    if (section.children.length === 0) {
+      this.layout.setExpanded(section.id, true);
+      this.layout.jumpTo(section.id);
+    } else this.layout.setCollapsed(section.id, false);
     this.layout.scrollTo(section.id);
     this.jumped.emit(section.id);
   }

@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import AxeBuilder from '@axe-core/playwright';
-import { expect, test as base, type Page } from '@playwright/test';
+import { expect, test as base, type Locator, type Page } from '@playwright/test';
 import { BASE_URL, storageStatePath, userEmail } from './e2e-env';
 import { createUser, sessionIsValid, signInToFile } from './seed-user';
 
@@ -88,6 +88,54 @@ export async function expectAccessible(page: Page): Promise<void> {
   expect(
     results.violations.map((v) => `${v.id}: ${v.nodes.map((n) => n.target.join(' ')).join(' | ')}`),
   ).toEqual([]);
+}
+
+const escapeRegExp = (text: string): string => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+function isHandheld(page: Page): boolean {
+  return page.viewportSize()!.width >= 1000;
+}
+
+function titled(title: string): RegExp {
+  return new RegExp(`^${escapeRegExp(title)}(, current)?$`);
+}
+
+/** A leaf's row in the route list (phone: the card itself, expanded or not). Matches "X" and "X, current". */
+export function routeRow(page: Page, title: string): Locator {
+  return page
+    .locator('section[id^="section-"]')
+    .and(page.getByRole('region', { name: titled(title) }));
+}
+
+/** The leaf's task panel: the detail pane on handheld, the expanded card on phone. */
+export function leafPanel(page: Page, title: string): Locator {
+  if (!isHandheld(page)) return routeRow(page, title);
+  return page
+    .locator('section[id^="detail-section-"]')
+    .and(page.getByRole('region', { name: titled(title) }));
+}
+
+/** Opens a leaf (expands its card on phone, selects it in the route pane on handheld) and returns its panel. */
+export async function openLeaf(page: Page, title: string): Promise<Locator> {
+  await routeRow(page, title)
+    .getByRole('button', { name: new RegExp(escapeRegExp(title)) })
+    .first()
+    .click();
+  return leafPanel(page, title);
+}
+
+/** A metric button, named "Here 3" in both bars. */
+export function metric(bar: Locator, label: string, count: number): Locator {
+  return bar.getByRole('button', { name: new RegExp(`^${label} ${count}$`) });
+}
+
+/** How far the route list has scrolled: the Route pane on handheld, `main` on phone (the page itself never scrolls). */
+export function routeScrollTop(page: Page): Promise<number> {
+  return page.evaluate(() => {
+    const el =
+      document.querySelector('aside[aria-label="Route"]') ?? document.querySelector('main');
+    return el?.scrollTop ?? 0;
+  });
 }
 
 /** Spec §5.9: never a horizontal page scroll. */

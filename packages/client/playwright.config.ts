@@ -17,6 +17,7 @@ export default defineConfig({
   forbidOnly: ci,
   retries: ci ? 1 : 0,
   reporter: ci ? [['github'], ['html', { open: 'never' }]] : [['list']],
+  expect: { toHaveScreenshot: { maxDiffPixelRatio: 0.01, animations: 'disabled' } },
   use: {
     baseURL: BASE_URL,
     browserName: 'chromium',
