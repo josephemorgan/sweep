@@ -1,6 +1,12 @@
 import { writeFileSync } from 'node:fs';
 import { longGuide } from './support/long-guide';
+import type { Locator } from '@playwright/test';
 import { expect, expectAccessible, expectNoHorizontalScroll, test } from './support/fixtures';
+
+/** The category header row of an expanded card, e.g. `Story` ... `1 of 1`. */
+function categoryHeader(card: Locator, name: string): Locator {
+  return card.locator('[data-category-header]').filter({ hasText: name });
+}
 
 test("checks a task and uses don't care", async ({ page, runs }, testInfo) => {
   const runId = await runs.create(`Tasks ${testInfo.project.name}`);
@@ -13,11 +19,11 @@ test("checks a task and uses don't care", async ({ page, runs }, testInfo) => {
   await expectNoHorizontalScroll(page);
 
   await village.getByRole('checkbox', { name: 'Pay the ferryman' }).check();
-  await expect(village.getByText('Story 1/1')).toBeVisible();
+  await expect(categoryHeader(village, 'Story').getByText('1 of 1')).toBeVisible();
   await village.getByRole('button', { name: 'More actions for Chest behind the mill' }).click();
   await page.getByRole('button', { name: "Don't care" }).click();
   await expect(village.getByText("Don't care", { exact: true })).toBeVisible();
-  await expect(village.getByText('Loot 0/0')).toBeVisible();
+  await expect(categoryHeader(village, 'Loot').getByText('0 of 0')).toBeVisible();
   await expect(page.getByText(/unsaved/)).toHaveCount(0);
 
   await page.reload();
@@ -35,13 +41,13 @@ test('makes an exclusive choice and switches it back', async ({ page, runs }, te
   await west.getByRole('checkbox', { name: 'Sunblade' }).check();
   await expect(west.getByRole('checkbox', { name: 'Moonshield' })).toBeDisabled();
   await expect(west.getByText('Not chosen')).toBeVisible();
-  await expect(west.getByText('Loot 1/1')).toBeVisible();
+  await expect(categoryHeader(west, 'Loot').getByText('1 of 1')).toBeVisible();
   // An expanded card with Markdown links and a not-chosen row, at both viewports.
   await expectAccessible(page);
   await expectNoHorizontalScroll(page);
   await west.getByRole('checkbox', { name: 'Sunblade' }).uncheck();
   await expect(west.getByRole('checkbox', { name: 'Moonshield' })).toBeEnabled();
-  await expect(west.getByText('Loot 0/2')).toBeVisible();
+  await expect(categoryHeader(west, 'Loot').getByText('0 of 2')).toBeVisible();
 });
 
 test('shows a long run name truncated in the top bar without horizontal scroll', async ({

@@ -6,7 +6,12 @@ import { LeafCard } from './leaf-card';
 import { RunActions } from './run-actions';
 import { RunLayout } from './run-layout';
 
-async function renderCard(leafId: string, progress = {}, guide?: Guide) {
+async function renderCard(
+  leafId: string,
+  progress = {},
+  guide?: Guide,
+  variant: 'row' | 'panel' = 'panel',
+) {
   const actions = { requestClear: vi.fn(), requestPin: vi.fn(), unpin: vi.fn() };
   const harness = await setupRunStore(progress, [
     RunLayout,
@@ -18,6 +23,7 @@ async function renderCard(leafId: string, progress = {}, guide?: Guide) {
   }
   const fixture = TestBed.createComponent(LeafCard);
   fixture.componentRef.setInput('leafId', leafId);
+  fixture.componentRef.setInput('variant', variant);
   await fixture.whenStable();
   const el = fixture.nativeElement as HTMLElement;
   const button = (name: string): HTMLButtonElement | undefined =>
@@ -25,17 +31,22 @@ async function renderCard(leafId: string, progress = {}, guide?: Guide) {
   return { ...harness, fixture, el, actions, button, layout: TestBed.inject(RunLayout) };
 }
 
+const categoryHeaders = (el: HTMLElement): string[] =>
+  [...el.querySelectorAll('[data-category-header]')].map((h) =>
+    [...h.children].map((c) => c.textContent?.trim()).join(' '),
+  );
+
 describe('LeafCard (§5.2)', () => {
   it('expands the current card with counts, walkthrough and actions', async () => {
     const { el, button, actions } = await renderCard('village');
-    expect(el.querySelector('section')?.getAttribute('aria-label')).toBe('Harrow Village');
+    expect(el.querySelector('section')?.getAttribute('aria-label')).toBe('Harrow Village, current');
     expect(el.querySelector('section')?.getAttribute('data-state')).toBe('current');
     expect(el.textContent).toContain('3 open');
     expect(el.textContent).toContain('Stock up and find passage across the river.');
-    const summaries = [...el.querySelectorAll('details > summary')].map((s) =>
-      s.textContent?.replace(/\s+/g, ' ').trim(),
+    expect(categoryHeaders(el)).toEqual(['Story 0 of 1', 'Loot 0 of 1', 'Side quests 0 of 1']);
+    expect([...el.querySelectorAll('details > summary')].map((s) => s.textContent?.trim())).toEqual(
+      ['Walkthrough'],
     );
-    expect(summaries).toEqual(['Walkthrough', 'Story 0/1', 'Loot 0/1', 'Side quests 0/1']);
     expect((el.querySelector('details') as HTMLDetailsElement).open).toBe(false);
     button('Clear section')!.click();
     button("I'm here")!.click();
@@ -56,7 +67,7 @@ describe('LeafCard (§5.2)', () => {
     (el.querySelector('input[aria-label="Pay the ferryman"]') as HTMLInputElement).click();
     await fixture.whenStable();
     expect(store.view()?.tasks.get('ferry-passage')).toEqual({ kind: 'done' });
-    expect(el.textContent).toContain('Story 1/1');
+    expect(categoryHeaders(el)[0]).toBe('Story 1 of 1');
   });
 
   it('keeps a resolved 2nd-chance row until the card collapses (§5.3)', async () => {
@@ -162,7 +173,7 @@ describe('LeafCard (§5.2)', () => {
   it('shows a cleared card collapsed and struck through', async () => {
     const { el, button } = await renderCard('village', { cleared: ['village'] });
     expect(el.querySelector('section')?.getAttribute('data-state')).toBe('cleared');
-    expect(el.querySelector('section > div button')?.getAttribute('aria-expanded')).toBe('false');
+    expect(el.querySelector('[role=heading] button')?.getAttribute('aria-expanded')).toBe('false');
     expect(el.querySelector('.line-through')?.textContent).toContain('Harrow Village');
     expect(button('Reopen section')).toBeUndefined();
   });
@@ -178,15 +189,12 @@ describe('LeafCard (§5.2)', () => {
 
   it('leaves untracked categories off the card', async () => {
     const { el } = await renderCard('village', { tracked: { quests: false } });
-    const summaries = [...el.querySelectorAll('details > summary')].map((s) =>
-      s.textContent?.replace(/\s+/g, ' ').trim(),
-    );
-    expect(summaries).toEqual(['Walkthrough', 'Story 0/1', 'Loot 0/1']);
+    expect(categoryHeaders(el)).toEqual(['Story 0 of 1', 'Loot 0 of 1']);
   });
 
   it('points the disclosure at the expanded body', async () => {
     const { el, layout, fixture } = await renderCard('village');
-    const toggle = el.querySelector('section > div button') as HTMLButtonElement;
+    const toggle = el.querySelector('[role=heading] button') as HTMLButtonElement;
     const id = toggle.getAttribute('aria-controls');
     expect(id).toBeTruthy();
     expect(el.querySelector(`#${id}`)).not.toBeNull();
@@ -195,10 +203,310 @@ describe('LeafCard (§5.2)', () => {
     expect(toggle.getAttribute('aria-controls')).toBeNull();
   });
 
-  it('blurs a hidden section title with the shared blur strength', async () => {
+  it('redacts a hidden section title with a bar and keeps the text out of the name', async () => {
     const { el } = await renderCard('throne-room');
-    expect(el.querySelector('section > div button span[aria-hidden]')?.className).toContain(
-      'blur-md',
+    const header = el.querySelector('[role=heading] button')!;
+    expect(header.querySelector('.redaction')).not.toBeNull();
+    expect(header.textContent).toContain('tap to reveal');
+    expect(el.querySelector('section')!.getAttribute('aria-label')).toBe('Hidden section');
+    expect(header.querySelector('.blur-md')).toBeNull();
+  });
+
+  it('keeps the hint out of the toggle name and labels the locked overview as a section spoiler', async () => {
+    const { el, fixture, layout } = await renderCard('throne-room');
+    const toggle = el.querySelector('[role=heading] button')!;
+    const hint = [...toggle.querySelectorAll('span')].find(
+      (n) => n.textContent === 'tap to reveal',
+    )!;
+    expect(hint.getAttribute('aria-hidden')).toBe('true');
+    layout.setExpanded('throne-room', true);
+    await fixture.whenStable();
+    expect(el.querySelector('p button')?.getAttribute('aria-label')).toBe(
+      'Hidden spoiler section. Tap to reveal.',
     );
+  });
+});
+
+describe('LeafCard plumbing (route)', () => {
+  it('shows the hint in place of the lock text', async () => {
+    const { el, fixture } = await renderCard('epilogue', {}, undefined, 'row');
+    fixture.componentRef.setInput('hint', 'Opens after Somewhere');
+    await fixture.whenStable();
+    expect(el.textContent).toContain('Opens after Somewhere');
+    expect(el.textContent).not.toContain('Requires:');
+    expect(el.querySelector('[data-hint]')!.className).toContain('text-fg-muted');
+  });
+
+  it('with detailPane, header click emits select and does not expand; selected is highlighted', async () => {
+    const { el, fixture, layout } = await renderCard('marsh', {}, undefined, 'row');
+    const selected: unknown[] = [];
+    fixture.componentInstance.select.subscribe(() => selected.push(true));
+    fixture.componentRef.setInput('detailPane', true);
+    fixture.componentRef.setInput('selected', true);
+    await fixture.whenStable();
+    (el.querySelector('button') as HTMLButtonElement).click();
+    expect(selected.length).toBe(1);
+    expect(layout.isExpanded('marsh')).toBe(false);
+    const section = el.querySelector('section')!;
+    expect(section.className).toContain('bg-surface-raised');
+    expect(section.className).toContain('rounded-l-panel');
+    expect(section.classList.contains('rounded-panel')).toBe(false);
+    expect(el.querySelector('.text-lamp.font-display')).not.toBeNull();
+  });
+});
+
+describe('LeafCard rows (route)', () => {
+  const node = (el: HTMLElement): HTMLElement => el.querySelector('[data-node] > span')!;
+  const row = (el: HTMLElement): HTMLElement => el.querySelector('[role=heading] button')!;
+
+  it('renders a cleared leaf as a 36 px struck-through row with the cleared dot', async () => {
+    const { el } = await renderCard('village', { cleared: ['village'] }, undefined, 'row');
+    expect(row(el).className).toContain('h-9');
+    expect(row(el).className).toContain('text-fg-cleared');
+    expect(el.querySelector('.line-through')!.className).toContain('decoration-rail-dot');
+    const n = node(el);
+    expect(n.className).toContain('bg-rail-dot');
+    expect(n.className).toContain('size-2');
+    expect(n.className).toContain('rounded-full');
+    expect(el.querySelector('[data-node]')!.getAttribute('aria-hidden')).toBe('true');
+    expect(el.querySelector('details')).toBeNull();
+  });
+
+  it('renders an unlocked leaf with a solid ring and its open count', async () => {
+    const { el } = await renderCard(
+      'west-tower',
+      { cleared: ['village', 'marsh', 'keep-gate'] },
+      undefined,
+      'row',
+    );
+    expect(row(el).className).toContain('min-h-11');
+    expect(node(el).className).toContain('border-rail-ring');
+    expect(node(el).className).toContain('border-solid');
+    expect(node(el).className).not.toContain('border-dashed');
+    expect(row(el).className).toContain('gap-2.5');
+    expect(row(el).className).toContain('pl-3');
+    expect(row(el).className).toContain('pr-4');
+    const count = [...el.querySelectorAll('span')].find((n) =>
+      / open$/.test(n.textContent!.trim()),
+    );
+    expect(count?.className).toContain('text-[13px]');
+    expect(count?.className).toContain('text-open');
+  });
+
+  it('renders a locked leaf with a dashed ring, muted text and the reason line', async () => {
+    const { el } = await renderCard('epilogue', {}, undefined, 'row');
+    expect(node(el).className).toContain('border-dashed');
+    expect(row(el).className).toContain('text-fg-muted');
+    expect(row(el).textContent).toContain('Locked:');
+    expect(row(el).textContent).toContain('Requires: a hidden section');
+    expect(el.querySelector('svg')).toBeNull();
+  });
+
+  it('shows the hint under the title of a next row', async () => {
+    const { el, fixture } = await renderCard('epilogue', {}, undefined, 'row');
+    fixture.componentRef.setInput('hint', 'Opens after Somewhere');
+    await fixture.whenStable();
+    expect(el.querySelector('[data-hint]')!.className).toContain('text-xs');
+    expect(row(el).textContent).not.toContain('Requires:');
+  });
+
+  it('renders the current leaf as a row with the lamp when not expanded', async () => {
+    const { el } = await renderCard('village', {}, undefined, 'row');
+    const n = node(el);
+    expect(n.className).toContain('bg-lamp');
+    expect(n.getAttribute('style')).toContain('--color-rail-ring');
+    expect(el.querySelector('details')).toBeNull();
+    expect(el.textContent).not.toContain('Clear section');
+  });
+
+  it('shows the pinned indicator as plain text', async () => {
+    const { el } = await renderCard('marsh', { pin: 'marsh' }, undefined, 'row');
+    const pinned = [...el.querySelectorAll('span')].find((n) => n.textContent === 'Pinned')!;
+    expect(pinned.className).toContain('text-accent');
+    expect(pinned.className).not.toContain('border');
+  });
+
+  it('renders the compact current row in the detail pane', async () => {
+    const { el, fixture } = await renderCard('marsh', {}, undefined, 'row');
+    fixture.componentRef.setInput('detailPane', true);
+    fixture.componentRef.setInput('selected', true);
+    await fixture.whenStable();
+    expect(row(el).classList.contains('min-h-11')).toBe(true);
+    expect(row(el).classList.contains('h-11')).toBe(false);
+    expect(node(el).className).toContain('border-rail-ring');
+    expect(node(el).className).not.toContain('bg-lamp');
+    const title = el.querySelector('.font-display')!;
+    expect(title.className).toContain('font-semibold');
+    expect(title.className).toContain('text-[15px]');
+    expect(title.className).toContain('text-lamp');
+    expect(title.className).not.toContain('text-sm');
+  });
+
+  it('expands a cleared row to a panel with Reopen and no lamp, then collapses', async () => {
+    const { el, fixture, layout, button } = await renderCard(
+      'village',
+      { cleared: ['village'] },
+      undefined,
+      'row',
+    );
+    row(el).click();
+    expect(layout.isExpanded('village')).toBe(true);
+    fixture.componentRef.setInput('variant', 'panel');
+    await fixture.whenStable();
+    expect(button('Reopen section')).toBeTruthy();
+    expect(node(el).className).toContain('bg-rail-dot');
+    expect(el.querySelector('.bg-lamp')).toBeNull();
+    row(el).click();
+    expect(layout.isExpanded('village')).toBe(false);
+  });
+
+  it('uses no shadow utility and no rounded-full outside the nodes', async () => {
+    for (const [id, progress] of [
+      ['village', {}],
+      ['village', { cleared: ['village'] }],
+      ['epilogue', {}],
+    ] as const) {
+      TestBed.resetTestingModule();
+      const { el } = await renderCard(id, progress, undefined, 'row');
+      for (const n of el.querySelectorAll('*')) {
+        expect(n.className.toString()).not.toMatch(/(^|\s)shadow-/);
+        if (n.className.toString().includes('rounded-full')) {
+          expect(n.closest('[data-node]')).not.toBeNull();
+        }
+      }
+    }
+  });
+});
+
+describe('LeafCard panel (route)', () => {
+  const node = (el: HTMLElement): HTMLElement => el.querySelector('[data-node] > span')!;
+
+  it('labels the current panel and styles its header', async () => {
+    const { el } = await renderCard('village');
+    const section = el.querySelector('section')!;
+    expect(section.getAttribute('aria-label')).toBe('Harrow Village, current');
+    expect(section.className).toContain('pl-3');
+    expect(section.className).toContain('pt-1');
+    const heading = el.querySelector('[role=heading]')!;
+    expect(heading.getAttribute('aria-level')).toBe('3');
+    const title = heading.querySelector('.font-display')!;
+    expect(title.className).toContain('font-bold');
+    expect(title.className).toContain('text-[21px]');
+    expect(title.className).toContain('text-lamp');
+    const open = [...el.querySelectorAll('span')].find((n) => n.textContent?.trim() === '3 open')!;
+    expect(open.className).toContain('text-open');
+    expect(open.className).toContain('font-display');
+    expect(node(el).className).toContain('bg-lamp');
+    expect(el.querySelector('[data-node]')!.className).toContain('pt-4');
+    const body = el.querySelector('section > div:not([data-node])')!;
+    expect(body.className).toContain('bg-surface-raised');
+    expect(body.className).toContain('rounded-l-panel');
+  });
+
+  it('names a non-current expanded panel by its plain title with a plain title colour', async () => {
+    const { el, layout, fixture } = await renderCard('marsh');
+    layout.setExpanded('marsh', true);
+    await fixture.whenStable();
+    expect(el.querySelector('section')!.getAttribute('aria-label')).toBe('Whisper Marsh');
+    const title = el.querySelector('[role=heading] .font-display')!;
+    expect(title.className).toContain('text-[21px]');
+    expect(title.className).toContain('text-fg');
+    expect(title.className).not.toContain('text-lamp');
+    expect(node(el).className).not.toContain('bg-lamp');
+  });
+
+  it('renders category headers with counts and the rule, walkthrough and buttons', async () => {
+    const { el, button } = await renderCard('village');
+    const header = el.querySelector('[data-category-header]')!;
+    expect(header.className).toContain('border-rule');
+    expect(header.className).toContain('text-fg-muted');
+    expect(header.className).toContain('text-xs');
+    expect(categoryHeaders(el)[0]).toBe('Story 0 of 1');
+    expect(el.querySelector('ul app-task-row')).not.toBeNull();
+    const summary = el.querySelector('details > summary')!;
+    expect(summary.className).toContain('min-h-11');
+    expect(summary.className).toContain('text-[15px]');
+    expect(summary.className).toContain('text-fg-muted');
+    expect(el.querySelector('details')!.className).toContain('border-rule');
+    expect(button('Clear section')!.className).toContain('btn-primary');
+    expect(button("I'm here")!.className).toBe('btn');
+  });
+
+  it('puts two columns on a grid and splits four categories 2/2', async () => {
+    const guide = structuredClone(LANTERN_KEEP) as Guide;
+    const lore = guide.tasks.find((t) => t.id === 'keep-history')!;
+    lore.windows[0]!.from = 'village';
+    lore.windows[0]!.home = 'village';
+    const { el, fixture } = await renderCard('village', { tracked: { lore: true } }, guide);
+    const oneColumn = categoryHeaders(el);
+    expect(oneColumn.length).toBe(4);
+    expect(el.querySelector('.grid-cols-2')).toBeNull();
+    fixture.componentRef.setInput('columns', 2);
+    await fixture.whenStable();
+    const grid = el.querySelector('.grid')!;
+    expect(grid.className).toContain('grid-cols-2');
+    expect(grid.className).toContain('gap-x-8');
+    const cols = [...grid.children];
+    expect(cols.length).toBe(2);
+    expect(cols.map((c) => c.querySelectorAll('[data-category-header]').length)).toEqual([2, 2]);
+    expect(categoryHeaders(el)).toEqual(oneColumn);
+  });
+
+  it('keeps the cleared dot, not the lamp, on a cleared expanded panel', async () => {
+    const { el, layout, fixture } = await renderCard('village', { cleared: ['village'] });
+    layout.setExpanded('village', true);
+    await fixture.whenStable();
+    expect(node(el).className).toContain('bg-rail-dot');
+    expect(el.querySelector('.bg-lamp')).toBeNull();
+  });
+
+  it('uses no shadow utility in a panel', async () => {
+    const { el } = await renderCard('village');
+    for (const n of el.querySelectorAll('*')) {
+      expect(n.className.toString()).not.toMatch(/(^|\s)shadow-/);
+      if (n.className.toString().includes('rounded-full')) {
+        expect(n.closest('[data-node]')).not.toBeNull();
+      }
+    }
+  });
+
+  it('never leaks a hidden section title in the label', async () => {
+    const { el } = await renderCard('throne-room');
+    expect(el.querySelector('section')!.getAttribute('aria-label')).toBe('Hidden section');
+  });
+});
+
+describe('LeafCard sticky rows and standalone panel', () => {
+  it('does not carry sticky rows over when the leaf changes', async () => {
+    const { el, fixture, layout, store } = await renderCard('village');
+    store.setTaskState('ferry-passage', 'done');
+    await fixture.whenStable();
+    expect(el.querySelector('input[aria-label="Pay the ferryman"]')).not.toBeNull();
+    vi.spyOn(layout, 'isExpanded').mockReturnValue(true);
+    fixture.componentRef.setInput('leafId', 'marsh');
+    await fixture.whenStable();
+    expect(el.querySelector('input[aria-label="Pay the ferryman"]')).toBeNull();
+    expect(el.querySelector('section')!.id).toBe('section-marsh');
+  });
+
+  it('renders a standalone detail panel without a layout write', async () => {
+    const { el, fixture, layout } = await renderCard('marsh');
+    fixture.componentRef.setInput('detailPane', true);
+    fixture.componentRef.setInput('columns', 2);
+    await fixture.whenStable();
+    expect(layout.isExpanded('marsh')).toBe(false);
+    expect(el.querySelector('[data-category-header]')).not.toBeNull();
+    expect(el.querySelector('.grid-cols-2')).not.toBeNull();
+    expect(
+      [...el.querySelectorAll('button')].some((b) => b.textContent?.trim() === "I'm here"),
+    ).toBe(true);
+    const toggle = el.querySelector('[role=heading] button') as HTMLButtonElement;
+    expect(toggle.hasAttribute('aria-expanded')).toBe(false);
+    expect(toggle.hasAttribute('aria-controls')).toBe(false);
+    const selected: unknown[] = [];
+    fixture.componentInstance.select.subscribe(() => selected.push(true));
+    toggle.click();
+    expect(selected.length).toBe(1);
+    expect(layout.isExpanded('marsh')).toBe(false);
   });
 });
