@@ -16,6 +16,9 @@ __screenshots__/
 .claude/worktrees/
 .superpowers/
 
+# Raw walkthrough captures: third-party text (.claude/skills/generate-sweep-guide)
+guides/*/source/
+
 # Playwright
 packages/client/playwright-report/
 packages/client/test-results/
