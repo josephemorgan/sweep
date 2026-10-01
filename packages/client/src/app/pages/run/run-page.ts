@@ -112,7 +112,13 @@ import { sectionLabel } from '../../run/spoiler';
               </p>
             }
             @if (detailLeaf(); as leafId) {
-              <app-leaf-card variant="panel" [detailPane]="true" [columns]="2" [leafId]="leafId" />
+              <app-leaf-card
+                variant="panel"
+                [detailPane]="true"
+                [columns]="2"
+                [level]="2"
+                [leafId]="leafId"
+              />
             }
           </section>
         </main>
@@ -317,6 +323,7 @@ export class RunPage implements RunActions {
     const label = this.label(leafId);
     this.store.setCleared(leafId, true);
     const next = this.store.view()?.current ?? null;
+    this.selectedLeaf.set(next);
     this.layout.resetLeaves([leafId, next]);
     if (next) this.layout.scrollTo(next);
     this.focusHeader(next ?? leafId);

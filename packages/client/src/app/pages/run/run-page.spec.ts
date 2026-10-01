@@ -383,6 +383,53 @@ describe('RunPage update guide (§5.8)', () => {
       expect(el.querySelector(`#detail-section-${next}`)).not.toBeNull();
     });
 
+    it('handheld: clearing the selected non-current leaf snaps the pane to the new current', async () => {
+      stubMedia(true);
+      const { el, fixture, store } = await renderPage({ cleared: ['village'] });
+      el.querySelector<HTMLButtonElement>('aside #section-keep-gate button')!.click();
+      await fixture.whenStable();
+      expect(title(el)).toContain('Keep Gate');
+      fixture.componentInstance.requestClear('keep-gate');
+      await fixture.whenStable();
+      [...document.querySelectorAll<HTMLButtonElement>('button')]
+        .find((b) => b.textContent?.trim() === 'Clear anyway')
+        ?.click();
+      await fixture.whenStable();
+      const next = store.view()!.current!;
+      expect(store.view()!.sections.get('keep-gate')!.cleared).toBe(true);
+      expect(el.querySelector(`#detail-section-${next}`)).not.toBeNull();
+      expect(el.querySelector('#detail-section-keep-gate')).toBeNull();
+    });
+
+    it('handheld: the pane snaps back to current after a pin and after an unpin', async () => {
+      stubMedia(true);
+      const { el, fixture, store } = await renderPage();
+      const select = async (id: string): Promise<void> => {
+        el.querySelector<HTMLButtonElement>(`aside #section-${id} button`)!.click();
+        await fixture.whenStable();
+      };
+      await select('keep-gate');
+      expect(el.querySelector('#detail-section-keep-gate')).not.toBeNull();
+      store.setPin('marsh');
+      await fixture.whenStable();
+      expect(store.view()!.current).toBe('marsh');
+      expect(el.querySelector('#detail-section-marsh')).not.toBeNull();
+      await select('keep-gate');
+      expect(el.querySelector('#detail-section-keep-gate')).not.toBeNull();
+      fixture.componentInstance.unpin();
+      await fixture.whenStable();
+      expect(store.view()!.current).toBe('village');
+      expect(el.querySelector('#detail-section-village')).not.toBeNull();
+    });
+
+    it('handheld: the detail pane title is an h2', async () => {
+      stubMedia(true);
+      const { el } = await renderPage({ cleared: ['village'] });
+      expect(
+        el.querySelector('[id^="detail-section-"] [role="heading"][aria-level="2"]'),
+      ).not.toBeNull();
+    });
+
     it('handheld: keeps the selected leaf when a task on it changes and current stays put', async () => {
       stubMedia(true);
       const { el, fixture, store } = await renderPage({ cleared: ['village'] });
