@@ -78,6 +78,7 @@ Also used in code:
 | `pnpm build:core` | Rebuild core's `dist/` (consumers import built output) |
 | `docker compose up -d postgres` | Dev database (sweep/sweep@localhost:5432/sweep) |
 | `docker compose up -d --build` | Full single-image app on :3000 |
+| `scripts/tag.sh --patch\|--minor\|--major [--push]` | Tag HEAD on master with the next version; pushing the tag publishes the image (`docs/deployment.md`) |
 | `scripts/deploy.sh` | On a server: pull the image CI published to GHCR and restart (`docs/deployment.md`) |
 
 Per package: `pnpm --filter @sweep/<core|server|client> <script>`.

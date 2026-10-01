@@ -16,16 +16,18 @@ server never builds anything and nothing on GitHub needs access to the server.
 
 ## Releasing
 
-Tag the master commit you want to ship and push the tag:
+On master, with everything committed and pushed:
 
 ```bash
-git tag -a v1.2.3 -m "v1.2.3"
-git push origin v1.2.3
+scripts/tag.sh --patch          # or --minor, --major; add --push to push the tag too
+git push origin v1.2.3          # printed by the script
 ```
 
-Tags follow semver with a `v` prefix; anything else is ignored by the workflow. The image is
-available a few minutes after the tag's CI run turns green, and the server's timer picks it
-up on its next run.
+The script takes the highest existing `vX.Y.Z` tag, bumps the part you asked for, and tags
+HEAD. It refuses a dirty tree, a branch other than master, a HEAD that is not on
+`origin/master` yet, and a HEAD that already carries a version tag. Tags follow semver with a
+`v` prefix; anything else is ignored by the workflow. The image is available a few minutes
+after the tag's CI run turns green, and the server's timer picks it up on its next run.
 
 ## Server layout
 
