@@ -2,7 +2,7 @@ import type { Page } from '@playwright/test';
 import { expect, leafPanel, metric, routeRow, test } from './support/fixtures';
 
 // Screenshot baselines for the Route UI (plan C7, R6). Generated on Linux and committed under
-// screens.e2e.ts-snapshots/. Regenerate with `pnpm e2e -- --update-snapshots screens`.
+// screens.e2e.ts-snapshots/. Regenerate with `pnpm e2e screens --update-snapshots=changed` (file filter before the flag).
 
 async function openSeededRun(page: Page, runs: { create(name: string): Promise<string> }) {
   // A fixed run name keeps the header identical across workers and projects.

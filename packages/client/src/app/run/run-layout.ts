@@ -4,6 +4,15 @@ import { RunStore } from './run-store';
 /** The 4:3 handheld layout (spec §5.9). */
 export const HANDHELD_QUERY = '(orientation: landscape) and (max-height: 800px)';
 
+/**
+ * ADR 0016. Two detail-pane columns need the viewport to be wide enough for each column to get
+ * about 250px: 340px route pane + 1px border + 48px pane padding + 32px column gap + 2 × 250px
+ * ≈ 920px. Below that the detail pane shows one column (the Retroid's CSS viewport is 640px
+ * wide). The same threshold drives the narrow styling variant `handheld-narrow` in styles.css,
+ * which must stay in step with it.
+ */
+export const WIDE_DETAIL_QUERY = '(min-width: 920px)';
+
 /** Page-scoped view state: which cards are expanded, which groups collapsed, where to scroll. */
 @Injectable()
 export class RunLayout {

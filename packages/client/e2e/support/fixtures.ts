@@ -93,7 +93,9 @@ export async function expectAccessible(page: Page): Promise<void> {
 const escapeRegExp = (text: string): string => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 function isHandheld(page: Page): boolean {
-  return page.viewportSize()!.width >= 1000;
+  // Mirrors HANDHELD_QUERY: landscape and at most 800px tall (640x400 Retroid, 1024x768).
+  const { width, height } = page.viewportSize()!;
+  return width > height && height <= 800;
 }
 
 function titled(title: string): RegExp {

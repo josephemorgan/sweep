@@ -69,7 +69,7 @@ Also used in code:
 | `pnpm typecheck` | Builds core, then type-checks the repo tests and every package (client templates via `ngc`) |
 | `pnpm test` | Builds core, then core + server + client unit tests + repo tests (`test/`, alone: `pnpm test:repo`) |
 | `pnpm build` | Builds all packages |
-| `pnpm e2e` | Playwright, projects `phone` (390×844) and `handheld-4x3` (1024×768), against a fresh `sweep_e2e` database and server on :3100 (see `packages/client/CLAUDE.md`) |
+| `pnpm e2e` | Playwright, projects `phone` (390×844) and `handheld-4x3` (640×400 at DPR 2, the Retroid; a 1024×768 case lives inside `layout.e2e.ts`), against a fresh `sweep_e2e` database and server on :3100 (see `packages/client/CLAUDE.md`) |
 | `pnpm schema` | Regenerate `schema/sweep-guide.v1.schema.json` from core's Zod schema (commit the result) |
 | `pnpm validate:examples` | Validate every guide under `guides/examples/` (CI runs it) |
 | `pnpm sweep validate <file> [--json]` | Guide validator CLI. Relative paths resolve from the directory you run it in. |

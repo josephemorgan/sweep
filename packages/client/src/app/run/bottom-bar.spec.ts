@@ -94,6 +94,18 @@ describe('BottomBar (§5.5)', () => {
       expect(buttons.at(-1)!.classList).toContain('size-11');
     });
 
+    it('stacks number over label below 920px and stays inline from 920px (ADR 0016)', async () => {
+      const { buttons } = await renderCompact();
+      const metrics = buttons.filter((b) => !b.hasAttribute('aria-label'));
+      expect(metrics).toHaveLength(4);
+      for (const b of metrics) {
+        expect(b.classList).toContain('flex-row-reverse');
+        expect(b.classList).toContain('handheld-narrow:flex-col-reverse');
+        expect(b.classList).toContain('handheld-narrow:items-center');
+        expect(b.classList).toContain('handheld-narrow:px-2');
+      }
+    });
+
     it('draws the amber border only when Last chance is above zero', async () => {
       const { buttons } = await renderCompact();
       const last = buttons.find((b) => b.textContent?.includes('Last chance'))!;

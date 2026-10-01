@@ -27,7 +27,8 @@ export default defineConfig({
     serviceWorkers: 'block',
     ...(chromiumPath ? { launchOptions: { executablePath: chromiumPath } } : {}),
   },
-  // Spec §8: phone portrait is primary; a 4:3 landscape handheld must stay usable.
+  // Spec §8: phone portrait is primary; a 4:3 landscape handheld must stay usable. handheld-4x3
+  // models the Retroid (1280x960 screen at DPR 2, Chrome's URL bar leaves ~400px); ADR 0016.
   projects: [
     {
       name: 'phone',
@@ -41,7 +42,10 @@ export default defineConfig({
     {
       name: 'handheld-4x3',
       use: {
-        viewport: { width: 1024, height: 768 },
+        viewport: { width: 640, height: 400 },
+        deviceScaleFactor: 2,
+        isMobile: true,
+        hasTouch: true,
       },
     },
   ],

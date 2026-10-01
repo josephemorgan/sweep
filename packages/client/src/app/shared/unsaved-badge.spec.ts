@@ -55,6 +55,24 @@ describe('UnsavedBadge', () => {
     expect(el.querySelector('.sr-only')?.textContent?.trim()).toBe('3 unsaved changes');
   });
 
+  it('narrow handheld: reserves 44px and shows only the dot and count (ADR 0016)', async () => {
+    const { el, size, stalled, tick } = setup();
+    size.set(2);
+    stalled.set(true);
+    await tick();
+    expect(el.querySelector('[role="status"]')!.classList).toContain('handheld-narrow:w-11');
+    const full = [...el.querySelectorAll('span[aria-hidden="true"]')].find((s) =>
+      s.textContent?.includes('2 unsaved'),
+    )!;
+    expect(full.classList).toContain('handheld-narrow:hidden');
+    const short = [...el.querySelectorAll('span[aria-hidden="true"]')].find(
+      (s) => s.textContent?.trim() === '2',
+    )!;
+    expect(short.classList).toContain('hidden');
+    expect(short.classList).toContain('handheld-narrow:inline');
+    expect(el.querySelector('.sr-only')?.textContent?.trim()).toBe('2 unsaved changes');
+  });
+
   it('shows at once when the queue is stalled', async () => {
     const { el, size, stalled, tick } = setup();
     size.set(2);
