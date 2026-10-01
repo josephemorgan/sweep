@@ -7,10 +7,10 @@ export interface Badge {
 }
 
 export const BADGE_CLASS: Record<BadgeTone, string> = {
-  neutral: 'border-border text-fg-muted',
-  missed: 'border-missed text-missed',
-  'last-chance': 'border-last-chance text-last-chance',
-  'not-chosen': 'border-not-chosen text-not-chosen',
+  neutral: 'text-xs text-fg-muted',
+  missed: 'text-xs font-bold text-missed',
+  'last-chance': 'text-xs font-bold text-last-chance',
+  'not-chosen': 'text-xs text-not-chosen',
 };
 
 /** Task-row badges (§5.2). `nextChanceLabel` is already spoiler-safe (see `sectionLabel`). */

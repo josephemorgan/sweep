@@ -29,18 +29,18 @@ let nextId = 0;
     '(focusout)': 'onFocusOut($event)',
   },
   template: `
-    <div class="flex items-start gap-1">
+    <div class="flex min-h-[42px] items-center gap-3" [class.text-not-chosen]="notChosen()">
       <label class="flex min-h-11 min-w-11 shrink-0 items-center justify-center">
         <input
           type="checkbox"
-          class="size-5 accent-accent"
+          class="ck"
           [checked]="done()"
           [disabled]="notChosen()"
           [attr.aria-label]="blurred() ? 'Hidden spoiler task' : task().title"
           (change)="toggle($event)"
         />
       </label>
-      <div class="min-w-0 flex-1">
+      <div class="min-w-0 grow">
         @if (blurred()) {
           <app-spoiler-text
             [text]="task().title"
@@ -54,8 +54,9 @@ let nextId = 0;
             <button
               #title
               type="button"
-              class="min-h-11 w-full text-left"
-              [class.line-through]="done()"
+              class="min-h-11 w-full grow text-left text-[15px] leading-5"
+              [class.line-through]="struck()"
+              [class.decoration-rail-dot]="struck()"
               [class.text-fg-muted]="resolved() && !notChosen()"
               [class.text-not-chosen]="notChosen()"
               [attr.aria-expanded]="howOpen()"
@@ -68,8 +69,9 @@ let nextId = 0;
             <span
               #title
               tabindex="-1"
-              class="flex min-h-11 items-center"
-              [class.line-through]="done()"
+              class="flex min-h-11 grow items-center text-[15px] leading-5"
+              [class.line-through]="struck()"
+              [class.decoration-rail-dot]="struck()"
               [class.text-fg-muted]="resolved() && !notChosen()"
               [class.text-not-chosen]="notChosen()"
               >{{ task().title }}</span
@@ -77,13 +79,9 @@ let nextId = 0;
           }
         }
         @if (badges().length > 0) {
-          <div class="-mt-1 mb-1 flex flex-wrap gap-1">
+          <div class="-mt-1 mb-1 flex flex-wrap gap-x-2">
             @for (badge of badges(); track badge.label) {
-              <span
-                class="rounded-control border px-1.5 text-xs"
-                [class]="badgeClass[badge.tone]"
-                >{{ badge.label }}</span
-              >
+              <span [class]="badgeClass[badge.tone]">{{ badge.label }}</span>
             }
           </div>
         }
@@ -97,7 +95,7 @@ let nextId = 0;
         <button
           #trigger
           type="button"
-          class="btn-quiet"
+          class="btn-quiet size-11 text-fg-muted"
           [attr.aria-controls]="menuOpen() ? actionsId : null"
           [attr.aria-expanded]="menuOpen()"
           [attr.aria-label]="
@@ -146,6 +144,9 @@ export class TaskRow {
   protected readonly menuOpen = signal(false);
   protected readonly done = computed(() => this.status().kind === 'done');
   protected readonly notChosen = computed(() => this.status().kind === 'not-chosen');
+  protected readonly struck = computed(
+    () => this.done() || (this.resolved() && this.secondChance()),
+  );
   protected readonly resolved = computed(() =>
     ['done', 'dont-care', 'not-chosen'].includes(this.status().kind),
   );

@@ -1,7 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { indexGuide, type TaskStatus } from '@sweep/core';
 import { LANTERN_KEEP } from '../../testing/lantern-keep';
-import { taskBadges } from './task-badges';
+import { BADGE_CLASS, taskBadges } from './task-badges';
 import { TaskRow } from './task-row';
 
 const tasks = indexGuide(LANTERN_KEEP).tasks;
@@ -295,5 +295,72 @@ describe('TaskRow fix round 1', () => {
     expect(
       taskBadges({ kind: 'missed', nextChance: 'epilogue' }, false, false, null)[0]!.label,
     ).toBe('Missed · 2nd chance at later');
+  });
+});
+
+describe('TaskRow route styling (B5)', () => {
+  const badge = (el: HTMLElement, text: string) =>
+    [...el.querySelectorAll('span')].find((n) => n.textContent?.trim() === text)!;
+  const has = (n: Element, classes: string) =>
+    classes.split(' ').every((c) => n.classList.contains(c));
+
+  it('uses the ck checkbox and the 42px row layout', async () => {
+    const { el, checkbox } = await render('ferry-passage', OPEN);
+    expect(checkbox.classList.contains('ck')).toBe(true);
+    expect(checkbox.classList.contains('size-5')).toBe(false);
+    const row = checkbox.closest('.min-h-\\[42px\\]')!;
+    expect(row).not.toBeNull();
+    expect(row.classList.contains('items-center')).toBe(true);
+    expect(row.classList.contains('gap-3')).toBe(true);
+    const title = [...el.querySelectorAll('span')].find(
+      (n) => n.textContent?.trim() === 'Pay the ferryman',
+    )!;
+    for (const c of ['grow', 'text-[15px]', 'leading-5']) expect(title.classList).toContain(c);
+  });
+
+  it('styles each badge as bare text', async () => {
+    const last = await render('ferry-passage', OPEN, { lastChance: true, secondChance: true });
+    expect(has(badge(last.el, 'Last chance'), 'text-xs font-bold text-last-chance')).toBe(true);
+    expect(has(badge(last.el, '2nd chance'), 'text-xs text-fg-muted')).toBe(true);
+    const missed = await render(
+      'lost-cat',
+      { kind: 'missed', nextChance: 'epilogue' },
+      { nextChanceLabel: 'Epilogue' },
+    );
+    expect(
+      has(badge(missed.el, 'Missed · 2nd chance at Epilogue'), 'text-xs font-bold text-missed'),
+    ).toBe(true);
+    const nc = await render('moonshield', { kind: 'not-chosen' });
+    expect(has(badge(nc.el, 'Not chosen'), 'text-xs text-not-chosen')).toBe(true);
+  });
+
+  it('never gives a badge a pill, border or background', () => {
+    for (const cls of Object.values(BADGE_CLASS)) {
+      expect(cls).not.toMatch(/rounded|(^|\s)bg-|border|(^|\s)p[xy]?-/);
+    }
+  });
+
+  it('keeps a resolved 2nd-chance row struck through', async () => {
+    const { el } = await render('ferry-passage', { kind: 'dont-care' }, { secondChance: true });
+    const title = [...el.querySelectorAll('span')].find(
+      (n) => n.textContent?.trim() === 'Pay the ferryman',
+    )!;
+    expect(title.classList).toContain('line-through');
+    expect(title.classList).toContain('decoration-rail-dot');
+  });
+
+  it('makes the menu button 44x44 muted', async () => {
+    const { el } = await render('ferry-passage', OPEN);
+    const more = el.querySelector('button[aria-label^="More actions"]')!;
+    expect(more.classList).toContain('size-11');
+    expect(more.classList).toContain('text-fg-muted');
+  });
+
+  it('keeps a hidden spoiler title out of every accessible name', async () => {
+    const { el, checkbox } = await render('keepers-lantern', OPEN);
+    expect(checkbox.getAttribute('aria-label')?.toLowerCase()).not.toContain('lantern');
+    for (const n of el.querySelectorAll('[aria-label]'))
+      expect(n.getAttribute('aria-label')!.toLowerCase()).not.toContain('lantern');
+    expect(el.querySelector('.redaction')).not.toBeNull();
   });
 });
