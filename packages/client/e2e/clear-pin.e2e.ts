@@ -5,11 +5,15 @@ test('clears with the impact dialog, then undoes', async ({ page, runs }, testIn
   await page.goto(`/runs/${runId}`);
   const village = page.getByRole('region', { name: 'Harrow Village' });
   await village.getByRole('button', { name: 'Clear section' }).click();
-  const dialog = page.getByRole('dialog', { name: 'Clear Harrow Village?' });
-  await expect(dialog).toContainText('Clearing Harrow Village closes 2 open tasks.');
-  await expect(dialog).toContainText('Pay the ferryman');
-  await expect(dialog).toContainText("Find the elder's cat · 2nd chance at Epilogue");
-  await expect(dialog.getByRole('button', { name: 'Cancel' })).toBeFocused();
+  const dialog = page.getByRole('dialog', { name: 'Leave Harrow Village behind?' });
+  await expect(dialog).toContainText('Clearing this section closes 2 open tasks.');
+  await expect(dialog.getByRole('listitem').filter({ hasText: 'Pay the ferryman' })).toContainText(
+    'Gone for good',
+  );
+  await expect(
+    dialog.getByRole('listitem').filter({ hasText: "Find the elder's cat" }),
+  ).toContainText('2nd chance at Epilogue');
+  await expect(dialog.getByRole('button', { name: 'Stay here' })).toBeFocused();
   await expectAccessible(page);
 
   // Undo must be clickable right after the modal closes (a modal dialog would make it inert).
@@ -35,8 +39,8 @@ test('cancelling the clear dialog changes nothing', async ({ page, runs }, testI
   const village = page.getByRole('region', { name: 'Harrow Village' });
   await village.getByRole('button', { name: 'Clear section' }).click();
   await page
-    .getByRole('dialog', { name: 'Clear Harrow Village?' })
-    .getByRole('button', { name: 'Cancel' })
+    .getByRole('dialog', { name: 'Leave Harrow Village behind?' })
+    .getByRole('button', { name: 'Stay here' })
     .click();
   await expect(page.getByRole('dialog')).toHaveCount(0);
   await expect(village).toHaveAttribute('data-state', 'current');

@@ -6,7 +6,7 @@ import { Sheet } from './sheet';
   imports: [Sheet],
   template: `
     <app-sheet [heading]="heading()" [(open)]="open">
-      <div class="flex flex-col gap-4 p-4">
+      <div class="flex flex-col gap-4 px-5 pb-5 pt-3">
         <p class="m-0">{{ message() }}</p>
         <div class="flex justify-end gap-2">
           <button type="button" class="btn" (click)="open.set(false)">Cancel</button>

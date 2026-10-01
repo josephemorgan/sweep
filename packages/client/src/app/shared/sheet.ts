@@ -23,8 +23,12 @@ let nextSheetId = 0;
   imports: [ToastHost],
   template: `
     <dialog #dialog class="sheet" [attr.aria-labelledby]="headingId" (close)="open.set(false)">
-      <div class="flex items-center gap-2 border-b border-border py-1 pl-4 pr-1">
-        <h2 [id]="headingId" class="m-0 flex-1 text-base font-semibold">{{ heading() }}</h2>
+      <div class="flex items-start gap-2 px-5 pt-5">
+        <h2
+          [id]="headingId"
+          class="m-0 flex-1 font-display text-[22px] font-bold leading-[26px] text-lamp"
+          [textContent]="heading()"
+        ></h2>
         <button type="button" class="btn-quiet" aria-label="Close" (click)="open.set(false)">
           <span aria-hidden="true">✕</span>
         </button>

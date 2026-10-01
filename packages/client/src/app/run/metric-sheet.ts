@@ -10,13 +10,13 @@ import { TaskRow } from './task-row';
   selector: 'app-metric-sheet',
   imports: [TaskRow],
   template: `
-    <div class="p-3">
-      <p class="m-0 mb-1 text-sm text-fg-muted">{{ description() }}</p>
+    <div class="px-5 pb-3">
+      <p class="m-0 py-3 text-sm text-fg-soft">{{ description() }}</p>
       @for (group of groups(); track group.leafId) {
-        <h3 class="m-0 mt-3 text-sm font-semibold">{{ label(group.leafId) }}</h3>
+        <h3 class="m-0 mt-3 text-xs text-fg-muted">{{ label(group.leafId) }}</h3>
         <ul class="m-0 list-none p-0">
           @for (id of group.taskIds; track id) {
-            <li>
+            <li class="min-h-12 border-b border-rule">
               <app-task-row
                 [task]="task(id)"
                 [status]="status(id)"

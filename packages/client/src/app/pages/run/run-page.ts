@@ -81,7 +81,7 @@ import { sectionLabel } from '../../run/spoiler';
         <app-unsaved-badge />
         <app-run-menu (updateGuide)="updating.set(true)" />
       </header>
-      <main class="mx-auto w-full max-w-[720px] flex-1 px-3 pb-36 pt-2 handheld:pb-16">
+      <main class="mx-auto w-full max-w-[720px] flex-1 px-3 pb-2 pt-2">
         @if (store.view()) {
           @if (store.offline()) {
             <p
@@ -191,7 +191,7 @@ export class RunPage implements RunActions {
   });
   protected readonly clearHeading = computed(() => {
     const pending = this.pendingClear();
-    return pending ? `Clear ${this.label(pending.leafId)}?` : 'Clear section';
+    return pending ? `Leave ${this.label(pending.leafId)} behind?` : 'Clear section';
   });
   protected readonly pinMessage = computed(() => {
     const leafId = this.pendingPin();

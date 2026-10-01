@@ -12,10 +12,14 @@ async function renderDialog(leafId: string, progress = {}) {
   fixture.componentInstance.cancelled.subscribe(() => events.push('cancelled'));
   await fixture.whenStable();
   const el = fixture.nativeElement as HTMLElement;
-  const section = (heading: string): string =>
-    [...el.querySelectorAll('section')]
-      .find((s) => s.querySelector('h3')?.textContent === heading)
-      ?.textContent?.replace(/\s+/g, ' ') ?? '';
+  const rows = (): HTMLElement[] => [...el.querySelectorAll<HTMLElement>('li')];
+  const rowFor = (title: string): string =>
+    rows()
+      .find((r) => r.textContent?.includes(title))
+      ?.textContent?.replace(/\s+/g, ' ')
+      .trim() ?? '';
+  const button = (name: string): HTMLButtonElement =>
+    [...el.querySelectorAll('button')].find((b) => b.textContent?.trim() === name)!;
   // The accessible text: blurred spans are aria-hidden, so drop them.
   const accessibleText = (): string => {
     const clone = el.cloneNode(true) as HTMLElement;
@@ -27,52 +31,101 @@ async function renderDialog(leafId: string, progress = {}) {
     [...el.querySelectorAll('[aria-label],[title]')]
       .map((n) => `${n.getAttribute('aria-label') ?? ''} ${n.getAttribute('title') ?? ''}`)
       .join(' ');
-  return { el, events, section, accessibleText, attributeNames };
+  const flat = (): string => (el.textContent ?? '').replace(/\s+/g, ' ');
+  return { el, events, rows, rowFor, button, accessibleText, attributeNames, flat };
 }
 
 describe('ClearDialog (§5.4)', () => {
-  it('lists what closes for good and what closes until later', async () => {
-    const { el, section, events } = await renderDialog('village');
-    expect(el.textContent).toContain('Clearing Harrow Village closes 2 open tasks.');
-    expect(section('Gone for good')).toContain('Pay the ferryman');
-    expect(section('Closes until later')).toContain(
-      "Find the elder's cat · 2nd chance at Epilogue",
+  it('is a padded column below the sheet header', async () => {
+    const { el } = await renderDialog('village');
+    const root = el.firstElementChild!;
+    for (const c of ['flex', 'flex-col', 'gap-3', 'px-5', 'pb-5']) {
+      expect(root.classList.contains(c)).toBe(true);
+    }
+    expect(el.querySelector('[role="dialog"]')).toBeNull();
+  });
+
+  it('leads with the plural count, without the suffix when some tasks return', async () => {
+    const { flat } = await renderDialog('village');
+    expect(flat()).toContain('Clearing this section closes 2 open tasks.');
+    expect(flat()).not.toContain('They have no second chance.');
+  });
+
+  it('says "1 open task" in the singular and adds the suffix when all are gone for good', async () => {
+    const { flat } = await renderDialog('marsh', { cleared: ['village'] });
+    expect(flat()).toContain(
+      'Clearing this section closes 1 open task. They have no second chance.',
     );
-    expect(section('Closes until later')).not.toContain('Pay the ferryman');
-    expect(section('Gone for good')).not.toContain("Find the elder's cat");
-    const buttons = [...el.querySelectorAll('button')];
-    buttons.find((b) => b.textContent?.trim() === 'Clear anyway')!.click();
-    buttons.find((b) => b.textContent?.trim() === 'Cancel')!.click();
+  });
+
+  it('lists each closing task with its category, home and outcome', async () => {
+    const { rowFor, rows } = await renderDialog('village');
+    expect(rows().length).toBe(2);
+    expect(rowFor('Pay the ferryman')).toContain('Story · here');
+    expect(rowFor('Pay the ferryman')).toContain('Gone for good');
+    expect(rowFor("Find the elder's cat")).toContain('Side quests · here');
+    expect(rowFor("Find the elder's cat")).toContain('2nd chance at Epilogue');
+    expect(rowFor("Find the elder's cat")).not.toContain('Gone for good');
+  });
+
+  it('names the home leaf when the task lives elsewhere', async () => {
+    const { rowFor } = await renderDialog('throne-room', {
+      cleared: ['village', 'marsh', 'keep-gate', 'east-tower', 'west-tower'],
+    });
+    expect(rowFor('Sunblade')).toContain('Loot · West Tower');
+    expect(rowFor('Sunblade')).not.toContain('here');
+  });
+
+  it('styles the row parts', async () => {
+    const { el, rows } = await renderDialog('village');
+    const dot = rows()[0]!.querySelector('[aria-hidden="true"].bg-last-chance')!;
+    expect(dot.classList.contains('rounded-full')).toBe(true);
+    expect(rows()[0]!.classList.contains('min-h-12')).toBe(true);
+    expect(el.querySelector('.text-last-chance')?.textContent).toContain('Gone for good');
+    expect(el.textContent).toContain('Everything else here stays open.');
+  });
+
+  it('confirms with Clear anyway and cancels with Stay here', async () => {
+    const { button, events } = await renderDialog('village');
+    button('Clear anyway').click();
+    button('Stay here').click();
     expect(events).toEqual(['confirmed', 'cancelled']);
   });
 
   it('warns about a locked leaf without naming a hidden requirement (Review Focus 5)', async () => {
-    const { accessibleText, attributeNames } = await renderDialog('epilogue');
+    const { accessibleText, attributeNames, el } = await renderDialog('epilogue');
     expect(accessibleText()).toContain(
       'Epilogue is locked (requires a hidden section). Clear anyway?',
     );
+    expect(el.querySelector('.text-missed')).not.toBeNull();
     expect(accessibleText()).not.toContain('Throne Room');
     expect(attributeNames()).not.toContain('Throne Room');
   });
 
-  it('blurs a closing spoiler task', async () => {
+  it('shows no locked warning for an unlocked leaf', async () => {
+    const { el, accessibleText } = await renderDialog('village');
+    expect(accessibleText()).not.toContain('is locked');
+    expect(el.querySelector('.text-missed')).toBeNull();
+  });
+
+  it('keeps a closing spoiler task out of the visible text and labels', async () => {
     const { el, accessibleText, attributeNames } = await renderDialog('throne-room', {
       cleared: ['village', 'marsh', 'keep-gate', 'east-tower', 'west-tower'],
     });
+    // TODO(G3): assert a .redaction bar once Section B's spoiler-text lands
     expect(accessibleText()).not.toContain("The keeper's lantern");
     expect(attributeNames()).not.toContain("The keeper's lantern");
+    expect(el.textContent).toContain("The keeper's lantern");
     expect(
       el.querySelector('button[aria-label="Hidden spoiler task. Tap to reveal."]'),
     ).not.toBeNull();
   });
 
-  it('uses the danger style for Clear anyway', async () => {
-    const { el } = await renderDialog('village');
-    const clear = [...el.querySelectorAll('button')].find(
-      (b) => b.textContent?.trim() === 'Clear anyway',
-    )!;
-    expect(clear.classList.contains('btn-danger')).toBe(true);
-    expect(clear.classList.contains('btn-primary')).toBe(false);
+  it('styles Clear anyway as primary, not danger', async () => {
+    const { button } = await renderDialog('village');
+    expect(button('Clear anyway').classList.contains('btn-primary')).toBe(true);
+    expect(button('Clear anyway').classList.contains('btn-danger')).toBe(false);
+    expect(button('Stay here').classList.contains('btn')).toBe(true);
   });
 
   it('puts the locked warning before the closing summary, spoiler-safe', async () => {
@@ -84,15 +137,10 @@ describe('ClearDialog (§5.4)', () => {
     const locked = text.indexOf(
       'A hidden section is locked (requires East Tower, West Tower). Clear anyway?',
     );
-    const closes = text.indexOf('Clearing a hidden section closes');
+    const closes = text.indexOf('Clearing this section closes');
     expect(locked).toBeGreaterThanOrEqual(0);
     expect(closes).toBeGreaterThan(locked);
     expect(text).not.toContain('Throne Room');
     expect(attributeNames()).not.toContain('Throne Room');
-  });
-
-  it('says "1 open task" in the singular', async () => {
-    const { el } = await renderDialog('marsh', { cleared: ['village'] });
-    expect(el.textContent).toContain('Clearing Whisper Marsh closes 1 open task.');
   });
 });

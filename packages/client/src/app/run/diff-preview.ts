@@ -41,12 +41,12 @@ export function isEmptyDiff(diff: GuideDiff): boolean {
           @let d = diff()[kind.key];
           @if (count(d) > 0) {
             <section class="flex flex-col">
-              <h3 class="m-0 text-sm font-semibold">
+              <h3 class="m-0 text-xs text-fg-muted">
                 {{ kind.label }}: {{ d.added.length }} added · {{ d.edited.length }} edited ·
                 {{ d.removed.length }} removed · {{ d.renamed.length }} renamed
               </h3>
               @if (d.added.length > 0) {
-                <details>
+                <details class="border-b border-rule">
                   <summary class="flex min-h-11 cursor-pointer items-center text-sm">
                     Added ({{ d.added.length }})
                   </summary>
@@ -64,7 +64,7 @@ export function isEmptyDiff(diff: GuideDiff): boolean {
                 </details>
               }
               @if (d.edited.length > 0) {
-                <details>
+                <details class="border-b border-rule">
                   <summary class="flex min-h-11 cursor-pointer items-center text-sm">
                     Edited ({{ d.edited.length }})
                   </summary>
@@ -83,7 +83,7 @@ export function isEmptyDiff(diff: GuideDiff): boolean {
                 </details>
               }
               @if (d.removed.length > 0) {
-                <details>
+                <details class="border-b border-rule">
                   <summary class="flex min-h-11 cursor-pointer items-center text-sm">
                     Removed ({{ d.removed.length }})
                   </summary>
@@ -101,7 +101,7 @@ export function isEmptyDiff(diff: GuideDiff): boolean {
                 </details>
               }
               @if (d.renamed.length > 0) {
-                <details>
+                <details class="border-b border-rule">
                   <summary class="flex min-h-11 cursor-pointer items-center text-sm">
                     Renamed ({{ d.renamed.length }})
                   </summary>

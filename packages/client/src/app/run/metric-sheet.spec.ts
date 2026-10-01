@@ -72,6 +72,16 @@ describe('MetricSheet (§5.5)', () => {
       expect(n.getAttribute('aria-label') ?? '').not.toContain(secret);
       expect(n.getAttribute('title') ?? '').not.toContain(secret);
     }
+    // TODO(G3): once Section B's redaction spoiler-text is merged, also assert
+    // el.querySelector('.redaction') is not null (Review Focus 3).
+  });
+
+  it('heads groups with a muted home label and separates rows with hairlines', async () => {
+    const { el } = await renderSheet('now');
+    const label = el.querySelector('h3')!;
+    expect(label.classList.contains('text-fg-muted')).toBe(true);
+    expect(label.classList.contains('text-xs')).toBe(true);
+    expect(el.querySelector('li.border-b.border-rule')).not.toBeNull();
   });
 
   it('closes only the row menu on the first Escape, not the sheet', async () => {

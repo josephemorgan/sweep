@@ -16,29 +16,44 @@ const INDENT_STEP = 0.75;
     <ng-template #level let-sections>
       <ul class="m-0 list-none p-0">
         @for (section of sections; track section.id) {
-          <li>
+          <li class="border-b border-rule">
             <button
               type="button"
-              class="menu-item"
+              class="menu-item min-h-12"
               [style.padding-left.rem]="indent(section.id)"
               [class.font-semibold]="section.children.length > 0"
               [attr.aria-current]="section.id === current() ? 'location' : null"
               (click)="jump(section)"
             >
+              <span aria-hidden="true" class="flex w-4 shrink-0 items-center justify-center">
+                @if (section.id === current()) {
+                  <span
+                    class="size-3.5 rounded-full bg-lamp"
+                    style="box-shadow: 0 0 0 3px var(--color-surface-raised), 0 0 0 4.5px var(--color-rail-ring)"
+                  ></span>
+                } @else if (locked(section)) {
+                  <span
+                    class="size-[9px] rounded-full border-[1.5px] border-dashed border-rail-ring"
+                  ></span>
+                } @else if (cleared(section)) {
+                  <span class="size-2 rounded-full bg-rail-dot"></span>
+                } @else if (section.children.length === 0) {
+                  <span
+                    class="size-[9px] rounded-full border-[1.5px] border-solid border-rail-ring"
+                  ></span>
+                }
+              </span>
               @if (hidden(section)) {
-                <span aria-hidden="true" class="select-none blur-sm">{{ section.title }}</span>
+                <span aria-hidden="true" class="redaction w-28"></span>
                 <span class="sr-only">Hidden section</span>
               } @else {
-                @if (locked(section)) {
-                  <span aria-hidden="true">🔒</span>
-                }
                 {{ section.title }}
                 @if (locked(section)) {
                   <span class="sr-only">locked</span>
                 }
               }
               @if (section.id === current()) {
-                <span class="ml-auto text-sm text-accent">current</span>
+                <span class="ml-auto text-sm text-lamp">current</span>
               }
             </button>
             @if (section.children.length > 0) {
@@ -48,7 +63,7 @@ const INDENT_STEP = 0.75;
         }
       </ul>
     </ng-template>
-    <div class="p-2">
+    <div class="px-3 pb-3">
       <ng-container *ngTemplateOutlet="level; context: { $implicit: roots() }" />
     </div>
   `,
@@ -77,6 +92,10 @@ export class JumpSheet {
   protected locked(section: Section): boolean {
     const view = this.store.view()?.sections.get(section.id);
     return section.children.length === 0 && view?.unlocked === false && view.cleared === false;
+  }
+
+  protected cleared(section: Section): boolean {
+    return this.store.view()?.sections.get(section.id)?.cleared === true;
   }
 
   protected hidden(section: Section): boolean {

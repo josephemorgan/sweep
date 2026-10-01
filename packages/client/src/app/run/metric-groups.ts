@@ -9,10 +9,10 @@ export const Metric = {
 export type Metric = (typeof Metric)[keyof typeof Metric];
 
 export const METRIC_LABEL: Record<Metric, string> = {
-  here: 'HERE',
-  now: 'NOW',
-  closing: 'CLOSING',
-  lastChance: 'LAST CHANCE',
+  here: 'Here',
+  now: 'Now',
+  closing: 'Closing',
+  lastChance: 'Last chance',
 };
 
 export function metricTaskIds(tasks: MetricTasks, metric: Metric): string[] {
@@ -33,6 +33,21 @@ export interface HomeGroup {
   taskIds: string[];
 }
 
+/** A task's home leaf: the open window's, else the first window that isn't closed, else the first. */
+export function taskHome(taskId: string, index: GuideIndex, view: RunView): string {
+  const windows = view.windows.get(taskId) ?? [];
+  // Window statuses only: a row must not change heading when its own state changes (§5.3).
+  const open = windows.indexOf('open');
+  const w =
+    open !== -1
+      ? open
+      : Math.max(
+          0,
+          windows.findIndex((s) => s !== 'closed'),
+        );
+  return index.tasks.get(taskId)!.windows[w]!.home;
+}
+
 /** §5.5: sheet rows grouped by home section: the open window's home, else the first live window's. */
 export function groupByHome(
   taskIds: readonly string[],
@@ -41,17 +56,7 @@ export function groupByHome(
 ): HomeGroup[] {
   const groups = new Map<string, string[]>();
   for (const id of taskIds) {
-    const windows = view.windows.get(id) ?? [];
-    // Window statuses only: a row must not change heading when its own state changes (§5.3).
-    const open = windows.indexOf('open');
-    const w =
-      open !== -1
-        ? open
-        : Math.max(
-            0,
-            windows.findIndex((s) => s !== 'closed'),
-          );
-    const home = index.tasks.get(id)!.windows[w]!.home;
+    const home = taskHome(id, index, view);
     const list = groups.get(home);
     if (list) list.push(id);
     else groups.set(home, [id]);

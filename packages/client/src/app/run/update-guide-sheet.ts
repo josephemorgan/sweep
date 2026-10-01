@@ -19,7 +19,7 @@ interface Problem {
   selector: 'app-update-guide-sheet',
   imports: [DiffPreview, ValidationReport],
   template: `
-    <div class="flex flex-col gap-3 p-4">
+    <div class="flex flex-col gap-3 px-5 pb-5 pt-3">
       @if (unsaved() > 0) {
         <p role="status" class="m-0 text-sm text-fg-muted">
           Waiting for {{ unsaved() }} unsaved {{ unsaved() === 1 ? 'change' : 'changes' }} to save

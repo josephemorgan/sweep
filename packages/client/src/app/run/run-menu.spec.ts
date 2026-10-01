@@ -88,9 +88,46 @@ describe('RunMenu (§5.2 ☰ menu)', () => {
     const { openItem } = await renderMenu();
     const sheet = await openItem('Jump to section');
     const west = findButton(sheet, 'West Tower');
-    expect(west.querySelector('[aria-hidden="true"]')?.textContent).toContain('🔒');
+    expect(
+      west.querySelector('[aria-hidden="true"] .border-dashed.border-rail-ring'),
+    ).not.toBeNull();
     expect(west.querySelector('.sr-only')?.textContent).toBe('locked');
     expect(findButton(sheet, 'Harrow Village').querySelector('.sr-only')).toBeNull();
+    expect(findButton(sheet, 'Harrow Village').querySelector('.border-dashed')).toBeNull();
+  });
+
+  it('marks the current section with the lamp node and the rest with rail nodes', async () => {
+    const { openItem } = await renderMenu();
+    const sheet = await openItem('Jump to section');
+    const current = sheet.querySelector('[aria-current="location"]')!;
+    expect(current.querySelector('.bg-lamp.rounded-full')).not.toBeNull();
+    expect(sheet.querySelectorAll('.bg-lamp').length).toBe(1);
+    expect(sheet.querySelector('.bg-rail-dot, .border-rail-ring')).not.toBeNull();
+    expect(sheet.innerHTML).not.toContain('🔒');
+  });
+
+  it('styles the menu items as hairline-separated rows and Delete run as missed', async () => {
+    const { openMenu } = await renderMenu();
+    const menu = await openMenu();
+    const del = findButton(menu, 'Delete run');
+    expect(del.classList.contains('text-missed')).toBe(true);
+    expect(del.classList.contains('menu-item')).toBe(true);
+    expect(menu.querySelector('li.border-b.border-rule')).not.toBeNull();
+  });
+
+  it('confirms deletion with a danger button beside a plain cancel', async () => {
+    const { openItem } = await renderMenu();
+    const confirm = await openItem('Delete run');
+    expect(findButton(confirm, 'Delete run').classList.contains('btn-danger')).toBe(true);
+    expect(findButton(confirm, 'Cancel').classList.contains('btn')).toBe(true);
+  });
+
+  it('uses ck checkboxes for the category toggles', async () => {
+    const { openItem } = await renderMenu();
+    const sheet = await openItem('Categories');
+    const boxes = sheet.querySelectorAll('input[type="checkbox"]');
+    expect(boxes.length).toBeGreaterThan(0);
+    boxes.forEach((b) => expect(b.classList.contains('ck')).toBe(true));
   });
 
   it('caps the indentation of deep sections', async () => {

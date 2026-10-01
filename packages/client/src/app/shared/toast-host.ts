@@ -25,7 +25,7 @@ import { Toasts } from './toasts';
       <div
         #layer
         [attr.popover]="inSheet() ? null : 'manual'"
-        class="pointer-events-none fixed inset-x-0 top-auto bottom-32 m-0 flex h-auto w-full flex-col items-center gap-2 overflow-visible border-0 bg-transparent p-0 px-4 handheld:bottom-14"
+        class="pointer-events-none fixed inset-x-0 top-auto bottom-[72px] m-0 flex h-auto w-full flex-col items-center gap-2 overflow-visible border-0 bg-transparent p-0 px-4 handheld:bottom-4"
       >
         @for (toast of visible(); track toast.id) {
           <div
