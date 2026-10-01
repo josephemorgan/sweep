@@ -3,6 +3,8 @@ name: CI
 on:
   push:
     branches: [master]
+    # A version tag is a release: the full suite runs on it, then the image is published.
+    tags: ['v*']
   pull_request:
 
 permissions:
@@ -140,10 +142,10 @@ jobs:
         if: always()
         run: docker compose down -v
 
-  # Publish the image to GHCR once a master push has passed both the test and the compose smoke
-  # jobs. A home server pulls it (docs/deployment.md); nothing here reaches into the server.
+  # Publish the image to GHCR when a version tag (v1.2.3) has passed both the test and the compose
+  # smoke jobs. A home server pulls it (docs/deployment.md); nothing here reaches into the server.
   publish:
-    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
     needs: [ci, docker]
     runs-on: ubuntu-latest
     timeout-minutes: 25
@@ -165,8 +167,10 @@ jobs:
         uses: docker/metadata-action@v5
         with:
           images: ghcr.io/${{ github.repository }}
-          # `latest` moves with master; the sha tag is there for pinning and rollback.
+          # v1.2.3 publishes 1.2.3, 1.2 and latest; the sha tag is there for pinning and rollback.
           tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
             type=raw,value=latest
             type=sha,format=long
 

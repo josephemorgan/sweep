@@ -1,10 +1,31 @@
 # Deployment
 
 Sweep ships as one Docker image (Express serves `/api` and the built Angular client, spec §7).
-Every push to `master` that passes CI publishes that image to GitHub Container Registry as
-`ghcr.io/josephemorgan/sweep:latest` and `ghcr.io/josephemorgan/sweep:sha-<commit>` (the
-`publish` job in `.github/workflows/ci.yml`). A server deploys by pulling it, so the server
-never builds anything and nothing on GitHub needs access to the server.
+Pushing a version tag (`v1.2.3`) runs the full CI suite on that commit and then publishes the
+image to GitHub Container Registry (the `publish` job in `.github/workflows/ci.yml`) as:
+
+| Tag | Example |
+|---|---|
+| exact version | `ghcr.io/josephemorgan/sweep:1.2.3` |
+| minor series | `ghcr.io/josephemorgan/sweep:1.2` |
+| `latest` | moves to every release |
+| commit | `ghcr.io/josephemorgan/sweep:sha-<commit>` |
+
+Pushes to `master` run CI but publish nothing. A server deploys by pulling the image, so the
+server never builds anything and nothing on GitHub needs access to the server.
+
+## Releasing
+
+Tag the master commit you want to ship and push the tag:
+
+```bash
+git tag -a v1.2.3 -m "v1.2.3"
+git push origin v1.2.3
+```
+
+Tags follow semver with a `v` prefix; anything else is ignored by the workflow. The image is
+available a few minutes after the tag's CI run turns green, and the server's timer picks it
+up on its next run.
 
 ## Server layout
 
@@ -26,7 +47,7 @@ SWEEP_APP_URL=https://sweep.example.com   # the public origin, as the reverse pr
 TRUST_PROXY=1                             # behind a reverse proxy
 SIGNUP_ENABLED=false
 DEMO_ENABLED=false
-# SWEEP_IMAGE_TAG=sha-<commit>            # pin or roll back; default latest
+# SWEEP_IMAGE_TAG=1.2.3                   # pin a release or roll back; default latest
 ```
 
 Database migrations run when the server starts, so a deploy is only "start the new image".
@@ -38,7 +59,7 @@ pulls the image, restarts the app only if the image changed, and removes the sup
 images (only those, matched by label). A `docker-compose.override.yml` beside the compose
 files, for server-local settings such as a proxy network, is applied last. The clone must be
 on `master` with its upstream set, or the fast-forward is skipped and the compose files go
-stale. Run it by hand, or on a systemd timer so a push deploys itself a few minutes later:
+stale. Run it by hand, or on a systemd timer so a release deploys itself a few minutes later:
 
 ```ini
 # /etc/systemd/system/sweep-deploy.service
@@ -74,8 +95,14 @@ The package is public, so pulling needs no login. If it is ever made private, ru
 
 ## Rollback
 
-Set `SWEEP_IMAGE_TAG=sha-<commit>` in `.env` and run `scripts/deploy.sh`. Remove the line to
-follow `latest` again. The timer will not move off a pinned tag.
+Set `SWEEP_IMAGE_TAG=1.2.2` (a previous release, or `sha-<commit>`) in `.env` and run
+`scripts/deploy.sh`. Remove the line to follow `latest` again. The timer will not move off a
+pinned tag.
+
+Note that the server's compose files follow `master` through the script's fast-forward, while
+the image follows releases. A compose change that lands between releases is applied at the
+next timer run. That is harmless for additive changes such as a new `${VAR:-}` mapping, but a
+change that needs a matching image should be released straight away.
 
 ## Why pull, not push
 
