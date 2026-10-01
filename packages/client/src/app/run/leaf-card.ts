@@ -273,8 +273,7 @@ export class LeafCard {
   /** Two-pane layout: the header selects the row instead of expanding it. */
   readonly detailPane = input(false);
   readonly selected = input(false);
-  // eslint-disable-next-line @angular-eslint/no-output-native -- name fixed by the route plan (Section C consumes it)
-  readonly select = output<void>();
+  readonly selectRow = output<void>();
 
   private readonly injector = inject(Injector);
   private readonly toggle = viewChild<ElementRef<HTMLButtonElement>>('toggle');
@@ -390,7 +389,7 @@ export class LeafCard {
   );
 
   protected headerClick(): void {
-    if (this.detailPane()) this.select.emit();
+    if (this.detailPane()) this.selectRow.emit();
     else {
       this.layout.setExpanded(this.leafId(), !this.expanded());
       // The list swaps row and panel, which destroys the focused toggle.

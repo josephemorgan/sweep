@@ -30,7 +30,7 @@ interface Row {
           [hint]="row.section.id === nextLeafId() ? hint() : null"
           [detailPane]="detailPane()"
           [selected]="detailPane() && row.section.id === selected()"
-          (select)="choose(row.section.id)"
+          (selectRow)="choose(row.section.id)"
         />
       } @else {
         <app-group-heading

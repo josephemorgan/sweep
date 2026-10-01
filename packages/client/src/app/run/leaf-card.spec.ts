@@ -237,10 +237,10 @@ describe('LeafCard plumbing (route)', () => {
     expect(el.querySelector('[data-hint]')!.className).toContain('text-fg-muted');
   });
 
-  it('with detailPane, header click emits select and does not expand; selected is highlighted', async () => {
+  it('with detailPane, header click emits selectRow and does not expand; selected is highlighted', async () => {
     const { el, fixture, layout } = await renderCard('marsh', {}, undefined, 'row');
     const selected: unknown[] = [];
-    fixture.componentInstance.select.subscribe(() => selected.push(true));
+    fixture.componentInstance.selectRow.subscribe(() => selected.push(true));
     fixture.componentRef.setInput('detailPane', true);
     fixture.componentRef.setInput('selected', true);
     await fixture.whenStable();
@@ -517,7 +517,7 @@ describe('LeafCard sticky rows and standalone panel', () => {
     expect(toggle.hasAttribute('aria-expanded')).toBe(false);
     expect(toggle.hasAttribute('aria-controls')).toBe(false);
     const selected: unknown[] = [];
-    fixture.componentInstance.select.subscribe(() => selected.push(true));
+    fixture.componentInstance.selectRow.subscribe(() => selected.push(true));
     toggle.click();
     expect(selected.length).toBe(1);
     expect(layout.isExpanded('marsh')).toBe(false);
