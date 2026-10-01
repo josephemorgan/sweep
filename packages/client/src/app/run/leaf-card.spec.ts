@@ -475,3 +475,38 @@ describe('LeafCard panel (route)', () => {
     expect(el.querySelector('section')!.getAttribute('aria-label')).toBe('Hidden section');
   });
 });
+
+describe('LeafCard sticky rows and standalone panel', () => {
+  it('does not carry sticky rows over when the leaf changes', async () => {
+    const { el, fixture, layout, store } = await renderCard('village');
+    store.setTaskState('ferry-passage', 'done');
+    await fixture.whenStable();
+    expect(el.querySelector('input[aria-label="Pay the ferryman"]')).not.toBeNull();
+    vi.spyOn(layout, 'isExpanded').mockReturnValue(true);
+    fixture.componentRef.setInput('leafId', 'marsh');
+    await fixture.whenStable();
+    expect(el.querySelector('input[aria-label="Pay the ferryman"]')).toBeNull();
+    expect(el.querySelector('section')!.id).toBe('section-marsh');
+  });
+
+  it('renders a standalone detail panel without a layout write', async () => {
+    const { el, fixture, layout } = await renderCard('marsh');
+    fixture.componentRef.setInput('detailPane', true);
+    fixture.componentRef.setInput('columns', 2);
+    await fixture.whenStable();
+    expect(layout.isExpanded('marsh')).toBe(false);
+    expect(el.querySelector('[data-category-header]')).not.toBeNull();
+    expect(el.querySelector('.grid-cols-2')).not.toBeNull();
+    expect(
+      [...el.querySelectorAll('button')].some((b) => b.textContent?.trim() === "I'm here"),
+    ).toBe(true);
+    const toggle = el.querySelector('[role=heading] button') as HTMLButtonElement;
+    expect(toggle.hasAttribute('aria-expanded')).toBe(false);
+    expect(toggle.hasAttribute('aria-controls')).toBe(false);
+    const selected: unknown[] = [];
+    fixture.componentInstance.select.subscribe(() => selected.push(true));
+    toggle.click();
+    expect(selected.length).toBe(1);
+    expect(layout.isExpanded('marsh')).toBe(false);
+  });
+});
