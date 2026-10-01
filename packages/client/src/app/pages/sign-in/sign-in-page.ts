@@ -2,6 +2,7 @@ import { Component, computed, inject, signal } from '@angular/core';
 import { FormField, FormRoot, email, form, required } from '@angular/forms/signals';
 import { ActivatedRoute, Router } from '@angular/router';
 import { toApiError } from '../../api/api-error';
+import { AuthApi } from '../../api/auth-api';
 import { Session } from '../../auth/session';
 
 function safeNext(next: string | null): string {
@@ -50,14 +51,26 @@ function safeNext(next: string | null): string {
         }
         <button type="submit" class="btn-primary" [disabled]="busy()">Sign in</button>
       </form>
+      @if (demoEnabled()) {
+        <div class="flex flex-col gap-2 border-t border-border pt-4">
+          <button type="button" class="btn" [disabled]="busy()" (click)="tryDemo()">
+            Try the demo
+          </button>
+          <p class="m-0 text-sm text-fg-muted">
+            Poke around a few sample playthroughs. Nothing you do in the demo is saved.
+          </p>
+        </div>
+      }
     </main>
   `,
 })
 export class SignInPage {
   private readonly session = inject(Session);
+  private readonly auth = inject(AuthApi);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
   protected readonly busy = signal(false);
+  protected readonly demoEnabled = signal(false);
   protected readonly error = signal<string | null>(null);
   private readonly model = signal({ email: '', password: '' });
 
@@ -77,6 +90,30 @@ export class SignInPage {
   protected readonly showPasswordError = computed(
     () => this.signInForm.password().touched() && this.signInForm.password().invalid(),
   );
+
+  constructor() {
+    void this.auth.demoStatus().then((enabled) => this.demoEnabled.set(enabled));
+  }
+
+  protected async tryDemo(): Promise<void> {
+    this.busy.set(true);
+    this.error.set(null);
+    try {
+      await this.session.signInDemo();
+      await this.router.navigateByUrl(safeNext(this.route.snapshot.queryParamMap.get('next')));
+    } catch (err) {
+      const e = toApiError(err);
+      this.error.set(
+        e.status === 429
+          ? 'Too many sign-in attempts. Wait a minute and try again.'
+          : e.status === 404
+            ? "The demo isn't available right now."
+            : e.message,
+      );
+    } finally {
+      this.busy.set(false);
+    }
+  }
 
   private async submit(): Promise<void> {
     this.busy.set(true);

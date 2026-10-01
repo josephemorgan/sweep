@@ -1,0 +1,8 @@
+# Production override: run the image CI publishes instead of building locally.
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+# See docs/deployment.md. Runtime config still comes from the .env next to these files.
+services:
+  app:
+    image: ghcr.io/josephemorgan/sweep:${SWEEP_IMAGE_TAG:-latest}
+    build: !reset null
+    pull_policy: always

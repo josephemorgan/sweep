@@ -14,6 +14,7 @@ describe('readEnv', () => {
       databaseUrl: base.DATABASE_URL,
       port: 3000,
       signupEnabled: false,
+      demoEnabled: false,
       betterAuthSecret: SECRET,
       betterAuthUrl: 'http://localhost:4200',
       clientDistDir: undefined,
@@ -27,6 +28,7 @@ describe('readEnv', () => {
       ...base,
       PORT: '8080',
       SIGNUP_ENABLED: 'true',
+      DEMO_ENABLED: 'true',
       BETTER_AUTH_URL: 'https://sweep.example.com/some/path?x=1',
       CLIENT_DIST_DIR: '/app/public',
       TRUST_PROXY: '2',
@@ -34,6 +36,7 @@ describe('readEnv', () => {
     });
     expect(env.port).toBe(8080);
     expect(env.signupEnabled).toBe(true);
+    expect(env.demoEnabled).toBe(true);
     expect(env.betterAuthUrl).toBe('https://sweep.example.com');
     expect(env.clientDistDir).toBe('/app/public');
     expect(env.trustProxy).toBe(2);
@@ -147,5 +150,9 @@ describe('readEnv', () => {
 
   it('rejects SIGNUP_ENABLED values other than true/false', () => {
     expect(() => readEnv({ ...base, SIGNUP_ENABLED: 'yes' })).toThrow(/SIGNUP_ENABLED/);
+  });
+
+  it('rejects DEMO_ENABLED values other than true/false', () => {
+    expect(() => readEnv({ ...base, DEMO_ENABLED: 'yes' })).toThrow(/DEMO_ENABLED/);
   });
 });

@@ -4,6 +4,7 @@ pnpm-lock.yaml
 **/.angular/
 **/*.md
 guides/
+packages/server/demo/guides/
 schema/*.json
 packages/core/test/fixtures/
 packages/server/drizzle/

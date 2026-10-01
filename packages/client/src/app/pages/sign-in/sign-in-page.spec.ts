@@ -1,14 +1,20 @@
 import { TestBed } from '@angular/core/testing';
 import { ActivatedRoute, Router, convertToParamMap, provideRouter } from '@angular/router';
 import { ApiError } from '../../api/api-error';
+import { AuthApi } from '../../api/auth-api';
 import { Session } from '../../auth/session';
 import { SignInPage } from './sign-in-page';
 
-async function setup(signIn: ReturnType<typeof vi.fn>, next?: string) {
+async function setup(
+  signIn: ReturnType<typeof vi.fn>,
+  next?: string,
+  demo: { status?: Promise<boolean>; signInDemo?: ReturnType<typeof vi.fn> } = {},
+) {
   TestBed.configureTestingModule({
     providers: [
       provideRouter([]),
-      { provide: Session, useValue: { signIn } },
+      { provide: Session, useValue: { signIn, signInDemo: demo.signInDemo } },
+      { provide: AuthApi, useValue: { demoStatus: () => demo.status ?? Promise.resolve(false) } },
       {
         provide: ActivatedRoute,
         useValue: {
@@ -36,6 +42,47 @@ async function setup(signIn: ReturnType<typeof vi.fn>, next?: string) {
 }
 
 describe('SignInPage', () => {
+  const demoButton = (el: HTMLElement): HTMLButtonElement | undefined =>
+    [...el.querySelectorAll('button')].find((b) => b.textContent?.includes('Try the demo'));
+
+  it('hides the demo button when the demo is disabled or the check fails', async () => {
+    // AuthApi.demoStatus() resolves false for both "disabled" and any error.
+    const { el } = await setup(vi.fn(), undefined, { status: Promise.resolve(false) });
+    expect(demoButton(el)).toBeUndefined();
+  });
+
+  it('shows the demo button when enabled and signs in with it', async () => {
+    const signInDemo = vi.fn().mockResolvedValue(undefined);
+    const { fixture, el, navigate } = await setup(vi.fn(), '/runs/abc', {
+      status: Promise.resolve(true),
+      signInDemo,
+    });
+    await vi.waitFor(() => {
+      fixture.detectChanges();
+      expect(demoButton(el)).toBeDefined();
+    });
+    demoButton(el)!.click();
+    await vi.waitFor(() => expect(navigate).toHaveBeenCalledWith('/runs/abc'));
+    expect(signInDemo).toHaveBeenCalled();
+  });
+
+  it('explains a disabled demo', async () => {
+    const signInDemo = vi.fn().mockRejectedValue(new ApiError(404, 'NOT_FOUND', 'x'));
+    const { fixture, el } = await setup(vi.fn(), undefined, {
+      status: Promise.resolve(true),
+      signInDemo,
+    });
+    await vi.waitFor(() => {
+      fixture.detectChanges();
+      expect(demoButton(el)).toBeDefined();
+    });
+    demoButton(el)!.click();
+    await vi.waitFor(() => {
+      fixture.detectChanges();
+      expect(el.querySelector('[role="alert"]')?.textContent).toContain("isn't available");
+    });
+  });
+
   it('validates before calling the server', async () => {
     const signIn = vi.fn();
     const { el, submit } = await setup(signIn);

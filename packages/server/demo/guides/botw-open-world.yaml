@@ -1,0 +1,71 @@
+# yaml-language-server: $schema=../../schema/sweep-guide.v1.schema.json
+sweep: 1
+game: "The Legend of Zelda: Breath of the Wild"
+title: Open-world sample
+categories:
+  shrines:
+    name: Shrines
+    about: Shrines of Trials.
+  koroks:
+    name: Korok seeds
+    about: Hidden Korok seeds.
+sections:
+  - id: great-plateau
+    title: Great Plateau
+    overview: The tutorial plateau; earn the paraglider to leave.
+    sections:
+      - id: plateau-shrines
+        title: Plateau shrines
+        overview: Clear the four plateau shrines.
+      - id: paraglider
+        title: The paraglider
+        overview: Meet the old man at the Temple of Time.
+  - id: hyrule
+    title: Hyrule
+    overview: The open world. Go anywhere, in any order.
+    requires: [great-plateau]
+    sections:
+      - id: kakariko
+        title: Kakariko Village
+        overview: Meet Impa.
+        requires: []
+      - id: hateno
+        title: Hateno Village
+        overview: Visit the Ancient Tech Lab.
+        requires: []
+      - id: zoras-domain
+        title: Zora's Domain
+        overview: Help the Zora with Vah Ruta.
+        requires: []
+      - id: hyrule-castle
+        title: Hyrule Castle
+        overview: Face Calamity Ganon whenever you're ready.
+        requires: []
+tasks:
+  - id: oman-au-shrine
+    title: Oman Au Shrine
+    category: shrines
+    windows:
+      - from: plateau-shrines
+        until: end
+  - id: korok-hateno-rock-circle
+    title: "Korok: rock circle above Hateno"
+    category: koroks
+    windows:
+      - from: hyrule
+        until: end
+        home: hateno
+  - id: korok-kakariko-pinwheel
+    title: "Korok: pinwheel balloons near Kakariko"
+    category: koroks
+    windows:
+      - from: hyrule
+        until: end
+        home: kakariko
+  - id: korok-zora-waterfall
+    title: "Korok: top of the waterfall"
+    category: koroks
+    windows:
+      - from: hyrule
+        until: end
+        home: zoras-domain

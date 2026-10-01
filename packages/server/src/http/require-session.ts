@@ -19,7 +19,12 @@ export function requireSession(auth: Auth): RequestHandler {
     });
     for (const cookie of headers.getSetCookie()) res.append('Set-Cookie', cookie);
     if (!result) throw new HttpError(401, ApiErrorCode.Unauthorized, 'Sign in to continue.');
-    setUser(res, { id: result.user.id, email: result.user.email, name: result.user.name });
+    setUser(res, {
+      id: result.user.id,
+      email: result.user.email,
+      name: result.user.name,
+      sessionId: result.session.id,
+    });
     next();
   };
 }

@@ -2,6 +2,8 @@ import { createApp } from './app.js';
 import { createAuth } from './auth.js';
 import { createDb } from './db/client.js';
 import { runMigrations } from './db/migrate.js';
+import { loadDemoTemplates } from './demo/templates.js';
+import { ensureDemoUser } from './demo/user.js';
 import { readEnv } from './env.js';
 import { loadRootEnvFile } from './load-env.js';
 
@@ -19,6 +21,22 @@ const auth = createAuth({
   baseURL: env.betterAuthUrl,
   signupEnabled: env.signupEnabled,
 });
+
+let demo: Parameters<typeof createApp>[0]['demo'];
+if (env.demoEnabled) {
+  // Only account creation needs sign-up on; it stays off for the running app.
+  const signupAuth = createAuth({
+    db,
+    secret: env.betterAuthSecret,
+    baseURL: env.betterAuthUrl,
+    signupEnabled: true,
+  });
+  await ensureDemoUser({ db, auth, signupAuth, secret: env.betterAuthSecret });
+  const templates = await loadDemoTemplates({ timeoutMs: env.parseTimeoutMs });
+  console.log(`Demo enabled: ${templates.length} sample runs.`);
+  demo = { templates, secret: env.betterAuthSecret };
+}
+
 const app = createApp({
   db,
   auth,
@@ -26,6 +44,7 @@ const app = createApp({
   clientDistDir: env.clientDistDir,
   trustProxy: env.trustProxy,
   parseTimeoutMs: env.parseTimeoutMs,
+  demo,
 });
 const server = app.listen(env.port, () => {
   console.log(`Sweep server listening on http://localhost:${env.port}`);

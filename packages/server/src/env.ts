@@ -4,6 +4,8 @@ export interface Env {
   databaseUrl: string;
   port: number;
   signupEnabled: boolean;
+  /** Shows "Try the demo" and serves per-session in-memory sample runs (DEMO_ENABLED). */
+  demoEnabled: boolean;
   betterAuthSecret: string;
   /** The origin users load the app from: BETTER_AUTH_URL reduced to `scheme://host[:port]`. */
   betterAuthUrl: string;
@@ -105,12 +107,17 @@ export function readEnv(source: NodeJS.ProcessEnv = process.env): Env {
   if (signup !== 'true' && signup !== 'false') {
     throw new Error(`SIGNUP_ENABLED must be "true" or "false", got "${signup}".`);
   }
+  const demo = source['DEMO_ENABLED'] ?? 'false';
+  if (demo !== 'true' && demo !== 'false') {
+    throw new Error(`DEMO_ENABLED must be "true" or "false", got "${demo}".`);
+  }
   const betterAuthUrl = readOrigin(source['BETTER_AUTH_URL']);
   requireHttpsInProduction(betterAuthUrl, source['NODE_ENV']);
   return {
     databaseUrl,
     port,
     signupEnabled: signup === 'true',
+    demoEnabled: demo === 'true',
     betterAuthSecret: readSecret(source['BETTER_AUTH_SECRET']),
     betterAuthUrl,
     clientDistDir: source['CLIENT_DIST_DIR'] || undefined,

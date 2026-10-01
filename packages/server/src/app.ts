@@ -1,12 +1,19 @@
 import { basename, resolve } from 'node:path';
+import { DEMO_USER_EMAIL, type DemoSignInResponseDto, type DemoStatusDto } from '@sweep/core';
 import { toNodeHandler } from 'better-auth/node';
 import express, { type Express } from 'express';
 import type { Auth } from './auth.js';
 import type { Database } from './db/client.js';
+import { demoAuthGuard } from './demo/auth-guard.js';
+import { demoRunsRouter } from './demo/router.js';
+import { DemoSandboxes } from './demo/sandbox.js';
+import type { DemoLimits, DemoTemplate } from './demo/types.js';
+import { demoSignIn } from './demo/user.js';
 import { renormalizer, type RenormalizerHooks } from './guides/renormalize.js';
 import { authBodyLimit } from './http/auth-body.js';
 import { describeError, errorHandler } from './http/error-handler.js';
 import { ApiErrorCode, HttpError } from './http/errors.js';
+import { getUser } from './http/locals.js';
 import { authRateLimit, userRateLimit } from './http/rate-limits.js';
 import { requireSession } from './http/require-session.js';
 import { sameOriginGuard } from './http/same-origin.js';
@@ -44,6 +51,10 @@ export interface AppOptions {
   parseWorkerUrl?: URL | undefined;
   /** Test hooks for re-normalization: a wrapped reparse, the backoff clock, joins. */
   renormalize?: RenormalizerHooks | undefined;
+  /** Turns the demo on (DEMO_ENABLED): seeded runs, the shared secret, and optional limit overrides. */
+  demo?:
+    | { templates: readonly DemoTemplate[]; secret: string; limits?: Partial<DemoLimits> }
+    | undefined;
 }
 
 /**
@@ -69,9 +80,10 @@ const NO_CACHE_FILES = new Set(['index.html', 'ngsw-worker.js', 'ngsw.json']);
 const IMMUTABLE_ASSET = /-[A-Z0-9]{8}\.[a-z0-9]+$/;
 
 /**
- * Order: helmet, trust proxy, /api/auth (rate limit, body limit, Better Auth), JSON,
- * same-origin, health, schema (public), session guard, per-user limit, routers, /api 404,
- * static/SPA, errors.
+ * Order: helmet, trust proxy, /api/auth (rate limit, body limit, demo auth guard, Better Auth), /api/demo rate
+ * limit (the same budget), JSON, same-origin, demo status and sign-in (public), health, schema
+ * (public), session guard, per-user limit, runs routers (the demo router for the demo account,
+ * the database one for everyone else), /api 404, static/SPA, errors.
  */
 export function createApp(options: AppOptions): Express {
   const { db, auth, sameOrigin, clientDistDir } = options;
@@ -85,31 +97,65 @@ export function createApp(options: AppOptions): Express {
 
   // Better Auth mounts before express.json(). authBodyLimit reads its bodies with a size limit
   // (better-call applies none) and hands them over as a string.
-  app.use('/api/auth', authRateLimit(limits.auth));
+  const authLimiter = authRateLimit(limits.auth);
+  app.use('/api/auth', authLimiter);
   app.use('/api/auth', authBodyLimit(AUTH_BODY_LIMIT_BYTES));
+  if (options.demo) app.use('/api/auth', demoAuthGuard(auth));
   app.all('/api/auth/*splat', toNodeHandler(safeAuthHandler(auth)));
   app.use(express.json({ limit: JSON_BODY_LIMIT_BYTES }));
 
+  // Demo sign-in shares the auth budget (GET /api/demo is skipped as a safe method).
+  app.use('/api/demo', authLimiter);
   app.use('/api', sameOriginGuard(sameOrigin));
+
+  app.get('/api/demo', (_req, res) => {
+    const body: DemoStatusDto = { enabled: Boolean(options.demo) };
+    res.json(body);
+  });
+  app.post('/api/demo/sign-in', async (_req, res) => {
+    if (!options.demo) {
+      throw new HttpError(404, ApiErrorCode.NotFound, 'The demo is not enabled.');
+    }
+    const { headers, user } = await demoSignIn(auth, options.demo.secret);
+    for (const cookie of headers.getSetCookie()) res.append('Set-Cookie', cookie);
+    const body: DemoSignInResponseDto = { user };
+    res.json(body);
+  });
 
   app.use('/api', healthRouter(db));
   app.use(schemaRouter());
   app.use('/api', requireSession(auth));
   app.use('/api', userRateLimit('api', limits.api));
-  app.use(
-    '/api',
-    runsRouter({
-      db,
-      quotas,
+  const dbRuns = runsRouter({
+    db,
+    quotas,
+    uploadLimiter: userRateLimit('uploads', limits.uploads),
+    parseUpload: uploadParser({ timeoutMs: parseTimeoutMs, workerUrl: options.parseWorkerUrl }),
+    models: renormalizer({
+      ...options.renormalize,
+      timeoutMs: parseTimeoutMs,
+      workerUrl: options.parseWorkerUrl,
+    }),
+  });
+  if (options.demo) {
+    const demoRuns = demoRunsRouter({
+      sandboxes: new DemoSandboxes(options.demo.templates, { limits: options.demo.limits }),
       uploadLimiter: userRateLimit('uploads', limits.uploads),
       parseUpload: uploadParser({ timeoutMs: parseTimeoutMs, workerUrl: options.parseWorkerUrl }),
-      models: renormalizer({
-        ...options.renormalize,
-        timeoutMs: parseTimeoutMs,
-        workerUrl: options.parseWorkerUrl,
-      }),
-    }),
-  );
+    });
+    app.use('/api', (req, res, next) => {
+      (getUser(res).email === DEMO_USER_EMAIL ? demoRuns : dbRuns)(req, res, next);
+    });
+  } else {
+    // A leftover demo account (the demo was turned off) is signed out, not served from the DB.
+    app.use('/api', (_req, res, next) => {
+      if (getUser(res).email === DEMO_USER_EMAIL) {
+        throw new HttpError(401, ApiErrorCode.Unauthorized, 'Sign in to continue.');
+      }
+      next();
+    });
+    app.use('/api', dbRuns);
+  }
   app.use('/api', () => {
     throw new HttpError(404, ApiErrorCode.NotFound, 'No such API route.');
   });

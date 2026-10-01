@@ -20,3 +20,4 @@ Format (MADR-lite): YAML front matter (`status`, `date`, optional `supersedes`),
 | [0012](0012-private-guides-with-accounts.md) | Accounts; guides private to the uploader, never shared |
 | [0013](0013-pnpm-10-pin.md) | Pin pnpm 10.34.6 (corepack < 0.34.5, Node < 24.12, can't run pnpm 12) |
 | [0014](0014-core-consumed-as-built-output.md) | Consumers import core's built `dist/`, rebuilt on install |
+| [0015](0015-demo-sign-in-in-memory-sandbox.md) | Demo sign-in: one shared account, per-session in-memory sandboxes |

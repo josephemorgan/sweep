@@ -1,9 +1,11 @@
+import type { DemoSignInResponseDto } from '@sweep/core';
 import type { Express } from 'express';
 import request from 'supertest';
 import { createApp, type AppOptions } from '../../src/app.js';
 import { createAuth, type Auth } from '../../src/auth.js';
 import type { Database } from '../../src/db/client.js';
 import { RATE_LIMITS, type RateLimits } from '../../src/limits.js';
+import { ensureDemoUser } from '../../src/demo/user.js';
 import { createUser } from '../../src/scripts/create-user.js';
 import { createTestDb, type TestDb } from './test-db.js';
 
@@ -54,11 +56,15 @@ export interface TestContext {
   testDb: TestDb;
   db: Database;
   auth: Auth;
+  /** A sign-up-enabled Better Auth instance, as the create-user script builds. */
+  scriptAuth: Auth;
   app: Express;
   origin: string;
   /** Creates an account (as the create-user script does) and returns its user id. */
   createUser(email: string): Promise<string>;
   signedInAgent(email: string): Promise<SignedIn>;
+  /** A guest signed in through POST /api/demo/sign-in (needs the `demo` option). */
+  demoAgent(): Promise<SignedIn>;
   close(): Promise<void>;
 }
 
@@ -77,6 +83,15 @@ export async function createTestContext(options: ContextOptions = {}): Promise<T
     rateLimits: { ...TEST_RATE_LIMITS, ...rateLimits },
   });
 
+  if (appOptions.demo) {
+    await ensureDemoUser({
+      db: testDb.db,
+      auth,
+      signupAuth: scriptAuth,
+      secret: appOptions.demo.secret,
+    });
+  }
+
   async function addUser(email: string): Promise<string> {
     const name = email.split('@')[0] ?? email;
     const created = await createUser(scriptAuth, { email, name, password: TEST_PASSWORD });
@@ -87,6 +102,7 @@ export async function createTestContext(options: ContextOptions = {}): Promise<T
     testDb,
     db: testDb.db,
     auth,
+    scriptAuth,
     app,
     origin,
     createUser: addUser,
@@ -98,6 +114,12 @@ export async function createTestContext(options: ContextOptions = {}): Promise<T
         .send({ email, password: TEST_PASSWORD });
       if (res.status !== 200) throw new Error(`sign-in failed: ${res.status} ${res.text}`);
       return { agent, userId };
+    },
+    async demoAgent() {
+      const agent = withOrigin(request.agent(app), origin);
+      const res = await agent.post('/api/demo/sign-in');
+      if (res.status !== 200) throw new Error(`demo sign-in failed: ${res.status} ${res.text}`);
+      return { agent, userId: (res.body as DemoSignInResponseDto).user.id };
     },
     close: () => testDb.drop(),
   };

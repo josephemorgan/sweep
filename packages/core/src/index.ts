@@ -17,6 +17,8 @@ export type {
   ApiErrorDto,
   ApplyGuideResponseDto,
   CreateRunResponseDto,
+  DemoSignInResponseDto,
+  DemoStatusDto,
   DryRunCreateResponseDto,
   DryRunUpdateResponseDto,
   GuideSummaryDto,
@@ -30,6 +32,7 @@ export type {
   SetSectionBody,
   SetTaskBody,
 } from './model/api.js';
+export { DEMO_USER_EMAIL, DEMO_USER_NAME } from './model/demo.js';
 
 export { SectionState, WindowStatus, deriveCore, deriveRun } from './engine/derive.js';
 export type { CoreView, SectionView, TaskStatus, TaskStatusKind } from './engine/derive.js';
