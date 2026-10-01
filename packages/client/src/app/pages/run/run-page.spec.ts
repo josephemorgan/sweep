@@ -7,7 +7,7 @@ import { ResumeCache } from '../../run/resume-cache';
 import { setupRunStore } from '../../../testing/run-store-harness';
 import { By } from '@angular/platform-browser';
 import { SectionList } from '../../run/section-list';
-import { RunLayout } from '../../run/run-layout';
+import { HANDHELD_QUERY, RunLayout, WIDE_DETAIL_QUERY } from '../../run/run-layout';
 import { RunPage } from './run-page';
 
 async function renderPage(progress = {}) {
@@ -334,11 +334,11 @@ describe('RunPage update guide (§5.8)', () => {
   });
 
   describe('layouts', () => {
-    function stubMedia(matches: boolean): void {
+    function stubMedia(handheld: boolean, wide = handheld): void {
       vi.stubGlobal(
         'matchMedia',
         vi.fn().mockImplementation((query: string) => ({
-          matches,
+          matches: query === HANDHELD_QUERY ? handheld : query === WIDE_DETAIL_QUERY ? wide : false,
           media: query,
           addEventListener: vi.fn(),
           removeEventListener: vi.fn(),
@@ -366,7 +366,7 @@ describe('RunPage update guide (§5.8)', () => {
       stubMedia(true);
       const { el, fixture, store } = await renderPage({ cleared: ['village'] });
       const aside = el.querySelector('aside[aria-label="Route"]')!;
-      expect(aside.classList).toContain('w-[340px]');
+      expect(aside.classList).toContain('w-[min(340px,47vw)]');
       expect(el.querySelector('main')!.contains(aside)).toBe(true);
       expect(el.querySelector('header app-bottom-bar')).not.toBeNull();
       expect(title(el)).toContain('Marsh');
@@ -381,6 +381,21 @@ describe('RunPage update guide (§5.8)', () => {
       const next = store.view()!.current!;
       expect(next).not.toBe('village');
       expect(el.querySelector(`#detail-section-${next}`)).not.toBeNull();
+    });
+
+    it('handheld, wide viewport: the detail pane card gets two columns', async () => {
+      stubMedia(true, true);
+      const { el } = await renderPage({ cleared: ['village'] });
+      const pane = el.querySelector('main > section')!;
+      expect(pane.querySelector('app-leaf-card .grid-cols-2')).not.toBeNull();
+    });
+
+    it('handheld, narrow viewport (Retroid, 640px): the detail pane card gets one column', async () => {
+      stubMedia(true, false);
+      const { el } = await renderPage({ cleared: ['village'] });
+      const pane = el.querySelector('main > section')!;
+      expect(pane.querySelector('app-leaf-card')).not.toBeNull();
+      expect(pane.querySelector('.grid-cols-2')).toBeNull();
     });
 
     it('handheld: clearing the selected non-current leaf snaps the pane to the new current', async () => {

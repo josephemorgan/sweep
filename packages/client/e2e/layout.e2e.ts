@@ -37,9 +37,12 @@ test('layout follows spec §5.9 at this viewport', async ({ page, runs }, testIn
 
   if (handheld) {
     const route = page.getByRole('complementary', { name: 'Route' });
-    expect((await route.boundingBox())!.width).toBe(340);
+    // ADR 0016: min(340px, 47vw) is 300.8px at 640px wide.
+    expect((await route.boundingBox())!.width).toBeCloseTo(0.47 * viewport.width, 0);
     await expect(current.getByRole('button', { name: 'Clear section' })).toBeVisible();
-    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(
+    const pane = page.locator('main > section').first();
+    expect(await pane.evaluate((el) => getComputedStyle(el).paddingLeft)).toBe('16px');
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(
       await page.evaluate(() => document.documentElement.clientWidth),
     );
   } else {
@@ -49,12 +52,18 @@ test('layout follows spec §5.9 at this viewport', async ({ page, runs }, testIn
 
   // The run name keeps a sensible width next to the unsaved reservation and the menu button.
   const h1 = (await page.getByRole('heading', { level: 1 }).boundingBox())!;
-  expect(h1.width).toBeGreaterThanOrEqual(120);
+  expect(h1.width).toBeGreaterThanOrEqual(handheld ? 200 : 120);
 
   const bar = page.getByRole('navigation', { name: 'Run metrics' });
   const barBox = (await bar.boundingBox())!;
-  if (handheld) expect(barBox.height).toBeLessThanOrEqual(56);
-  else expect(barBox.height).toBe(64);
+  if (handheld) {
+    expect(barBox.height).toBeLessThanOrEqual(56);
+    // Narrow handheld: the label sits below its number.
+    const now = bar.getByRole('button', { name: /^Now/ });
+    const label = (await now.locator('span').first().boundingBox())!;
+    const num = (await now.locator('span').nth(1).boundingBox())!;
+    expect(label.y).toBeGreaterThan(num.y);
+  } else expect(barBox.height).toBe(64);
 
   await bar.getByRole('button', { name: /^Now/ }).click();
   const sheet = (await page.getByRole('dialog', { name: 'Now', exact: true }).boundingBox())!;
@@ -102,8 +111,36 @@ test('a 70-character leaf title truncates on one line in the route pane', async 
   const short = (await routeRow(page, 'Start').boundingBox())!;
   const long = (await row.boundingBox())!;
   expect(Math.abs(long.height - short.height)).toBeLessThanOrEqual(1);
-  expect((await page.getByRole('complementary', { name: 'Route' }).boundingBox())!.width).toBe(340);
+  const aside = (await page.getByRole('complementary', { name: 'Route' }).boundingBox())!;
+  expect(aside.width).toBeCloseTo(0.47 * page.viewportSize()!.width, 0);
   await expectNoHorizontalScroll(page);
+});
+
+test.describe('wide handheld (1024×768)', () => {
+  test.use({ viewport: { width: 1024, height: 768 } });
+
+  test('keeps the 340px route pane, two columns and inline metrics', async ({
+    page,
+    runs,
+  }, testInfo) => {
+    test.skip(testInfo.project.name !== 'handheld-4x3', 'the wide handheld case is handheld-only');
+    const runId = await runs.create(`Wide ${testInfo.project.name}`);
+    await page.goto(`/runs/${runId}`);
+    const current = leafPanel(page, 'Harrow Village');
+    await expect(current).toBeVisible();
+    expect((await page.getByRole('complementary', { name: 'Route' }).boundingBox())!.width).toBe(
+      340,
+    );
+    await expect(page.locator('main > section app-leaf-card .grid-cols-2').first()).toBeVisible();
+    const now = page.getByRole('navigation', { name: 'Run metrics' }).getByRole('button', {
+      name: /^Now/,
+    });
+    const label = (await now.locator('span').first().boundingBox())!;
+    const num = (await now.locator('span').nth(1).boundingBox())!;
+    expect(label.y).toBeLessThan(num.y + num.height);
+    expect(num.y).toBeLessThan(label.y + label.height);
+    await expectNoHorizontalScroll(page);
+  });
 });
 
 test('a not-chosen row reads as disabled and the top bar stays reachable', async ({

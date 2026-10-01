@@ -1,3 +1,4 @@
+import type { WritableSignal } from '@angular/core';
 import {
   Component,
   DestroyRef,
@@ -25,7 +26,7 @@ import { ClearDialog } from '../../run/clear-dialog';
 import { lockReason } from '../../run/lock-reason';
 import { Reveals } from '../../run/reveals';
 import { RunActions } from '../../run/run-actions';
-import { HANDHELD_QUERY, RunLayout } from '../../run/run-layout';
+import { HANDHELD_QUERY, RunLayout, WIDE_DETAIL_QUERY } from '../../run/run-layout';
 import { RunMenu } from '../../run/run-menu';
 import { RunStore } from '../../run/run-store';
 import { UpdateGuideSheet } from '../../run/update-guide-sheet';
@@ -92,7 +93,7 @@ import { sectionLabel } from '../../run/spoiler';
         <main class="flex grow overflow-hidden">
           <aside
             aria-label="Route"
-            class="relative w-[340px] shrink-0 overflow-y-auto overflow-x-hidden border-r border-rule"
+            class="relative w-[min(340px,47vw)] shrink-0 overflow-y-auto overflow-x-hidden border-r border-rule"
           >
             @if (store.guide(); as guide) {
               <app-section-list
@@ -103,7 +104,9 @@ import { sectionLabel } from '../../run/spoiler';
               />
             }
           </aside>
-          <section class="min-w-0 grow overflow-y-auto px-6 py-3">
+          <section
+            class="min-w-0 grow overflow-y-auto px-6 py-3 handheld-narrow:px-4 handheld-narrow:py-2"
+          >
             @if (store.offline()) {
               <p
                 class="m-0 mx-3 mb-2 rounded-control border border-border px-3 py-2 text-sm text-fg-muted"
@@ -115,7 +118,7 @@ import { sectionLabel } from '../../run/spoiler';
               <app-leaf-card
                 variant="panel"
                 [detailPane]="true"
-                [columns]="2"
+                [columns]="wideDetail() ? 2 : 1"
                 [level]="2"
                 [leafId]="leafId"
               />
@@ -196,6 +199,8 @@ export class RunPage implements RunActions {
 
   /** The 4:3 handheld layout (spec §5.9); one layout renders at a time. */
   protected readonly handheld = signal(false);
+  /** Wide enough for two detail-pane columns (see WIDE_DETAIL_QUERY). */
+  protected readonly wideDetail = signal(false);
   /** R5: the leaf shown in the detail pane; snaps back to current whenever current changes. */
   private readonly current = computed(() => this.store.view()?.current ?? null);
   protected readonly selectedLeaf = linkedSignal<string | null>(() => this.current());
@@ -205,15 +210,19 @@ export class RunPage implements RunActions {
     return id && this.store.index()?.sections.has(id) ? id : this.current();
   });
 
+  private watchMedia(query: string, target: WritableSignal<boolean>): void {
+    const list = this.doc.defaultView?.matchMedia?.(query);
+    if (!list) return;
+    target.set(list.matches);
+    const onChange = (e: MediaQueryListEvent): void => target.set(e.matches);
+    list.addEventListener?.('change', onChange);
+    inject(DestroyRef).onDestroy(() => list.removeEventListener?.('change', onChange));
+  }
+
   constructor() {
     const title = inject(Title);
-    const query = this.doc.defaultView?.matchMedia?.(HANDHELD_QUERY);
-    if (query) {
-      this.handheld.set(query.matches);
-      const onChange = (e: MediaQueryListEvent): void => this.handheld.set(e.matches);
-      query.addEventListener?.('change', onChange);
-      inject(DestroyRef).onDestroy(() => query.removeEventListener?.('change', onChange));
-    }
+    this.watchMedia(HANDHELD_QUERY, this.handheld);
+    this.watchMedia(WIDE_DETAIL_QUERY, this.wideDetail);
     effect(() => {
       const id = this.runId();
       untracked(() => void this.store.open(id));

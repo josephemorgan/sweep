@@ -41,9 +41,10 @@ Readings of the spec that the user accepted where it leaves room. Change them on
 - **Spoiler blur:** a courtesy, not a security boundary. Blurred text stays in the DOM (aria-hidden, select-none), so Ctrl+F can find it.
 - **Task row ⋯:** a disclosure (aria-expanded/aria-controls), not `role=menu`.
 
-## Open items for the user
+## Handheld layout (spec §5.9, ADR 0016)
 
-- **§11.3 Retroid viewport:** `handheld-4x3` (1024x768) is an assumed CSS viewport. Confirm the device's real CSS viewport and DPR, then adjust that project in `playwright.config.ts` and the `(max-height: 800px)` landscape query if needed.
+- The Retroid's CSS viewport is 640×400 at DPR 2 (1280×960 screen; Chrome's URL bar takes ~80 px; ~450 px installed, 480 px fullscreen). `handheld-4x3` in `playwright.config.ts` models it; `layout.e2e.ts` also keeps a 1024×768 case.
+- One threshold, 920 px wide, splits the narrow and wide handheld variants. It lives in two places that must stay in step: `WIDE_DETAIL_QUERY` in `run-layout.ts` (drives the detail-pane column count) and the `handheld-narrow` Tailwind variant in `styles.css` (pane width and padding, stacked header metrics).
 
 ---
 

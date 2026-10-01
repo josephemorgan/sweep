@@ -12,12 +12,13 @@ export const UNSAVED_DELAY_MS = 1_000;
     <span
       role="status"
       aria-live="polite"
-      class="inline-flex min-h-11 w-28 items-center justify-center text-sm"
+      class="inline-flex min-h-11 w-28 handheld-narrow:w-11 items-center justify-center text-sm"
     >
       @if (shown()) {
         <span class="inline-flex items-center gap-1 text-last-chance">
           <span aria-hidden="true">●</span>
-          <span aria-hidden="true">{{ queue.size() }} unsaved</span>
+          <span aria-hidden="true" class="handheld-narrow:hidden">{{ queue.size() }} unsaved</span>
+          <span aria-hidden="true" class="hidden handheld-narrow:inline">{{ queue.size() }}</span>
           <span class="sr-only">
             {{ queue.size() }} unsaved {{ queue.size() === 1 ? 'change' : 'changes' }}
           </span>
