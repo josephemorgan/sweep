@@ -16,13 +16,11 @@ interface Problem {
   selector: 'app-new-run-page',
   imports: [FormField, FormRoot, RouterLink, ValidationReport],
   template: `
-    <header
-      class="sticky top-0 z-10 flex items-center gap-1 border-b border-border bg-surface-raised px-1"
-    >
+    <header class="sticky top-0 z-10 flex items-center gap-1 border-b border-rule bg-surface px-1">
       <a routerLink="/runs" class="btn-quiet" aria-label="Back to runs"
         ><span aria-hidden="true">‹</span></a
       >
-      <h1 class="m-0 flex-1 text-lg font-semibold">New run</h1>
+      <h1 class="m-0 flex-1 font-display font-semibold text-[22px] leading-7">New run</h1>
     </header>
     <main class="mx-auto flex w-full max-w-[720px] flex-col gap-4 px-4 py-4">
       <label class="flex flex-col gap-1 text-sm">
@@ -39,10 +37,7 @@ interface Problem {
         <p role="status" class="m-0 text-fg-muted">{{ busyText() }}</p>
       }
       @if (problem(); as p) {
-        <div
-          role="alert"
-          class="flex flex-wrap items-center gap-2 rounded-panel border border-missed p-3"
-        >
+        <div role="alert" class="flex flex-wrap items-center gap-2 border-l-2 border-missed pl-3">
           <p class="m-0 flex-1">{{ p.message }}</p>
           @if (p.retry) {
             <button type="button" class="btn" (click)="retry()">Try again</button>

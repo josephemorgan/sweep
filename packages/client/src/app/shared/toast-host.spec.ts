@@ -103,4 +103,14 @@ describe('ToastHost', () => {
       vi.useRealTimers();
     }
   });
+
+  it('styles a toast as a bordered raised surface without shadow', async () => {
+    const fixture = TestBed.createComponent(ToastHost);
+    TestBed.inject(Toasts).show('Saved', { durationMs: 60_000 });
+    await fixture.whenStable();
+    const toast = (fixture.nativeElement as HTMLElement).querySelector('p')!.parentElement!;
+    expect(toast.className).toContain('rounded-control');
+    expect(toast.className).toContain('border-border');
+    expect(toast.className).not.toContain('shadow');
+  });
 });

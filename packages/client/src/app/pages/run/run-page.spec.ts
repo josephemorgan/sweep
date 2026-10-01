@@ -106,6 +106,40 @@ describe('RunPage', () => {
   });
 });
 
+describe('RunPage header (Route UI)', () => {
+  it('uses the Route header styling and labels', async () => {
+    const { el } = await renderPage();
+    const header = el.querySelector('header')!;
+    expect(header.classList.contains('border-rule')).toBe(true);
+    expect(header.classList.contains('h-14')).toBe(true);
+    expect(el.querySelector('h1')?.classList.contains('font-display')).toBe(true);
+    expect(header.querySelector('a[aria-label="All runs"]')).not.toBeNull();
+    expect(header.querySelector('button[aria-label="Run menu"]')).not.toBeNull();
+  });
+
+  it('shows "<guide title> · n of m cleared" when the guide title differs from the run name', async () => {
+    const { el } = await renderPage({ cleared: ['village'] });
+    expect(el.querySelector('[data-testid="run-subtitle"]')?.textContent?.trim()).toBe(
+      'Completionist checklist · 1 of 7 cleared',
+    );
+  });
+
+  it('shows just "n of m cleared" when the guide title equals the run name', async () => {
+    const { store, api } = await setupRunStore();
+    store.close();
+    api.getRun.mockResolvedValue(
+      lanternKeepPayload({ cleared: ['village'] }, 'Completionist checklist'),
+    );
+    const fixture = TestBed.createComponent(RunPage);
+    fixture.componentRef.setInput('runId', RUN_ID);
+    await fixture.whenStable();
+    const el = fixture.nativeElement as HTMLElement;
+    expect(el.querySelector('[data-testid="run-subtitle"]')?.textContent?.trim()).toBe(
+      '1 of 7 cleared',
+    );
+  });
+});
+
 describe('RunPage clear and pin (§5.4)', () => {
   const dialog = (el: HTMLElement): HTMLDialogElement | null => el.querySelector('dialog[open]');
   const click = (root: Element, name: string): void =>

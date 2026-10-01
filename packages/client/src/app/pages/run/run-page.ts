@@ -47,17 +47,37 @@ import { sectionLabel } from '../../run/spoiler';
   template: `
     <div class="flex min-h-dvh flex-col">
       <header
-        class="sticky top-0 z-20 flex items-center gap-1 border-b border-border bg-surface-raised px-1"
+        class="sticky top-0 z-20 flex h-14 items-center gap-1 border-b border-rule bg-surface pl-1 pr-2 pt-1.5"
       >
-        <a routerLink="/runs" class="btn-quiet" aria-label="All runs"
-          ><span aria-hidden="true">‹</span></a
-        >
-        <h1
-          class="m-0 min-w-0 flex-1 truncate text-base font-semibold"
-          [attr.title]="store.run()?.name ?? null"
-        >
-          {{ store.run()?.name ?? 'Run' }}
-        </h1>
+        <a
+          routerLink="/runs"
+          class="flex size-11 shrink-0 items-center justify-center text-fg-muted"
+          aria-label="All runs"
+          ><svg
+            viewBox="0 0 24 24"
+            class="size-6"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.75"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <path d="M15 5l-7 7 7 7" /></svg
+        ></a>
+        <div class="min-w-0 flex-1">
+          <h1
+            class="m-0 truncate font-display text-[17px] font-semibold leading-[21px]"
+            [attr.title]="store.run()?.name ?? null"
+          >
+            {{ store.run()?.name ?? 'Run' }}
+          </h1>
+          @if (subtitle(); as text) {
+            <p class="m-0 truncate text-xs leading-[14px] text-fg-muted" data-testid="run-subtitle">
+              {{ text }}
+            </p>
+          }
+        </div>
         <app-unsaved-badge />
         <app-run-menu (updateGuide)="updating.set(true)" />
       </header>
@@ -162,6 +182,13 @@ export class RunPage implements RunActions {
   protected readonly pendingClear = signal<{ leafId: string; impact: ClearImpact } | null>(null);
   protected readonly pendingPin = signal<string | null>(null);
   protected readonly updating = signal(false);
+  protected readonly subtitle = computed(() => {
+    const run = this.store.run();
+    const summary = this.store.view()?.summary;
+    if (!run || !summary) return '';
+    const count = `${summary.leavesCleared} of ${summary.leavesTotal} cleared`;
+    return run.title !== run.name ? `${run.title} · ${count}` : count;
+  });
   protected readonly clearHeading = computed(() => {
     const pending = this.pendingClear();
     return pending ? `Leave ${this.label(pending.leafId)} behind?` : 'Clear section';

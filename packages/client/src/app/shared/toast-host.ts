@@ -29,7 +29,7 @@ import { Toasts } from './toasts';
       >
         @for (toast of visible(); track toast.id) {
           <div
-            class="pointer-events-auto flex w-full max-w-md items-center gap-2 rounded-panel border border-border bg-surface-raised py-1 pl-4 pr-1 shadow-lg"
+            class="pointer-events-auto flex w-full max-w-md items-center gap-2 rounded-control border border-border bg-surface-raised py-1 pl-4 pr-1"
             (mouseenter)="onEnter(toast.id)"
             (mouseleave)="onLeave($event, toast.id)"
             (focusin)="toasts.pause(toast.id)"
