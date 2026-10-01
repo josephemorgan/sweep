@@ -10,3 +10,5 @@ packages/core/test/fixtures/
 packages/server/drizzle/
 packages/client/playwright-report/
 packages/client/test-results/
+# Design artboard exports from the canvas; kept verbatim (see docs/design/*/README.md).
+docs/design/
