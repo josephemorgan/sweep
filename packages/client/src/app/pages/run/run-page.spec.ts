@@ -366,7 +366,7 @@ describe('RunPage update guide (§5.8)', () => {
       stubMedia(true);
       const { el, fixture, store } = await renderPage({ cleared: ['village'] });
       const aside = el.querySelector('aside[aria-label="Route"]')!;
-      expect(aside.classList).toContain('w-[340px]');
+      expect(aside.classList).toContain('w-[min(340px,47vw)]');
       expect(el.querySelector('main')!.contains(aside)).toBe(true);
       expect(el.querySelector('header app-bottom-bar')).not.toBeNull();
       expect(title(el)).toContain('Marsh');

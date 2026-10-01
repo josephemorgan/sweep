@@ -22,6 +22,9 @@
 
 /* Spec §5.9: the 4:3 handheld layout. */
 @custom-variant handheld (@media (orientation: landscape) and (max-height: 800px));
+/* ADR 0016: the narrow handheld variant (Retroid, 640px wide), below 920px. Must stay in step
+   with WIDE_DETAIL_QUERY in run-layout.ts. */
+@custom-variant handheld-narrow (@media (orientation: landscape) and (max-height: 800px) and (width < 920px));
 
 @layer base {
   :root {

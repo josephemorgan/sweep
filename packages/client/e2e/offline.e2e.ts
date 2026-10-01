@@ -11,10 +11,12 @@ test('checks a task offline and syncs on reconnect', async ({ page, context, run
   await expect(
     village.locator('[data-category-header]').filter({ hasText: 'Story' }),
   ).toContainText('1 of 1');
-  await expect(page.getByText('1 unsaved', { exact: true })).toBeVisible();
+  await expect(page.locator('app-unsaved-badge').getByRole('status')).toContainText(
+    '1 unsaved change',
+  );
 
   await context.setOffline(false);
-  await expect(page.getByText('1 unsaved', { exact: true })).toHaveCount(0);
+  await expect(page.locator('app-unsaved-badge').getByRole('status')).not.toContainText('unsaved');
   await expect
     .poll(async () => {
       const res = await page.request.get(`/api/runs/${runId}`);

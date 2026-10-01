@@ -93,7 +93,7 @@ import { sectionLabel } from '../../run/spoiler';
         <main class="flex grow overflow-hidden">
           <aside
             aria-label="Route"
-            class="relative w-[340px] shrink-0 overflow-y-auto overflow-x-hidden border-r border-rule"
+            class="relative w-[min(340px,47vw)] shrink-0 overflow-y-auto overflow-x-hidden border-r border-rule"
           >
             @if (store.guide(); as guide) {
               <app-section-list
@@ -104,7 +104,9 @@ import { sectionLabel } from '../../run/spoiler';
               />
             }
           </aside>
-          <section class="min-w-0 grow overflow-y-auto px-6 py-3">
+          <section
+            class="min-w-0 grow overflow-y-auto px-6 py-3 handheld-narrow:px-4 handheld-narrow:py-2"
+          >
             @if (store.offline()) {
               <p
                 class="m-0 mx-3 mb-2 rounded-control border border-border px-3 py-2 text-sm text-fg-muted"
