@@ -1,6 +1,7 @@
 import { NgTemplateOutlet } from '@angular/common';
 import {
-  afterEveryRender,
+  afterNextRender,
+  Injector,
   Component,
   computed,
   ElementRef,
@@ -24,6 +25,7 @@ import { TaskRow } from './task-row';
 
 interface CardSource {
   card: CardView;
+  leafId: string;
   expanded: boolean;
   epoch: number;
   version: number | undefined;
@@ -35,7 +37,7 @@ interface CardSource {
   host: { class: 'block' },
   template: `
     <!-- Read on every render, collapsed or not, so the sticky snapshot ends when the card collapses (§5.3). -->
-    @let shownCategories = categories();
+    @let shownColumns = categoryColumns();
     @if (variant() === 'row') {
       <section
         [id]="'section-' + leafId()"
@@ -109,8 +111,8 @@ interface CardSource {
                 #toggle
                 type="button"
                 class="flex min-h-11 w-full items-center text-left"
-                [attr.aria-expanded]="expanded()"
-                [attr.aria-controls]="expanded() ? bodyId() : null"
+                [attr.aria-expanded]="detailPane() ? null : expanded()"
+                [attr.aria-controls]="open() && !detailPane() ? bodyId() : null"
                 (click)="headerClick()"
               >
                 <span class="block" [class]="titleClasses()">
@@ -134,7 +136,7 @@ interface CardSource {
           } @else if (lockText(); as text) {
             <p class="m-0 text-sm text-fg-muted">{{ text }}</p>
           }
-          @if (expanded()) {
+          @if (open()) {
             <div [id]="bodyId()" class="flex flex-col gap-2">
               <p class="m-0 text-sm leading-[19px] text-fg-soft">
                 <app-spoiler-text
@@ -145,7 +147,7 @@ interface CardSource {
                 />
               </p>
               <div [class]="columns() === 2 ? 'grid grid-cols-2 gap-x-8' : 'flex flex-col gap-2'">
-                @for (column of categoryColumns(); track $index) {
+                @for (column of shownColumns; track $index) {
                   <div class="flex min-w-0 flex-col gap-2">
                     @for (category of column; track category.categoryId) {
                       <div>
@@ -271,19 +273,9 @@ export class LeafCard {
   // eslint-disable-next-line @angular-eslint/no-output-native -- name fixed by the route plan (Section C consumes it)
   readonly select = output<void>();
 
-  /** Set when a toggle swaps row and panel, which destroys the focused button. */
-  private refocus = false;
+  private readonly injector = inject(Injector);
   private readonly toggle = viewChild<ElementRef<HTMLButtonElement>>('toggle');
   protected readonly store = inject(RunStore);
-
-  constructor() {
-    afterEveryRender(() => {
-      const toggle = this.toggle();
-      if (!this.refocus || !toggle) return;
-      this.refocus = false;
-      toggle.nativeElement.focus();
-    });
-  }
 
   protected readonly layout = inject(RunLayout);
   protected readonly actions = inject(RunActions);
@@ -294,6 +286,8 @@ export class LeafCard {
   protected readonly leaf = computed(() => this.index().sections.get(this.leafId())!);
   protected readonly state = computed(() => this.view().sections.get(this.leafId())!.state);
   protected readonly expanded = computed(() => this.layout.isExpanded(this.leafId()));
+  /** The panel body shows when expanded, and always in the two-pane detail. */
+  protected readonly open = computed(() => this.expanded() || this.detailPane());
   protected readonly pinned = computed(
     () => this.view().pinned && this.view().current === this.leafId(),
   );
@@ -360,13 +354,15 @@ export class LeafCard {
   protected readonly categories = linkedSignal<CardSource, readonly CardCategory[]>({
     source: () => ({
       card: this.view().cards.get(this.leafId())!,
-      expanded: this.expanded(),
+      leafId: this.leafId(),
+      expanded: this.open(),
       epoch: this.layout.expansionEpoch(this.leafId()),
       version: this.store.run()?.currentVersion,
     }),
     computation: (source, previous) =>
       source.expanded &&
       previous?.source.expanded &&
+      previous.source.leafId === source.leafId &&
       previous.source.epoch === source.epoch &&
       previous.source.version === source.version
         ? stickyCategories(
@@ -395,7 +391,7 @@ export class LeafCard {
     else {
       this.layout.setExpanded(this.leafId(), !this.expanded());
       // The list swaps row and panel, which destroys the focused toggle.
-      this.refocus = true;
+      afterNextRender(() => this.toggle()?.nativeElement.focus(), { injector: this.injector });
     }
   }
 

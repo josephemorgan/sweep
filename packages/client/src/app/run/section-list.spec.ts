@@ -169,3 +169,13 @@ describe('SectionList focus', () => {
     expect(document.activeElement).toBe(toggle());
   });
 });
+
+describe('SectionList leaf wrapper', () => {
+  it('renders leaf cards directly in the list and a cleared row at 36 px with no extra padding', async () => {
+    const { el } = await renderList({ cleared: ['village'] });
+    const card = el.querySelector('app-leaf-card')!;
+    expect(card.parentElement).toBe(el);
+    expect(card.className).not.toContain('pt-2');
+    expect(el.querySelector('#section-village button')!.className).toContain('h-9');
+  });
+});

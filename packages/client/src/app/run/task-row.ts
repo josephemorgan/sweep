@@ -104,7 +104,7 @@ let nextId = 0;
           <div
             data-actions
             [id]="actionsId"
-            class="absolute right-0 top-full z-30 flex min-w-40 flex-col rounded-control border border-border bg-surface-raised py-1 shadow-lg"
+            class="absolute right-0 top-full z-30 flex min-w-40 flex-col rounded-control border border-border bg-surface-raised py-1"
           >
             <button type="button" class="min-h-11 px-4 text-left" (click)="choose('dont-care')">
               Don't care

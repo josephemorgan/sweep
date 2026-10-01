@@ -35,3 +35,9 @@ describe('text tokens meet WCAG AA (4.5:1) on both surfaces', () => {
     }
   }
 });
+
+describe('cleared rows meet WCAG AA on the page surface', () => {
+  it('fg-cleared on surface', () => {
+    expect(contrast(token('fg-cleared'), token('surface'))).toBeGreaterThanOrEqual(4.5);
+  });
+});

@@ -153,6 +153,7 @@ describe('TaskRow fix round 1', () => {
     expect(more.getAttribute('aria-expanded')).toBe('true');
     expect(el.querySelector('[role="menu"], [role="menuitem"]')).toBeNull();
     const list = el.querySelector(`#${more.getAttribute('aria-controls')}`)!;
+    expect(list.className).not.toMatch(/(^|\s)shadow-/);
     expect([...list.querySelectorAll('button')].map((b) => b.textContent!.trim())).toEqual([
       "Don't care",
       'Reset',

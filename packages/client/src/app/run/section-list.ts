@@ -22,19 +22,16 @@ interface Row {
     <div aria-hidden="true" class="absolute left-[19px] top-0 bottom-0 w-[1.5px] bg-rail"></div>
     @for (row of rows(); track row.section.id) {
       @if (row.leaf) {
-        <div class="relative flex gap-2.5 pl-3 pr-2 pt-2">
-          <span aria-hidden="true" class="w-4 shrink-0"></span>
-          <app-leaf-card
-            class="min-w-0 flex-1"
-            [leafId]="row.section.id"
-            [level]="headingLevel(row.depth)"
-            [variant]="!detailPane() && layout.isExpanded(row.section.id) ? 'panel' : 'row'"
-            [hint]="row.section.id === nextLeafId() ? hint() : null"
-            [detailPane]="detailPane()"
-            [selected]="detailPane() && row.section.id === selected()"
-            (select)="choose(row.section.id)"
-          />
-        </div>
+        <app-leaf-card
+          class="block"
+          [leafId]="row.section.id"
+          [level]="headingLevel(row.depth)"
+          [variant]="!detailPane() && layout.isExpanded(row.section.id) ? 'panel' : 'row'"
+          [hint]="row.section.id === nextLeafId() ? hint() : null"
+          [detailPane]="detailPane()"
+          [selected]="detailPane() && row.section.id === selected()"
+          (select)="choose(row.section.id)"
+        />
       } @else {
         <app-group-heading
           [groupId]="row.section.id"
