@@ -152,3 +152,20 @@ describe('SectionList (route rail)', () => {
     expect(hintText(el).join()).not.toContain('Throne Room');
   });
 });
+
+describe('SectionList focus', () => {
+  it('keeps focus on the toggle when a row becomes a panel and back', async () => {
+    const { el, fixture } = await renderList();
+    const toggle = (): HTMLButtonElement =>
+      el.querySelector('#section-marsh [role=heading] button')!;
+    toggle().focus();
+    toggle().click();
+    await fixture.whenStable();
+    expect(toggle().getAttribute('aria-expanded')).toBe('true');
+    expect(document.activeElement).toBe(toggle());
+    toggle().click();
+    await fixture.whenStable();
+    expect(toggle().getAttribute('aria-expanded')).toBe('false');
+    expect(document.activeElement).toBe(toggle());
+  });
+});

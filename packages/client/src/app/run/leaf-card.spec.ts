@@ -438,7 +438,8 @@ describe('LeafCard panel (route)', () => {
     lore.windows[0]!.from = 'village';
     lore.windows[0]!.home = 'village';
     const { el, fixture } = await renderCard('village', { tracked: { lore: true } }, guide);
-    expect(categoryHeaders(el).length).toBe(4);
+    const oneColumn = categoryHeaders(el);
+    expect(oneColumn.length).toBe(4);
     expect(el.querySelector('.grid-cols-2')).toBeNull();
     fixture.componentRef.setInput('columns', 2);
     await fixture.whenStable();
@@ -448,7 +449,7 @@ describe('LeafCard panel (route)', () => {
     const cols = [...grid.children];
     expect(cols.length).toBe(2);
     expect(cols.map((c) => c.querySelectorAll('[data-category-header]').length)).toEqual([2, 2]);
-    expect(categoryHeaders(el)[0]).toBe('Story 0 of 1');
+    expect(categoryHeaders(el)).toEqual(oneColumn);
   });
 
   it('keeps the cleared dot, not the lamp, on a cleared expanded panel', async () => {

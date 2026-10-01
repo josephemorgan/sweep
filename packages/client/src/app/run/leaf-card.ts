@@ -1,5 +1,15 @@
 import { NgTemplateOutlet } from '@angular/common';
-import { Component, computed, inject, input, linkedSignal, output } from '@angular/core';
+import {
+  afterEveryRender,
+  Component,
+  computed,
+  ElementRef,
+  inject,
+  input,
+  linkedSignal,
+  output,
+  viewChild,
+} from '@angular/core';
 import type { CardCategory, CardView, Task, TaskStatus } from '@sweep/core';
 import { MarkdownView } from '../shared/markdown-view';
 import { lockReason } from './lock-reason';
@@ -36,6 +46,7 @@ interface CardSource {
       >
         <div role="heading" [attr.aria-level]="level()">
           <button
+            #toggle
             type="button"
             class="flex w-full items-center gap-2.5 pl-3 pr-4 text-left"
             [class]="buttonClasses()"
@@ -53,20 +64,7 @@ interface CardSource {
             </span>
             <span class="min-w-0 flex-1 py-1">
               <span class="block" [class]="titleClasses()">
-                @if (state() === 'locked') {
-                  <span class="sr-only">Locked:</span>
-                }
-                @if (blurred()) {
-                  <span class="inline-flex items-center gap-2.5"
-                    ><span aria-hidden="true" class="redaction" [style.width.px]="barWidth()"></span
-                    ><span aria-hidden="true" class="text-xs font-normal text-fg-muted"
-                      >tap to reveal</span
-                    ><span aria-hidden="true" class="sr-only select-none">{{ leaf().title }}</span
-                    ><span class="sr-only">Hidden section</span></span
-                  >
-                } @else {
-                  {{ leaf().title }}
-                }
+                <ng-container [ngTemplateOutlet]="titleTpl" />
               </span>
               @if (hint(); as text) {
                 <span data-hint class="block text-xs text-fg-muted">{{ text }}</span>
@@ -108,6 +106,7 @@ interface CardSource {
           <div class="flex items-start gap-2">
             <div role="heading" [attr.aria-level]="level()" class="min-w-0 grow">
               <button
+                #toggle
                 type="button"
                 class="flex min-h-11 w-full items-center text-left"
                 [attr.aria-expanded]="expanded()"
@@ -115,33 +114,16 @@ interface CardSource {
                 (click)="headerClick()"
               >
                 <span class="block" [class]="titleClasses()">
-                  @if (state() === 'locked') {
-                    <span class="sr-only">Locked:</span>
-                  }
-                  @if (blurred()) {
-                    <span class="inline-flex items-center gap-2.5"
-                      ><span
-                        aria-hidden="true"
-                        class="redaction"
-                        [style.width.px]="barWidth()"
-                      ></span
-                      ><span aria-hidden="true" class="text-xs font-normal text-fg-muted"
-                        >tap to reveal</span
-                      ><span aria-hidden="true" class="sr-only select-none">{{ leaf().title }}</span
-                      ><span class="sr-only">Hidden section</span></span
-                    >
-                  } @else {
-                    {{ leaf().title }}
-                  }
+                  <ng-container [ngTemplateOutlet]="titleTpl" />
                 </span>
               </button>
             </div>
             @if (pinned()) {
-              <span class="pt-3 text-xs text-accent">Pinned</span>
+              <span class="shrink-0 whitespace-nowrap pt-3 text-xs text-accent">Pinned</span>
             }
             @if (openCount() > 0) {
               <span
-                class="pt-3 font-display text-sm font-semibold"
+                class="shrink-0 whitespace-nowrap pt-3 font-display text-sm font-semibold"
                 [class]="state() === 'locked' ? 'text-fg-muted' : 'text-open'"
                 >{{ openCount() }} open</span
               >
@@ -162,27 +144,43 @@ interface CardSource {
                   label="Hidden spoiler section. Tap to reveal."
                 />
               </p>
-              @if (columns() === 2) {
-                <div class="grid grid-cols-2 gap-x-8">
-                  @for (column of categoryColumns(); track $index) {
-                    <div class="flex min-w-0 flex-col gap-2">
-                      @for (category of column; track category.categoryId) {
-                        <ng-container
-                          [ngTemplateOutlet]="categoryTpl"
-                          [ngTemplateOutletContext]="{ $implicit: category }"
-                        />
-                      }
-                    </div>
-                  }
-                </div>
-              } @else {
-                @for (category of shownCategories; track category.categoryId) {
-                  <ng-container
-                    [ngTemplateOutlet]="categoryTpl"
-                    [ngTemplateOutletContext]="{ $implicit: category }"
-                  />
+              <div [class]="columns() === 2 ? 'grid grid-cols-2 gap-x-8' : 'flex flex-col gap-2'">
+                @for (column of categoryColumns(); track $index) {
+                  <div class="flex min-w-0 flex-col gap-2">
+                    @for (category of column; track category.categoryId) {
+                      <div>
+                        <div
+                          data-category-header
+                          class="flex items-baseline gap-2 border-b border-rule pt-1.5 text-xs text-fg-muted"
+                        >
+                          <span>{{ categoryName(category.categoryId) }}</span>
+                          @if (category.missed > 0) {
+                            <span class="text-missed">· {{ category.missed }} missed</span>
+                          }
+                          <span class="ml-auto">{{ category.done }} of {{ category.total }}</span>
+                        </div>
+                        <ul
+                          class="m-0 list-none p-0"
+                          [attr.aria-label]="categoryName(category.categoryId)"
+                        >
+                          @for (row of category.rows; track row.taskId) {
+                            <li>
+                              <app-task-row
+                                [task]="task(row.taskId)"
+                                [status]="row.status"
+                                [secondChance]="row.secondChance"
+                                [lastChance]="store.lastChanceIds().has(row.taskId)"
+                                [nextChanceLabel]="nextChanceLabel(row.status)"
+                                (stateChange)="store.setTaskState(row.taskId, $event)"
+                              />
+                            </li>
+                          }
+                        </ul>
+                      </div>
+                    }
+                  </div>
                 }
-              }
+              </div>
               @if (leaf().walkthrough; as walkthrough) {
                 <details class="border-t border-rule">
                   <summary
@@ -193,7 +191,7 @@ interface CardSource {
                   <app-markdown-view class="block pb-2" [source]="walkthrough" />
                 </details>
               }
-              <div class="flex justify-end gap-2 pt-1.5">
+              <div class="flex flex-wrap justify-end gap-2 pt-1.5">
                 @if (state() === 'cleared') {
                   <button type="button" class="btn" (click)="store.setCleared(leafId(), false)">
                     Reopen section
@@ -220,6 +218,21 @@ interface CardSource {
         </div>
       </section>
     }
+    <ng-template #titleTpl>
+      @if (state() === 'locked') {
+        <span class="sr-only">Locked:</span>
+      }
+      @if (blurred()) {
+        <span class="inline-flex items-center gap-2.5"
+          ><span aria-hidden="true" class="redaction" [style.width.px]="barWidth()"></span
+          ><span aria-hidden="true" class="text-xs font-normal text-fg-muted">tap to reveal</span
+          ><span aria-hidden="true" class="sr-only select-none">{{ leaf().title }}</span
+          ><span class="sr-only">Hidden section</span></span
+        >
+      } @else {
+        {{ leaf().title }}
+      }
+    </ng-template>
     <ng-template #nodeTpl>
       @switch (node()) {
         @case ('lamp') {
@@ -243,34 +256,6 @@ interface CardSource {
         }
       }
     </ng-template>
-    <ng-template #categoryTpl let-category>
-      <div>
-        <div
-          data-category-header
-          class="flex items-baseline gap-2 border-b border-rule pt-1.5 text-xs text-fg-muted"
-        >
-          <span>{{ categoryName(category.categoryId) }}</span>
-          @if (category.missed > 0) {
-            <span class="text-missed">· {{ category.missed }} missed</span>
-          }
-          <span class="ml-auto">{{ category.done }} of {{ category.total }}</span>
-        </div>
-        <ul class="m-0 list-none p-0" [attr.aria-label]="categoryName(category.categoryId)">
-          @for (row of category.rows; track row.taskId) {
-            <li>
-              <app-task-row
-                [task]="task(row.taskId)"
-                [status]="row.status"
-                [secondChance]="row.secondChance"
-                [lastChance]="store.lastChanceIds().has(row.taskId)"
-                [nextChanceLabel]="nextChanceLabel(row.status)"
-                (stateChange)="store.setTaskState(row.taskId, $event)"
-              />
-            </li>
-          }
-        </ul>
-      </div>
-    </ng-template>
   `,
 })
 export class LeafCard {
@@ -286,7 +271,20 @@ export class LeafCard {
   // eslint-disable-next-line @angular-eslint/no-output-native -- name fixed by the route plan (Section C consumes it)
   readonly select = output<void>();
 
+  /** Set when a toggle swaps row and panel, which destroys the focused button. */
+  private refocus = false;
+  private readonly toggle = viewChild<ElementRef<HTMLButtonElement>>('toggle');
   protected readonly store = inject(RunStore);
+
+  constructor() {
+    afterEveryRender(() => {
+      const toggle = this.toggle();
+      if (!this.refocus || !toggle) return;
+      this.refocus = false;
+      toggle.nativeElement.focus();
+    });
+  }
+
   protected readonly layout = inject(RunLayout);
   protected readonly actions = inject(RunActions);
   private readonly reveals = inject(Reveals);
@@ -326,7 +324,7 @@ export class LeafCard {
   protected readonly titleClasses = computed(() => {
     if (this.compact()) return 'font-display font-semibold text-[15px] text-lamp truncate';
     if (this.variant() === 'panel') {
-      const base = 'font-display font-bold text-[21px] leading-[25px] ';
+      const base = 'font-display font-bold text-[21px] leading-[25px] break-words ';
       const colour = this.state() === 'current' ? 'text-lamp' : 'text-fg';
       return base + colour + (this.state() === 'cleared' ? ' line-through' : '');
     }
@@ -382,6 +380,7 @@ export class LeafCard {
   /** Two-column layout: the first ceil(n / 2) categories on the left. */
   protected readonly categoryColumns = computed(() => {
     const all = this.categories();
+    if (this.columns() === 1) return [all];
     const half = Math.ceil(all.length / 2);
     return [all.slice(0, half), all.slice(half)];
   });
@@ -393,7 +392,11 @@ export class LeafCard {
 
   protected headerClick(): void {
     if (this.detailPane()) this.select.emit();
-    else this.layout.setExpanded(this.leafId(), !this.expanded());
+    else {
+      this.layout.setExpanded(this.leafId(), !this.expanded());
+      // The list swaps row and panel, which destroys the focused toggle.
+      this.refocus = true;
+    }
   }
 
   protected task(taskId: string): Task {
