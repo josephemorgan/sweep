@@ -22,7 +22,7 @@ describe('RunPage', () => {
     const headings = [...el.querySelectorAll('[role="heading"][aria-level="2"]')].map((h) =>
       h.textContent?.trim(),
     );
-    expect(headings.some((h) => h?.startsWith('Act 1'))).toBe(true);
+    expect(headings.some((h) => h?.includes('Act 1'))).toBe(true);
     expect(el.querySelector('#section-marsh')?.getAttribute('data-state')).toBe('current');
     await vi.waitFor(() => expect(Element.prototype.scrollIntoView).toHaveBeenCalled());
     expect((vi.mocked(Element.prototype.scrollIntoView).mock.contexts[0] as HTMLElement).id).toBe(

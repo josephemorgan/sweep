@@ -53,7 +53,9 @@ describe('spoiler rules (§5.6)', () => {
     const el = fixture.nativeElement as HTMLElement;
     const button = el.querySelector('button')!;
     expect(button.getAttribute('aria-label')).toBe('Hidden spoiler. Tap to reveal.');
-    expect(button.querySelector('[aria-hidden="true"]')?.textContent).toBe('Throne Room');
+    expect(button.querySelector('.redaction')).not.toBeNull();
+    expect(button.textContent).toContain('tap to reveal');
+    expect(button.querySelector('.sr-only[aria-hidden="true"]')?.textContent).toBe('Throne Room');
     button.click();
     await fixture.whenStable();
     expect(el.querySelector('button')).toBeNull();
@@ -117,12 +119,42 @@ describe('spoiler rules (§5.6)', () => {
     el.remove();
   });
 
-  it('SpoilerText blur is a courtesy: text stays out of the accessible name', async () => {
-    const fixture = mount({ text: 'Secret', hidden: true, revealKey: 'k6' });
+  it('SpoilerText redaction is a courtesy: text stays in the DOM, out of the accessible name', async () => {
+    const fixture = mount({
+      text: 'Secret',
+      hidden: true,
+      revealKey: 'k6',
+      label: 'Hidden spoiler task. Tap to reveal.',
+    });
     await fixture.whenStable();
-    const span = (fixture.nativeElement as HTMLElement).querySelector('span')!;
-    expect(span.className).toContain('blur-md');
-    expect(span.className).toContain('select-none');
+    const button = (fixture.nativeElement as HTMLElement).querySelector('button')!;
+    expect(button.getAttribute('aria-label')).toBe('Hidden spoiler task. Tap to reveal.');
+    expect(button.getAttribute('aria-label')).not.toContain('Secret');
+    const bar = button.querySelector('.redaction')!;
+    expect(bar.getAttribute('aria-hidden')).toBe('true');
+    expect(button.textContent).toContain('tap to reveal');
+    const hiddenText = button.querySelector('.sr-only')!;
+    expect(hiddenText.getAttribute('aria-hidden')).toBe('true');
+    expect(hiddenText.textContent).toBe('Secret');
+    expect(button.className).toContain('min-h-[42px]');
+  });
+
+  it('SpoilerText sizes the bar from the title length, clamped 64 to 176px', async () => {
+    const short = mount({ text: 'abcd', hidden: true, revealKey: 'k7' });
+    await short.whenStable();
+    expect(
+      ((short.nativeElement as HTMLElement).querySelector('.redaction') as HTMLElement).style.width,
+    ).toBe('64px');
+    const long = mount({ text: 'x'.repeat(40), hidden: true, revealKey: 'k8' });
+    await long.whenStable();
+    expect(
+      ((long.nativeElement as HTMLElement).querySelector('.redaction') as HTMLElement).style.width,
+    ).toBe('176px');
+    const mid = mount({ text: 'x'.repeat(12), hidden: true, revealKey: 'k9' });
+    await mid.whenStable();
+    expect(
+      ((mid.nativeElement as HTMLElement).querySelector('.redaction') as HTMLElement).style.width,
+    ).toBe('84px');
   });
 });
 
