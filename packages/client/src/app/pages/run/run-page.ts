@@ -92,7 +92,7 @@ import { sectionLabel } from '../../run/spoiler';
         <main class="flex grow overflow-hidden">
           <aside
             aria-label="Route"
-            class="relative w-[340px] shrink-0 overflow-y-auto border-r border-rule"
+            class="relative w-[340px] shrink-0 overflow-y-auto overflow-x-hidden border-r border-rule"
           >
             @if (store.guide(); as guide) {
               <app-section-list
@@ -111,7 +111,7 @@ import { sectionLabel } from '../../run/spoiler';
                 Offline. Showing the last saved copy; changes are queued.
               </p>
             }
-            @if (selectedLeaf(); as leafId) {
+            @if (detailLeaf(); as leafId) {
               <app-leaf-card variant="panel" [detailPane]="true" [columns]="2" [leafId]="leafId" />
             }
           </section>
@@ -193,6 +193,11 @@ export class RunPage implements RunActions {
   /** R5: the leaf shown in the detail pane; snaps back to current whenever current changes. */
   private readonly current = computed(() => this.store.view()?.current ?? null);
   protected readonly selectedLeaf = linkedSignal<string | null>(() => this.current());
+  /** A selection that a guide update removed would crash the card, so fall back to current. */
+  protected readonly detailLeaf = computed(() => {
+    const id = this.selectedLeaf();
+    return id && this.store.index()?.sections.has(id) ? id : this.current();
+  });
 
   constructor() {
     const title = inject(Title);
@@ -219,6 +224,11 @@ export class RunPage implements RunActions {
       this.scrolledFor = id;
       const current = view.current;
       if (current) untracked(() => this.layout.scrollTo(current));
+    });
+    // The jump sheet picked a leaf: show it in the handheld detail pane.
+    effect(() => {
+      const jump = this.layout.jumpedTo();
+      if (jump) untracked(() => this.selectedLeaf.set(jump.id));
     });
     effect(() => {
       const request = this.layout.scrollRequest();
@@ -284,7 +294,8 @@ export class RunPage implements RunActions {
   /** §5.8: the new guide version is in; close the sheet and return to the current card. */
   protected onUpdated(): void {
     this.updating.set(false);
-    const current = this.store.view()?.current;
+    const current = this.store.view()?.current ?? null;
+    this.selectedLeaf.set(current);
     if (current) this.layout.scrollTo(current);
   }
 

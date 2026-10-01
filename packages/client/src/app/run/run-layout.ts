@@ -14,6 +14,13 @@ export class RunLayout {
   private seq = 0;
   readonly scrollRequest = signal<{ id: string; seq: number } | null>(null);
 
+  /** A jump-sheet pick of a leaf; the handheld run page shows it in the detail pane. */
+  readonly jumpedTo = signal<{ id: string; seq: number } | null>(null);
+
+  jumpTo(leafId: string): void {
+    this.jumpedTo.set({ id: leafId, seq: ++this.seq });
+  }
+
   /** §5.2: the current card starts expanded, every other card collapsed; any card can be toggled. */
   isExpanded(leafId: string): boolean {
     return this.leafOverrides().get(leafId) ?? this.store.view()?.current === leafId;

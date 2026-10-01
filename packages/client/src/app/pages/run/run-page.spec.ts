@@ -7,6 +7,7 @@ import { ResumeCache } from '../../run/resume-cache';
 import { setupRunStore } from '../../../testing/run-store-harness';
 import { By } from '@angular/platform-browser';
 import { SectionList } from '../../run/section-list';
+import { RunLayout } from '../../run/run-layout';
 import { RunPage } from './run-page';
 
 async function renderPage(progress = {}) {
@@ -391,6 +392,48 @@ describe('RunPage update guide (§5.8)', () => {
       await fixture.whenStable();
       expect(store.view()!.current).toBe('marsh');
       expect(title(el)).toContain('Harrow Village');
+    });
+
+    it('handheld: the route aside never scrolls sideways', async () => {
+      stubMedia(true);
+      const { el } = await renderPage();
+      const aside = el.querySelector('aside[aria-label="Route"]')!;
+      expect(aside.classList).toContain('overflow-y-auto');
+      expect(aside.classList).toContain('overflow-x-hidden');
+    });
+
+    it('handheld: a guide update that removes the selected leaf falls back to current, no throw', async () => {
+      stubMedia(true);
+      const { el, fixture, store, api } = await renderPage({ cleared: ['village'] });
+      el.querySelector<HTMLButtonElement>('aside #section-keep-gate button')!.click();
+      await fixture.whenStable();
+      expect(title(el)).toContain('Keep Gate');
+      const payload = lanternKeepPayload({ cleared: ['village'] });
+      const act2 = payload.guide.sections.find((s) => s.id === 'act-2')!;
+      const without = {
+        ...payload.guide,
+        sections: payload.guide.sections.map((s) =>
+          s.id === 'act-2'
+            ? { ...act2, children: act2.children.filter((c) => c.id !== 'keep-gate') }
+            : s,
+        ),
+        tasks: payload.guide.tasks.filter((t) => !JSON.stringify(t).includes('keep-gate')),
+      };
+      api.getRun.mockResolvedValue({ ...payload, guide: without });
+      await store.refetch();
+      await fixture.whenStable();
+      expect(store.index()?.sections.has('keep-gate')).toBe(false);
+      expect(store.view()!.current).toBe('marsh');
+      expect(el.querySelector('#detail-section-marsh')).not.toBeNull();
+    });
+
+    it('handheld: a layout jump to a leaf shows it in the detail pane', async () => {
+      stubMedia(true);
+      const { el, fixture } = await renderPage({ cleared: ['village'] });
+      expect(title(el)).toContain('Marsh');
+      fixture.debugElement.injector.get(RunLayout).jumpTo('keep-gate');
+      await fixture.whenStable();
+      expect(el.querySelector('#detail-section-keep-gate')).not.toBeNull();
     });
 
     it('binds section-list detailPane by layout', async () => {

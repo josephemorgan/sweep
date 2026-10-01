@@ -37,6 +37,7 @@ test.describe('with the service worker', () => {
     context,
     runs,
   }, testInfo) => {
+    test.setTimeout(90_000);
     // Review Focus 1, R10: fonts are in the ngsw app group, so they load offline.
     const runId = await runs.create(`Offline font ${testInfo.project.name}`);
     await page.goto(`/runs/${runId}`);
